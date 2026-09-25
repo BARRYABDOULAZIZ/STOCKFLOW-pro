@@ -752,11 +752,13 @@
       document.getElementById(paneId).style.display = key === name ? '' : 'none';
       document.getElementById('authTab' + key[0].toUpperCase() + key.slice(1)).classList.toggle('active', key === name);
     });
+  }
+  function clearAuthError() {
     document.getElementById('loginError').style.display = 'none';
   }
-  document.getElementById('authTabLogin').addEventListener('click', () => showAuthTab('login'));
-  document.getElementById('authTabSignup').addEventListener('click', () => showAuthTab('signup'));
-  document.getElementById('authTabJoin').addEventListener('click', () => showAuthTab('join'));
+  document.getElementById('authTabLogin').addEventListener('click', () => { showAuthTab('login'); clearAuthError(); });
+  document.getElementById('authTabSignup').addEventListener('click', () => { showAuthTab('signup'); clearAuthError(); });
+  document.getElementById('authTabJoin').addEventListener('click', () => { showAuthTab('join'); clearAuthError(); });
 
   function showAuthError(msg) {
     const el = document.getElementById('loginError');
