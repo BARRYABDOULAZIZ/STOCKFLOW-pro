@@ -663,7 +663,8 @@
     t.textContent = msg;
     t.classList.add('show');
     clearTimeout(toast._h);
-    toast._h = setTimeout(() => t.classList.remove('show'), 2800);
+    const duration = msg && msg.length > 60 ? 8000 : 2800;
+    toast._h = setTimeout(() => t.classList.remove('show'), duration);
   }
   function setSync(ok, label) {
     document.getElementById('syncLabel').textContent = label;
@@ -1306,7 +1307,8 @@
       toast(`Facture FAC-${String(num).padStart(4, '0')} finalisée — stock mis à jour.`);
     } catch (err) {
       console.error(err);
-      toast('Erreur lors de la finalisation. Réessaie.');
+      const detail = (err && err.message) ? err.message : String(err);
+      toast('Erreur : ' + detail);
     } finally {
       btn.disabled = false;
     }
@@ -2137,7 +2139,7 @@
   // ================= Boot =================
   function startDataSync(db) {
     db.collection('produits').onSnapshot(
-      (snap) => { state.products = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderStock(); renderInvoiceLines(); renderDashboard(); renderInventaire(); scheduleAutoBackup(); },
+      (snap) => { state.products = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderStock(); renderDashboard(); renderInventaire(); scheduleAutoBackup(); },
       (err) => { console.error(err); setSync(false, 'connexion perdue'); }
     );
     db.collection('factures').onSnapshot(
