@@ -1286,7 +1286,8 @@
         total, createdAt: Date.now(), annulee: false,
         operateur: state.currentUser ? `${state.currentUser.nom} (${ROLE_LABEL[state.currentUser.role]})` : '',
       };
-      await state.db.collection('factures').doc('fac-' + num).set(invDoc);
+      const invId = 'fac-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+      await state.db.collection('factures').doc(invId).set(invDoc);
 
       // Regrouper les quantités par produit avant de déduire, pour éviter d'écraser
       // la déduction si le même article apparaît sur plusieurs lignes de la facture.
