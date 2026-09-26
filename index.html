@@ -468,6 +468,16 @@
       <div class="field-grid">
         <div><label>Client</label><input id="f-client" placeholder="Nom du client"></div>
         <div><label>Date</label><input id="f-date" type="date"></div>
+        <div><label>Montant payé (FCFA)</label><input id="f-paye" type="number" min="0" step="1" placeholder="Laisser vide = payé en totalité"></div>
+        <div>
+          <label>Mode de paiement</label>
+          <select id="f-mode-paiement">
+            <option value="Espèces">Espèces</option>
+            <option value="Mobile Money">Mobile Money</option>
+            <option value="Virement">Virement</option>
+            <option value="Chèque">Chèque</option>
+          </select>
+        </div>
       </div>
       <p class="hint-text" style="margin-top:0;">Cherche une référence du catalogue, ou tape librement pour une ligne hors-catalogue.</p>
       <div class="inv-lines" id="invLines"></div>
@@ -1394,8 +1404,20 @@
         total, montantPaye: 0, createdAt: Date.now(), annulee: false,
         operateur: state.currentUser ? `${state.currentUser.nom} (${ROLE_LABEL[state.currentUser.role]})` : '',
       };
+
+      // Montant payé au moment de la vente : champ vide = payé en totalité (cas le plus courant).
+      const payeRaw = document.getElementById('f-paye').value.trim();
+      const mode = document.getElementById('f-mode-paiement').value;
+      let montantPaye = payeRaw === '' ? total : Math.max(0, Math.min(total, Number(payeRaw) || 0));
+      invDoc.montantPaye = montantPaye;
       const invId = 'fac-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
       await state.db.collection('factures').doc(invId).set(invDoc);
+
+      // Trace ce premier paiement dans l'historique du client, comme un paiement enregistré depuis sa fiche.
+      if (montantPaye > 0 && clientId) {
+        const payId = 'pa-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+        await state.db.doc('paiements/' + payId).set({ factureId: invId, clientId, montant: montantPaye, mode, date, operateur: state.currentUser ? state.currentUser.nom : '', createdAt: Date.now() });
+      }
 
       // Regrouper les quantités par produit avant de déduire, pour éviter d'écraser
       // la déduction si le même article apparaît sur plusieurs lignes de la facture.
@@ -1412,8 +1434,10 @@
 
       invoiceLines = [freshLine()];
       document.getElementById('f-client').value = '';
+      document.getElementById('f-paye').value = '';
       renderInvoiceLines();
-      toast(`Facture FAC-${String(num).padStart(4, '0')} finalisée — stock mis à jour.`);
+      const resteMsg = montantPaye < total ? ` — reste à payer : ${euros(total - montantPaye)}` : '';
+      toast(`Facture FAC-${String(num).padStart(4, '0')} finalisée — stock mis à jour${resteMsg}.`);
     } catch (err) {
       console.error(err);
       const detail = (err && err.message) ? err.message : String(err);
