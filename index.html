@@ -249,6 +249,7 @@
     <button data-tab="ventes">🛒 Ventes</button>
     <button data-tab="factures">🧾 Factures</button>
     <button data-tab="fournisseurs">🚚 Fournisseurs</button>
+    <button data-tab="clients">👥 Clients</button>
     <button data-tab="donnees">💾 Données</button>
     <button data-tab="soon">…</button>
   </nav>
@@ -484,7 +485,7 @@
     <div class="row-head"><h2>Factures émises</h2></div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>N°</th><th>Date</th><th>Client</th><th>Vendeur</th><th class="num-cell">Articles</th><th class="num-cell">Total</th><th></th></tr></thead>
+        <thead><tr><th>N°</th><th>Date</th><th>Client</th><th>Vendeur</th><th class="num-cell">Articles</th><th class="num-cell">Total</th><th>Paiement</th><th></th></tr></thead>
         <tbody id="histBody"></tbody>
       </table>
       <div class="empty" id="histEmpty" style="display:none;">Aucune facture émise pour l'instant.</div>
@@ -566,6 +567,91 @@
     </div>
   </section>
 
+  <!-- CLIENTS -->
+  <section class="panel" id="panel-clients">
+    <div class="cluster">
+      <div class="stat"><div class="num" id="clCount">–</div><div class="lbl">Clients</div></div>
+      <div class="stat"><div class="num alert" id="clDetteTotale">–</div><div class="lbl">💰 Total dû par les clients</div></div>
+      <div class="stat"><div class="num alert" id="clAvecDette">–</div><div class="lbl">Clients avec un solde dû</div></div>
+    </div>
+
+    <div class="card">
+      <div class="row-head"><h2 id="clFormTitle">Ajouter un client</h2></div>
+      <div class="field-grid">
+        <div><label>Nom</label><input id="cl-nom" placeholder="Nom du client"></div>
+        <div><label>Téléphone</label><input id="cl-tel" placeholder="+221 ..."></div>
+        <div><label>Adresse</label><input id="cl-adresse" placeholder="Adresse"></div>
+      </div>
+      <p class="hint-text" style="margin-top:0;">Un client est aussi créé automatiquement dès qu'un nom est saisi sur une vente (onglet Ventes).</p>
+      <div style="display:flex; gap:10px;">
+        <button class="primary" id="btnAddClient">Ajouter le client</button>
+        <button class="ghost" id="btnCancelClEdit" style="display:none;">Annuler la modification</button>
+      </div>
+    </div>
+
+    <div class="row-head"><h2>Liste des clients</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nom</th><th>Téléphone</th><th class="num-cell">Total facturé</th><th class="num-cell">Reste à payer</th><th></th></tr></thead>
+        <tbody id="clBody"></tbody>
+      </table>
+      <div class="empty" id="clEmpty" style="display:none;">Aucun client pour l'instant.</div>
+    </div>
+
+    <!-- Fiche détaillée client -->
+    <div class="card" id="clDetailCard" style="display:none;">
+      <div class="row-head">
+        <h2 id="cld-nom">Client</h2>
+        <button class="ghost" id="btnCloseClDetail">Fermer</button>
+      </div>
+
+      <div class="hero-row" style="margin-bottom:18px;">
+        <div class="hero-card invest"><div class="hlbl">Total facturé</div><div class="hval" id="cld-facture">–</div></div>
+        <div class="hero-card value"><div class="hlbl">Total payé</div><div class="hval" id="cld-paye">–</div></div>
+        <div class="hero-card profit" style="background: var(--danger);"><div class="hlbl">💰 Reste à payer</div><div class="hval" id="cld-reste">–</div></div>
+      </div>
+      <p class="muted" style="margin-bottom:18px;">📞 <span id="cld-tel">—</span> · 📍 <span id="cld-adresse">—</span></p>
+
+      <div class="row-head"><h2>Enregistrer un paiement</h2></div>
+      <div class="field-grid">
+        <div>
+          <label>Facture concernée</label>
+          <select id="cld-facture-select"></select>
+        </div>
+        <div><label>Montant reçu (FCFA)</label><input id="cld-montant" type="number" min="0" step="1" value="0"></div>
+        <div>
+          <label>Mode de paiement</label>
+          <select id="cld-mode">
+            <option value="Espèces">Espèces</option>
+            <option value="Mobile Money">Mobile Money</option>
+            <option value="Virement">Virement</option>
+            <option value="Chèque">Chèque</option>
+          </select>
+        </div>
+        <div><label>Date</label><input id="cld-date" type="date"></div>
+      </div>
+      <button class="primary" id="btnAddPaiement">Enregistrer le paiement</button>
+
+      <div class="row-head" style="margin-top:22px;"><h2>Factures de ce client</h2></div>
+      <div class="table-wrap short">
+        <table>
+          <thead><tr><th>N°</th><th>Date</th><th class="num-cell">Total</th><th class="num-cell">Payé</th><th class="num-cell">Reste</th></tr></thead>
+          <tbody id="cld-factures"></tbody>
+        </table>
+        <div class="empty" id="cld-factures-empty" style="display:none;">Aucune facture pour ce client.</div>
+      </div>
+
+      <div class="row-head" style="margin-top:22px;"><h2>Historique des paiements</h2></div>
+      <div class="table-wrap short">
+        <table>
+          <thead><tr><th>Date</th><th>Facture</th><th class="num-cell">Montant</th><th>Mode</th></tr></thead>
+          <tbody id="cld-paiements"></tbody>
+        </table>
+        <div class="empty" id="cld-paiements-empty" style="display:none;">Aucun paiement enregistré.</div>
+      </div>
+    </div>
+  </section>
+
   <!-- DONNÉES -->
   <section class="panel" id="panel-donnees">
     <div class="card">
@@ -623,7 +709,7 @@
   <!-- SOON -->
   <section class="panel" id="panel-soon">
     <div class="soon-card">
-      <div class="display">Scanner · Paiements · Clients · Fournisseurs · Rapports · Comptabilité · Paramètres</div>
+      <div class="display">Rapports · Comptabilité · Paramètres</div>
       <p style="margin:0;">Ces modules arrivent dans une prochaine étape — dis-le quand tu veux qu'on s'y attaque.</p>
     </div>
   </section>
@@ -653,7 +739,7 @@
 (function () {
   "use strict";
 
-  const state = { db: null, downloads: null, products: [], invoices: [], movements: [], fournisseurs: [], commandes: [], currentUser: null };
+  const state = { db: null, downloads: null, products: [], invoices: [], movements: [], fournisseurs: [], commandes: [], clients: [], paiements: [], currentUser: null };
   const euros = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR') + ' FCFA';
   const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -674,9 +760,9 @@
   // ================= Utilisateur / rôle / commerce =================
   const ROLE_LABEL = { proprietaire: 'Propriétaire', admin: 'Admin', caissier: 'Caissier', employe: 'Employé' };
   const ROLE_TABS = {
-    proprietaire: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'donnees', 'soon'],
-    admin: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'donnees', 'soon'],
-    caissier: ['dashboard', 'ventes', 'factures'],
+    proprietaire: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'donnees', 'soon'],
+    admin: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'donnees', 'soon'],
+    caissier: ['dashboard', 'ventes', 'factures', 'clients'],
     employe: ['dashboard', 'scanner', 'produits'],
   };
 
@@ -1101,6 +1187,15 @@
         const tr = document.createElement('tr');
         const nbArticles = (inv.lignes || []).reduce((s, l) => s + (Number(l.qte) || 0), 0);
         const annulee = !!inv.annulee;
+        const paye = Number(inv.montantPaye) || 0;
+        const reste = Math.max(0, Number(inv.total || 0) - paye);
+        let statutHtml = '<span class="badge" style="background:var(--good,#16a34a); color:#fff;">Payée</span>';
+        if (!annulee) {
+          if (paye <= 0) statutHtml = '<span class="badge" style="background:var(--danger); color:#fff;">Non payée</span>';
+          else if (reste > 0) statutHtml = '<span class="badge" style="background:#d97706; color:#fff;">Partielle</span>';
+        } else {
+          statutHtml = '—';
+        }
         tr.style.opacity = annulee ? '0.5' : '1';
         tr.innerHTML = `
           <td>FAC-${String(inv.num).padStart(4, '0')}${annulee ? ' <span class="badge">Annulée</span>' : ''}</td>
@@ -1109,6 +1204,7 @@
           <td class="muted">${escapeHtml(inv.operateur || '—')}</td>
           <td class="num-cell">${nbArticles}</td>
           <td class="num-cell">${euros(inv.total)}</td>
+          <td>${statutHtml}</td>
           <td class="num-cell" style="white-space:nowrap;">
             <button class="ghost" data-print="${inv.id}" style="padding:6px 12px; font-size:12px;">Imprimer</button>
             ${annulee ? '' : `<button class="ghost" data-cancel="${inv.id}" style="padding:6px 12px; font-size:12px; margin-left:6px;">Annuler</button>`}
@@ -1277,13 +1373,25 @@
       const date = document.getElementById('f-date').value || todayStr();
       const client = document.getElementById('f-client').value.trim();
 
+      // Retrouve ou crée automatiquement la fiche client à partir du nom saisi
+      let clientId = null;
+      if (client) {
+        const existing = state.clients.find(c => c.nom.trim().toLowerCase() === client.toLowerCase());
+        if (existing) {
+          clientId = existing.id;
+        } else {
+          clientId = 'cl-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+          await state.db.doc('clients/' + clientId).set({ nom: client, telephone: '', adresse: '', createdAt: Date.now() });
+        }
+      }
+
       const invDoc = {
-        num, date, client,
+        num, date, client, clientId,
         lignes: validLines.map(l => {
           const prod = l.matched ? state.products.find(p => p.ref === l.ref) : null;
           return { ref: l.ref || '', nom: l.nom, qte: Number(l.qte), prix: Number(l.prix) || 0, unite: l.unite || '', matched: !!prod, productId: prod ? prod.id : null };
         }),
-        total, createdAt: Date.now(), annulee: false,
+        total, montantPaye: 0, createdAt: Date.now(), annulee: false,
         operateur: state.currentUser ? `${state.currentUser.nom} (${ROLE_LABEL[state.currentUser.role]})` : '',
       };
       const invId = 'fac-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
@@ -1835,6 +1943,208 @@
     }
   });
 
+  // ================= Clients / Paiements =================
+  let editingClientId = null;
+  let selectedClientId = null;
+
+  function clientStats(clientId) {
+    const factures = state.invoices.filter(i => i.clientId === clientId && !i.annulee);
+    const totalFacture = factures.reduce((s, i) => s + (Number(i.total) || 0), 0);
+    const totalPaye = factures.reduce((s, i) => s + (Number(i.montantPaye) || 0), 0);
+    const reste = totalFacture - totalPaye;
+    return { totalFacture, totalPaye, reste, factures };
+  }
+
+  function renderClients() {
+    const body = document.getElementById('clBody');
+    const empty = document.getElementById('clEmpty');
+    body.innerHTML = '';
+
+    let detteTotale = 0, avecDette = 0;
+
+    if (state.clients.length === 0) {
+      empty.style.display = 'block';
+    } else {
+      empty.style.display = 'none';
+      state.clients.slice().sort((a, b) => (a.nom || '').localeCompare(b.nom || '')).forEach(c => {
+        const { totalFacture, reste } = clientStats(c.id);
+        if (reste > 0) { detteTotale += reste; avecDette++; }
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escapeHtml(c.nom)}</td>
+          <td class="muted">${escapeHtml(c.telephone || '—')}</td>
+          <td class="num-cell">${euros(totalFacture)}</td>
+          <td class="num-cell ${reste > 0 ? 'margin-neg' : 'margin-pos'}">${euros(reste)}</td>
+          <td class="num-cell" style="white-space:nowrap;">
+            <button class="ghost" data-view-cl="${c.id}" style="padding:6px 10px; font-size:12px;">Voir</button>
+            <button class="icon-btn" data-edit-cl="${c.id}" title="Modifier" style="opacity:0.6;">✎</button>
+            <button class="icon-btn" data-del-cl="${c.id}" title="Supprimer">✕</button>
+          </td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    document.getElementById('clCount').textContent = state.clients.length;
+    document.getElementById('clDetteTotale').textContent = euros(detteTotale);
+    document.getElementById('clAvecDette').textContent = avecDette;
+
+    body.querySelectorAll('[data-view-cl]').forEach(b => b.addEventListener('click', () => openClientDetail(b.dataset.viewCl)));
+    body.querySelectorAll('[data-edit-cl]').forEach(b => b.addEventListener('click', () => startEditClient(b.dataset.editCl)));
+    body.querySelectorAll('[data-del-cl]').forEach(b => b.addEventListener('click', () => deleteClient(b.dataset.delCl)));
+
+    if (selectedClientId) renderClientDetail();
+  }
+
+  function resetClientForm() {
+    editingClientId = null;
+    ['cl-nom', 'cl-tel', 'cl-adresse'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('clFormTitle').textContent = 'Ajouter un client';
+    document.getElementById('btnAddClient').textContent = 'Ajouter le client';
+    document.getElementById('btnCancelClEdit').style.display = 'none';
+  }
+
+  function startEditClient(id) {
+    const c = state.clients.find(x => x.id === id);
+    if (!c) return;
+    editingClientId = id;
+    document.getElementById('cl-nom').value = c.nom || '';
+    document.getElementById('cl-tel').value = c.telephone || '';
+    document.getElementById('cl-adresse').value = c.adresse || '';
+    document.getElementById('clFormTitle').textContent = `Modifier "${c.nom}"`;
+    document.getElementById('btnAddClient').textContent = 'Enregistrer les modifications';
+    document.getElementById('btnCancelClEdit').style.display = 'inline-block';
+    document.querySelector('#panel-clients .card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  document.getElementById('btnCancelClEdit').addEventListener('click', resetClientForm);
+
+  document.getElementById('btnAddClient').addEventListener('click', async () => {
+    const nom = document.getElementById('cl-nom').value.trim();
+    const telephone = document.getElementById('cl-tel').value.trim();
+    const adresse = document.getElementById('cl-adresse').value.trim();
+    if (!nom) { toast('Le nom du client est obligatoire.'); return; }
+    if (!state.db) { toast('Connexion non disponible.'); return; }
+
+    try {
+      if (editingClientId) {
+        await state.db.doc('clients/' + editingClientId).update({ nom, telephone, adresse });
+        toast(`"${nom}" mis à jour.`);
+      } else {
+        const id = 'cl-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+        await state.db.doc('clients/' + id).set({ nom, telephone, adresse, createdAt: Date.now() });
+        toast('Client ajouté.');
+      }
+      resetClientForm();
+    } catch (err) {
+      console.error(err);
+      toast("Erreur lors de l'opération.");
+    }
+  });
+
+  async function deleteClient(id) {
+    if (!state.db) return;
+    const c = state.clients.find(x => x.id === id);
+    if (!confirm(`Supprimer le client "${c ? c.nom : ''}" ? Son historique de factures restera enregistré mais ne sera plus rattaché.`)) return;
+    try {
+      await state.db.doc('clients/' + id).delete();
+      if (selectedClientId === id) { selectedClientId = null; document.getElementById('clDetailCard').style.display = 'none'; }
+      if (editingClientId === id) resetClientForm();
+      toast('Client supprimé.');
+    } catch (err) { console.error(err); toast('Erreur lors de la suppression.'); }
+  }
+
+  function openClientDetail(id) {
+    selectedClientId = id;
+    document.getElementById('clDetailCard').style.display = 'block';
+    renderClientDetail();
+    document.getElementById('clDetailCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  document.getElementById('btnCloseClDetail').addEventListener('click', () => {
+    selectedClientId = null;
+    document.getElementById('clDetailCard').style.display = 'none';
+  });
+
+  function renderClientDetail() {
+    const c = state.clients.find(x => x.id === selectedClientId);
+    if (!c) { document.getElementById('clDetailCard').style.display = 'none'; return; }
+
+    document.getElementById('cld-nom').textContent = c.nom;
+    document.getElementById('cld-tel').textContent = c.telephone || '—';
+    document.getElementById('cld-adresse').textContent = c.adresse || '—';
+
+    const { totalFacture, totalPaye, reste, factures } = clientStats(c.id);
+    document.getElementById('cld-facture').textContent = euros(totalFacture);
+    document.getElementById('cld-paye').textContent = euros(totalPaye);
+    document.getElementById('cld-reste').textContent = euros(reste);
+
+    // Sélecteur de facture pour le paiement — seulement celles avec un reste à payer
+    const select = document.getElementById('cld-facture-select');
+    const withBalance = factures.filter(i => (Number(i.total) || 0) - (Number(i.montantPaye) || 0) > 0);
+    select.innerHTML = withBalance.length === 0
+      ? '<option value="">Aucune facture avec un solde dû</option>'
+      : withBalance.slice().sort((a, b) => (b.num || 0) - (a.num || 0)).map(i => {
+          const r = (Number(i.total) || 0) - (Number(i.montantPaye) || 0);
+          return `<option value="${i.id}">FAC-${String(i.num).padStart(4, '0')} — reste ${euros(r)}</option>`;
+        }).join('');
+
+    // Liste des factures
+    const fBody = document.getElementById('cld-factures');
+    const fEmpty = document.getElementById('cld-factures-empty');
+    if (factures.length === 0) { fBody.innerHTML = ''; fEmpty.style.display = 'block'; }
+    else {
+      fEmpty.style.display = 'none';
+      fBody.innerHTML = factures.slice().sort((a, b) => (b.num || 0) - (a.num || 0)).map(i => {
+        const p = Number(i.montantPaye) || 0;
+        const r = (Number(i.total) || 0) - p;
+        return `<tr><td>FAC-${String(i.num).padStart(4, '0')}</td><td class="muted">${escapeHtml(i.date || '')}</td><td class="num-cell">${euros(i.total)}</td><td class="num-cell">${euros(p)}</td><td class="num-cell ${r > 0 ? 'margin-neg' : 'margin-pos'}">${euros(r)}</td></tr>`;
+      }).join('');
+    }
+
+    // Historique des paiements
+    const payments = state.paiements.filter(p => p.clientId === c.id);
+    const pBody = document.getElementById('cld-paiements');
+    const pEmpty = document.getElementById('cld-paiements-empty');
+    if (payments.length === 0) { pBody.innerHTML = ''; pEmpty.style.display = 'block'; }
+    else {
+      pEmpty.style.display = 'none';
+      pBody.innerHTML = payments.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).map(p => {
+        const inv = state.invoices.find(i => i.id === p.factureId);
+        return `<tr><td class="muted">${escapeHtml(p.date || '')}</td><td>${inv ? 'FAC-' + String(inv.num).padStart(4, '0') : '—'}</td><td class="num-cell">${euros(p.montant)}</td><td class="muted">${escapeHtml(p.mode || '')}</td></tr>`;
+      }).join('');
+    }
+
+    document.getElementById('cld-date').value = document.getElementById('cld-date').value || todayStr();
+  }
+
+  document.getElementById('btnAddPaiement').addEventListener('click', async () => {
+    if (!selectedClientId) return;
+    const c = state.clients.find(x => x.id === selectedClientId);
+    if (!c) return;
+    const factureId = document.getElementById('cld-facture-select').value;
+    const montant = Number(document.getElementById('cld-montant').value) || 0;
+    const mode = document.getElementById('cld-mode').value;
+    const date = document.getElementById('cld-date').value || todayStr();
+
+    if (!factureId) { toast('Choisis la facture concernée par ce paiement.'); return; }
+    if (montant <= 0) { toast('Le montant doit être supérieur à 0.'); return; }
+    if (!state.db) { toast('Connexion non disponible.'); return; }
+
+    const inv = state.invoices.find(i => i.id === factureId);
+    if (!inv) { toast('Facture introuvable.'); return; }
+    const nouveauPaye = (Number(inv.montantPaye) || 0) + montant;
+
+    try {
+      const id = 'pa-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+      await state.db.doc('paiements/' + id).set({ factureId, clientId: c.id, montant, mode, date, operateur: state.currentUser ? state.currentUser.nom : '', createdAt: Date.now() });
+      await state.db.doc('factures/' + factureId).update({ montantPaye: nouveauPaye });
+      document.getElementById('cld-montant').value = '0';
+      toast('Paiement enregistré.');
+    } catch (err) {
+      console.error(err);
+      toast("Erreur lors de l'enregistrement : " + (err.message || err));
+    }
+  });
+
   // ================= Export / Import / Sauvegarde =================
   const LOCAL_BACKUP_KEY = 'stockflow_pro_backup_v1';
   let xlsxLoadingPromise = null;
@@ -2046,18 +2356,20 @@
   try { supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch (e) { console.error(e); }
 
   // Table où chaque ligne appartient à UN commerce précis (isolation multi-tenant)
-  const TENANT_TABLES = new Set(['produits', 'factures', 'mouvements', 'fournisseurs', 'commandes_fournisseurs']);
+  const TENANT_TABLES = new Set(['produits', 'factures', 'mouvements', 'fournisseurs', 'commandes_fournisseurs', 'clients', 'paiements']);
   let CURRENT_COMMERCE_ID = null;
 
   // Les tables Postgres utilisent des noms en snake_case ; l'app utilise du camelCase.
   // Ces tables font la conversion dans les deux sens.
   const FIELD_MAPS = {
     produits: { codeBarre: 'code_barre', prixAchat: 'prix_achat', prixVente: 'prix_vente', createdAt: 'created_at' },
-    factures: { createdAt: 'created_at' },
+    factures: { createdAt: 'created_at', clientId: 'client_id', montantPaye: 'montant_paye' },
     mouvements: { productId: 'product_id', ancienStock: 'ancien_stock', nouveauStock: 'nouveau_stock', createdAt: 'created_at' },
     fournisseurs: { createdAt: 'created_at' },
     commandes_fournisseurs: { fournisseurId: 'fournisseur_id', fournisseurNom: 'fournisseur_nom', montantCommande: 'montant_commande', montantPaye: 'montant_paye', createdAt: 'created_at' },
     commerces: { logoUrl: 'logo_url', numeroFiscal: 'numero_fiscal', inviteCode: 'invite_code', createdAt: 'created_at' },
+    clients: { createdAt: 'created_at' },
+    paiements: { factureId: 'facture_id', clientId: 'client_id', createdAt: 'created_at' },
   };
 
   function toDbRow(table, obj) {
@@ -2144,7 +2456,7 @@
       (err) => { console.error(err); setSync(false, 'connexion perdue'); }
     );
     db.collection('factures').onSnapshot(
-      (snap) => { state.invoices = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderHistory(); renderDashboard(); scheduleAutoBackup(); },
+      (snap) => { state.invoices = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderHistory(); renderDashboard(); renderClients(); if (selectedClientId) renderClientDetail(); scheduleAutoBackup(); },
       (err) => console.error(err)
     );
     db.collection('mouvements').onSnapshot(
@@ -2157,6 +2469,14 @@
     );
     db.collection('commandes_fournisseurs').onSnapshot(
       (snap) => { state.commandes = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderFournisseurs(); if (selectedFournisseurId) renderFournisseurDetail(); scheduleAutoBackup(); },
+      (err) => console.error(err)
+    );
+    db.collection('clients').onSnapshot(
+      (snap) => { state.clients = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderClients(); if (selectedClientId) renderClientDetail(); scheduleAutoBackup(); },
+      (err) => console.error(err)
+    );
+    db.collection('paiements').onSnapshot(
+      (snap) => { state.paiements = snap.docs.map(d => ({ id: d.id, ...d.data() })); if (selectedClientId) renderClientDetail(); scheduleAutoBackup(); },
       (err) => console.error(err)
     );
   }
