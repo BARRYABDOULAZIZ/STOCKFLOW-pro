@@ -156,7 +156,8 @@
   @media print {
     body * { visibility: hidden; }
     #printArea, #printArea * { visibility: visible; }
-    #printArea { display: block; position: absolute; left: 0; top: 0; width: 100%; padding: 20px; }
+    #printArea { display: block; position: absolute; left: 0; top: 0; width: 100%; padding: 20px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    #pi-statut { -webkit-print-color-adjust: exact; print-color-adjust: exact; border: 1px solid currentColor; }
     .pi-head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 14px; margin-bottom: 18px; }
     .pi-head h1 { font-family: 'Fraunces', Georgia, serif; font-size: 24px; margin: 0; }
     .pi-meta { text-align: right; font-size: 13px; }
@@ -743,6 +744,8 @@
     <tbody id="pi-lines"></tbody>
   </table>
   <div class="pi-total"><span>Total</span><span id="pi-total"></span></div>
+  <div id="pi-statut" style="margin-top:10px; text-align:right; font-family:'Inter',sans-serif; font-weight:700; font-size:14px; padding:6px 14px; border-radius:6px; display:inline-block; float:right;"></div>
+  <div style="clear:both;"></div>
 </div>
 
 <script>
@@ -1266,6 +1269,19 @@
       <tr><td>${escapeHtml(l.ref || '—')}</td><td>${escapeHtml(l.nom)}</td><td class="num-cell">${l.qte}</td><td>${escapeHtml(l.unite || '')}</td><td class="num-cell">${euros(l.prix)}</td><td class="num-cell">${euros((Number(l.prix) || 0) * (Number(l.qte) || 0))}</td></tr>
     `).join('');
     document.getElementById('pi-total').textContent = euros(inv.total);
+    const paye = Number(inv.montantPaye) || 0;
+    const reste = Math.max(0, Number(inv.total || 0) - paye);
+    const statutEl = document.getElementById('pi-statut');
+    if (paye <= 0) {
+      statutEl.textContent = '⚠ NON PAYÉE — reste à payer : ' + euros(reste);
+      statutEl.style.background = '#fee2e2'; statutEl.style.color = '#991b1b';
+    } else if (reste > 0) {
+      statutEl.textContent = '◐ PAYÉE PARTIELLEMENT — payé : ' + euros(paye) + ' — reste : ' + euros(reste);
+      statutEl.style.background = '#fef3c7'; statutEl.style.color = '#92400e';
+    } else {
+      statutEl.textContent = '✓ PAYÉE INTÉGRALEMENT';
+      statutEl.style.background = '#dcfce7'; statutEl.style.color = '#166534';
+    }
     setTimeout(() => window.print(), 80);
   }
 
