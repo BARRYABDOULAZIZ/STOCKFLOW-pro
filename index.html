@@ -253,6 +253,7 @@
     <button data-tab="fournisseurs">🚚 Fournisseurs</button>
     <button data-tab="clients">👥 Clients</button>
     <button data-tab="rapports">📈 Rapports</button>
+    <button data-tab="parametres">⚙️ Paramètres</button>
     <button data-tab="donnees">💾 Données</button>
     <button data-tab="soon">…</button>
   </nav>
@@ -710,6 +711,35 @@
     <button class="primary" id="btnExportRapport">📊 Exporter ce rapport (Excel)</button>
   </section>
 
+  <!-- PARAMÈTRES -->
+  <section class="panel" id="panel-parametres">
+    <div class="card">
+      <div class="row-head"><h2>🔐 Mon compte</h2></div>
+      <p class="hint-text" style="margin-top:0;">Connecté avec : <strong id="pm-email">—</strong></p>
+      <div class="field-grid">
+        <div><label>Nouveau mot de passe</label><input id="pm-pass1" type="password" placeholder="8 caractères min." autocomplete="new-password"></div>
+        <div><label>Confirmer</label><input id="pm-pass2" type="password" placeholder="Répète le mot de passe" autocomplete="new-password"></div>
+      </div>
+      <button class="primary" id="btnChangePass">Changer le mot de passe</button>
+      <p class="muted" id="pmPassStatus" style="margin-top:10px;"></p>
+    </div>
+
+    <div class="card">
+      <div class="row-head">
+        <h2>👥 Mon équipe</h2>
+        <button class="ghost" id="btnRefreshTeam">Actualiser</button>
+      </div>
+      <p class="hint-text" style="margin-top:0;">Change le rôle ou retire l'accès de quelqu'un. Le code d'invitation pour ajouter de nouveaux membres est dans l'onglet Données.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Nom</th><th>Rôle</th><th></th></tr></thead>
+          <tbody id="pmTeamBody"></tbody>
+        </table>
+        <div class="empty" id="pmTeamEmpty" style="display:none;">Chargement…</div>
+      </div>
+    </div>
+  </section>
+
   <!-- DONNÉES -->
   <section class="panel" id="panel-donnees">
     <div class="card">
@@ -820,8 +850,8 @@
   // ================= Utilisateur / rôle / commerce =================
   const ROLE_LABEL = { proprietaire: 'Propriétaire', admin: 'Admin', caissier: 'Caissier', employe: 'Employé' };
   const ROLE_TABS = {
-    proprietaire: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'donnees', 'soon'],
-    admin: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'donnees', 'soon'],
+    proprietaire: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'parametres', 'donnees', 'soon'],
+    admin: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'parametres', 'donnees', 'soon'],
     caissier: ['dashboard', 'ventes', 'factures', 'clients'],
     employe: ['dashboard', 'scanner', 'produits'],
   };
@@ -1021,6 +1051,7 @@
       if (btn.dataset.tab === 'inventaire') renderInventaire();
       if (btn.dataset.tab === 'scanner') { renderMovements(); focusUsbInput(); }
       if (btn.dataset.tab === 'rapports') renderRapports();
+      if (btn.dataset.tab === 'parametres') loadTeam();
       else { stopCameraScan(); }
       if (btn.dataset.tab === 'fournisseurs') renderFournisseurs();
     });
@@ -2336,6 +2367,85 @@
       toast('Impossible de générer le rapport.');
     }
   });
+
+  // ================= Paramètres : compte + équipe =================
+  document.getElementById('btnChangePass').addEventListener('click', async () => {
+    const statusEl = document.getElementById('pmPassStatus');
+    const p1 = document.getElementById('pm-pass1').value;
+    const p2 = document.getElementById('pm-pass2').value;
+    statusEl.textContent = '';
+    if (p1.length < 8) { statusEl.textContent = 'Le mot de passe doit faire au moins 8 caractères.'; return; }
+    if (p1 !== p2) { statusEl.textContent = 'Les deux mots de passe ne correspondent pas.'; return; }
+    try {
+      const { error } = await supabaseClient.auth.updateUser({ password: p1 });
+      if (error) throw error;
+      document.getElementById('pm-pass1').value = '';
+      document.getElementById('pm-pass2').value = '';
+      statusEl.textContent = '✅ Mot de passe changé.';
+      toast('Mot de passe mis à jour.');
+    } catch (err) {
+      statusEl.textContent = 'Erreur : ' + (err.message || err);
+    }
+  });
+
+  async function loadTeam() {
+    document.getElementById('pm-email').textContent = (state.currentUser && state.currentUser.email) || '—';
+    const body = document.getElementById('pmTeamBody');
+    const empty = document.getElementById('pmTeamEmpty');
+    empty.style.display = 'block';
+    empty.textContent = 'Chargement…';
+    body.innerHTML = '';
+    try {
+      const { data, error } = await supabaseClient.from('profiles').select('*').eq('commerce_id', CURRENT_COMMERCE_ID);
+      if (error) throw error;
+      if (!data || data.length === 0) { empty.textContent = 'Aucun membre trouvé.'; return; }
+      empty.style.display = 'none';
+      const meId = state.currentUser.id;
+      body.innerHTML = data.map(m => {
+        const isSelf = m.id === meId;
+        const isProprio = m.role === 'proprietaire';
+        const roleCell = (isProprio)
+          ? `<strong>${ROLE_LABEL.proprietaire}</strong>`
+          : `<select data-role-for="${m.id}" ${isSelf ? 'disabled' : ''}>
+               <option value="admin" ${m.role === 'admin' ? 'selected' : ''}>Admin</option>
+               <option value="caissier" ${m.role === 'caissier' ? 'selected' : ''}>Caissier</option>
+               <option value="employe" ${m.role === 'employe' ? 'selected' : ''}>Employé</option>
+             </select>`;
+        const actionCell = (isProprio || isSelf) ? (isSelf ? '<span class="muted">(toi)</span>' : '') : `<button class="icon-btn" data-remove-member="${m.id}" title="Retirer l'accès">✕</button>`;
+        return `<tr><td>${escapeHtml(m.nom || '—')}</td><td>${roleCell}</td><td class="num-cell">${actionCell}</td></tr>`;
+      }).join('');
+
+      body.querySelectorAll('[data-role-for]').forEach(sel => {
+        sel.addEventListener('change', async () => {
+          const userId = sel.dataset.roleFor;
+          try {
+            const { error: rErr } = await supabaseClient.rpc('update_team_role', { p_user_id: userId, p_role: sel.value });
+            if (rErr) throw rErr;
+            toast('Rôle mis à jour.');
+          } catch (err) {
+            toast('Erreur : ' + (err.message || err));
+            loadTeam();
+          }
+        });
+      });
+      body.querySelectorAll('[data-remove-member]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm("Retirer l'accès de cette personne à ton commerce ?")) return;
+          try {
+            const { error: rErr } = await supabaseClient.rpc('remove_team_member', { p_user_id: btn.dataset.removeMember });
+            if (rErr) throw rErr;
+            toast('Membre retiré.');
+            loadTeam();
+          } catch (err) {
+            toast('Erreur : ' + (err.message || err));
+          }
+        });
+      });
+    } catch (err) {
+      empty.textContent = 'Erreur de chargement : ' + (err.message || err);
+    }
+  }
+  document.getElementById('btnRefreshTeam').addEventListener('click', loadTeam);
 
   // ================= Export / Import / Sauvegarde =================
   const LOCAL_BACKUP_KEY = 'stockflow_pro_backup_v1';
