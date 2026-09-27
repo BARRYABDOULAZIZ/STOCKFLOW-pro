@@ -239,6 +239,7 @@
 
   <style>
     .tablike { background:transparent; border:1px solid var(--line); border-radius:8px; padding:6px 4px; font-size:12px; cursor:pointer; }
+    .rp-preset.active { background:#1d4ed8; color:#fff; border-color:transparent; }
     .tablike.active { background:var(--accent, #2563eb); color:#fff; border-color:transparent; }
   </style>
 
@@ -251,6 +252,7 @@
     <button data-tab="factures">🧾 Factures</button>
     <button data-tab="fournisseurs">🚚 Fournisseurs</button>
     <button data-tab="clients">👥 Clients</button>
+    <button data-tab="rapports">📈 Rapports</button>
     <button data-tab="donnees">💾 Données</button>
     <button data-tab="soon">…</button>
   </nav>
@@ -663,6 +665,51 @@
     </div>
   </section>
 
+  <!-- RAPPORTS -->
+  <section class="panel" id="panel-rapports">
+    <div class="card">
+      <div class="row-head"><h2>📈 Période du rapport</h2></div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+        <button class="ghost rp-preset active" data-preset="today">Aujourd'hui</button>
+        <button class="ghost rp-preset" data-preset="7j">7 derniers jours</button>
+        <button class="ghost rp-preset" data-preset="mois">Ce mois-ci</button>
+        <button class="ghost rp-preset" data-preset="tout">Depuis le début</button>
+      </div>
+      <div class="field-grid">
+        <div><label>Du</label><input id="rp-du" type="date"></div>
+        <div><label>Au</label><input id="rp-au" type="date"></div>
+      </div>
+    </div>
+
+    <div class="cluster">
+      <div class="stat"><div class="num" id="rpVentes">–</div><div class="lbl">Ventes réalisées</div></div>
+      <div class="stat"><div class="num" id="rpCa">–</div><div class="lbl">Chiffre d'affaires</div></div>
+      <div class="stat"><div class="num" id="rpBenefice">–</div><div class="lbl">Bénéfice estimé*</div></div>
+      <div class="stat"><div class="num alert" id="rpResteDu">–</div><div class="lbl">💰 Reste dû sur la période</div></div>
+    </div>
+    <p class="hint-text">*Calculé à partir du prix d'achat actuel des produits — approximatif si tes prix d'achat ont changé depuis.</p>
+
+    <div class="row-head"><h2>🏆 Top produits sur la période</h2></div>
+    <div class="table-wrap short">
+      <table>
+        <thead><tr><th>Produit</th><th class="num-cell">Quantité vendue</th><th class="num-cell">Chiffre d'affaires</th></tr></thead>
+        <tbody id="rpTopBody"></tbody>
+      </table>
+      <div class="empty" id="rpTopEmpty" style="display:none;">Aucune vente sur cette période.</div>
+    </div>
+
+    <div class="row-head"><h2>Factures de la période</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>N°</th><th>Date</th><th>Client</th><th class="num-cell">Total</th><th>Statut</th></tr></thead>
+        <tbody id="rpFacturesBody"></tbody>
+      </table>
+      <div class="empty" id="rpFacturesEmpty" style="display:none;">Aucune facture sur cette période.</div>
+    </div>
+
+    <button class="primary" id="btnExportRapport">📊 Exporter ce rapport (Excel)</button>
+  </section>
+
   <!-- DONNÉES -->
   <section class="panel" id="panel-donnees">
     <div class="card">
@@ -733,7 +780,7 @@
   <div class="pi-head">
     <div>
       <h1>Facture</h1>
-      <div style="font-family:'Inter',sans-serif; font-size:13px; margin-top:4px;" id="pi-commerce-nom">StockFlow Pro</div>
+      <div style="font-family:'Inter',sans-serif; font-size:15px; font-weight:800; margin-top:4px; color:#1d4ed8;" id="pi-commerce-nom">StockFlow Pro</div>
       <div style="font-family:'Inter',sans-serif; font-size:11px; color:#555;" id="pi-commerce-adresse"></div>
     </div>
     <div class="pi-meta"><div id="pi-num"></div><div id="pi-date"></div></div>
@@ -773,8 +820,8 @@
   // ================= Utilisateur / rôle / commerce =================
   const ROLE_LABEL = { proprietaire: 'Propriétaire', admin: 'Admin', caissier: 'Caissier', employe: 'Employé' };
   const ROLE_TABS = {
-    proprietaire: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'donnees', 'soon'],
-    admin: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'donnees', 'soon'],
+    proprietaire: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'donnees', 'soon'],
+    admin: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'donnees', 'soon'],
     caissier: ['dashboard', 'ventes', 'factures', 'clients'],
     employe: ['dashboard', 'scanner', 'produits'],
   };
@@ -973,6 +1020,7 @@
       if (btn.dataset.tab === 'dashboard') renderDashboard();
       if (btn.dataset.tab === 'inventaire') renderInventaire();
       if (btn.dataset.tab === 'scanner') { renderMovements(); focusUsbInput(); }
+      if (btn.dataset.tab === 'rapports') renderRapports();
       else { stopCameraScan(); }
       if (btn.dataset.tab === 'fournisseurs') renderFournisseurs();
     });
@@ -2185,6 +2233,110 @@
     }
   });
 
+  // ================= Rapports =================
+  function applyRpPreset(preset) {
+    const today = new Date();
+    const iso = (d) => d.toISOString().slice(0, 10);
+    let du, au = todayStr();
+    if (preset === 'today') { du = todayStr(); }
+    else if (preset === '7j') { const d = new Date(today); d.setDate(d.getDate() - 6); du = iso(d); }
+    else if (preset === 'mois') { du = iso(new Date(today.getFullYear(), today.getMonth(), 1)); }
+    else if (preset === 'tout') { du = '2000-01-01'; }
+    document.getElementById('rp-du').value = du;
+    document.getElementById('rp-au').value = au;
+    document.querySelectorAll('.rp-preset').forEach(b => b.classList.toggle('active', b.dataset.preset === preset));
+    renderRapports();
+  }
+  document.querySelectorAll('.rp-preset').forEach(b => b.addEventListener('click', () => applyRpPreset(b.dataset.preset)));
+  document.getElementById('rp-du').addEventListener('change', () => { document.querySelectorAll('.rp-preset').forEach(b => b.classList.remove('active')); renderRapports(); });
+  document.getElementById('rp-au').addEventListener('change', () => { document.querySelectorAll('.rp-preset').forEach(b => b.classList.remove('active')); renderRapports(); });
+
+  function facturesPeriode() {
+    const du = document.getElementById('rp-du').value || '2000-01-01';
+    const au = document.getElementById('rp-au').value || todayStr();
+    return state.invoices.filter(i => !i.annulee && i.date >= du && i.date <= au);
+  }
+
+  function renderRapports() {
+    const factures = facturesPeriode();
+    const ca = factures.reduce((s, i) => s + (Number(i.total) || 0), 0);
+    const resteDu = factures.reduce((s, i) => s + Math.max(0, (Number(i.total) || 0) - (Number(i.montantPaye) || 0)), 0);
+
+    let benefice = 0;
+    const parProduit = {}; // nom -> { qte, ca }
+    factures.forEach(inv => (inv.lignes || []).forEach(l => {
+      const qte = Number(l.qte) || 0;
+      const ligneCa = (Number(l.prix) || 0) * qte;
+      const prod = l.productId ? state.products.find(p => p.id === l.productId) : null;
+      if (prod) benefice += ((Number(l.prix) || 0) - (Number(prod.prixAchat) || 0)) * qte;
+      const key = l.nom || '—';
+      if (!parProduit[key]) parProduit[key] = { qte: 0, ca: 0 };
+      parProduit[key].qte += qte;
+      parProduit[key].ca += ligneCa;
+    }));
+
+    document.getElementById('rpVentes').textContent = factures.length;
+    document.getElementById('rpCa').textContent = euros(ca);
+    document.getElementById('rpBenefice').textContent = euros(benefice);
+    document.getElementById('rpResteDu').textContent = euros(resteDu);
+
+    const top = Object.entries(parProduit).sort((a, b) => b[1].qte - a[1].qte).slice(0, 10);
+    const topBody = document.getElementById('rpTopBody');
+    const topEmpty = document.getElementById('rpTopEmpty');
+    if (top.length === 0) { topBody.innerHTML = ''; topEmpty.style.display = 'block'; }
+    else {
+      topEmpty.style.display = 'none';
+      topBody.innerHTML = top.map(([nom, v]) => `<tr><td>${escapeHtml(nom)}</td><td class="num-cell">${v.qte}</td><td class="num-cell">${euros(v.ca)}</td></tr>`).join('');
+    }
+
+    const fBody = document.getElementById('rpFacturesBody');
+    const fEmpty = document.getElementById('rpFacturesEmpty');
+    if (factures.length === 0) { fBody.innerHTML = ''; fEmpty.style.display = 'block'; }
+    else {
+      fEmpty.style.display = 'none';
+      fBody.innerHTML = factures.slice().sort((a, b) => (b.num || 0) - (a.num || 0)).map(inv => {
+        const paye = Number(inv.montantPaye) || 0;
+        const reste = Math.max(0, (Number(inv.total) || 0) - paye);
+        let statut = '<span class="badge" style="background:var(--good,#16a34a); color:#fff;">Payée</span>';
+        if (paye <= 0) statut = '<span class="badge" style="background:var(--danger); color:#fff;">Non payée</span>';
+        else if (reste > 0) statut = '<span class="badge" style="background:#d97706; color:#fff;">Partielle</span>';
+        return `<tr><td>FAC-${String(inv.num).padStart(4, '0')}</td><td class="muted">${escapeHtml(inv.date || '')}</td><td>${escapeHtml(inv.client || '—')}</td><td class="num-cell">${euros(inv.total)}</td><td>${statut}</td></tr>`;
+      }).join('');
+    }
+  }
+
+  document.getElementById('btnExportRapport').addEventListener('click', async () => {
+    toast('Préparation du rapport…');
+    try {
+      await loadXlsx();
+      const factures = facturesPeriode();
+      const du = document.getElementById('rp-du').value;
+      const au = document.getElementById('rp-au').value;
+      const wb = window.XLSX.utils.book_new();
+
+      const ca = factures.reduce((s, i) => s + (Number(i.total) || 0), 0);
+      const resteDu = factures.reduce((s, i) => s + Math.max(0, (Number(i.total) || 0) - (Number(i.montantPaye) || 0)), 0);
+      const wsResume = window.XLSX.utils.json_to_sheet([{
+        'Période': `${du} au ${au}`, 'Nombre de ventes': factures.length, "Chiffre d'affaires": ca, 'Reste dû': resteDu,
+      }]);
+      window.XLSX.utils.book_append_sheet(wb, wsResume, 'Résumé');
+
+      const lignes = [];
+      factures.forEach(inv => (inv.lignes || []).forEach(l => {
+        lignes.push({ Facture: 'FAC-' + String(inv.num).padStart(4, '0'), Date: inv.date, Client: inv.client || '', Référence: l.ref || '', Désignation: l.nom, Quantité: l.qte, Unité: l.unite || '', 'Prix unitaire': l.prix, 'Total ligne': (Number(l.prix) || 0) * (Number(l.qte) || 0) });
+      }));
+      window.XLSX.utils.book_append_sheet(wb, window.XLSX.utils.json_to_sheet(lignes), 'Ventes détaillées');
+
+      const arrayBuf = window.XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([arrayBuf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const ok = await saveFile(`rapport-stockflow-${du}-au-${au}.xlsx`, blob);
+      if (ok) toast('Rapport prêt.');
+    } catch (err) {
+      console.error(err);
+      toast('Impossible de générer le rapport.');
+    }
+  });
+
   // ================= Export / Import / Sauvegarde =================
   const LOCAL_BACKUP_KEY = 'stockflow_pro_backup_v1';
   let xlsxLoadingPromise = null;
@@ -2496,7 +2648,7 @@
       (err) => { console.error(err); setSync(false, 'connexion perdue'); }
     );
     db.collection('factures').onSnapshot(
-      (snap) => { state.invoices = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderHistory(); renderDashboard(); renderClients(); if (selectedClientId) renderClientDetail(); scheduleAutoBackup(); },
+      (snap) => { state.invoices = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderHistory(); renderDashboard(); renderClients(); if (selectedClientId) renderClientDetail(); renderRapports(); scheduleAutoBackup(); },
       (err) => console.error(err)
     );
     db.collection('mouvements').onSnapshot(
@@ -2523,6 +2675,7 @@
 
   async function boot() {
     document.getElementById('f-date').value = todayStr();
+    applyRpPreset('today');
 
     let db = null;
     try { db = createSupabaseDb(supabaseClient); } catch (e) { console.error(e); db = null; }
