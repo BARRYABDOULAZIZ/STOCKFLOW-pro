@@ -240,6 +240,7 @@
   <style>
     .tablike { background:transparent; border:1px solid var(--line); border-radius:8px; padding:6px 4px; font-size:12px; cursor:pointer; }
     .rp-preset.active { background:#1d4ed8; color:#fff; border-color:transparent; }
+    .cp-preset.active { background:#1d4ed8; color:#fff; border-color:transparent; }
     .tablike.active { background:var(--accent, #2563eb); color:#fff; border-color:transparent; }
   </style>
 
@@ -254,6 +255,7 @@
     <button data-tab="clients">👥 Clients</button>
     <button data-tab="rapports">📈 Rapports</button>
     <button data-tab="parametres">⚙️ Paramètres</button>
+    <button data-tab="comptabilite">💰 Comptabilité</button>
     <button data-tab="donnees">💾 Données</button>
     <button data-tab="soon">…</button>
   </nav>
@@ -339,6 +341,7 @@
         <div><label>Code-barres</label><input id="p-barcode" placeholder="EAN / code-barres"></div>
         <div><label>Fournisseur</label><input id="p-fournisseur" placeholder="Nom du fournisseur"></div>
         <div><label>Catégorie</label><input id="p-categorie" placeholder="Gros œuvre, plomberie, électricité…"></div>
+        <div><label>Emplacement</label><input id="p-emplacement" placeholder="Rayon 3, étagère A2…"></div>
       </div>
       <div class="field-grid">
         <div><label id="lbl-stock">Quantité en stock</label><input id="p-stock" type="number" min="0" step="any" value="0"></div>
@@ -377,11 +380,36 @@
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>Référence</th><th>Nom</th><th>Code-barres</th><th>Fournisseur</th><th>Catégorie</th><th class="num-cell">Achat</th><th class="num-cell">Vente</th><th class="num-cell">Stock</th><th>Unité</th><th></th></tr>
+          <tr><th>Référence</th><th>Nom</th><th>Code-barres</th><th>Fournisseur</th><th>Catégorie</th><th>Emplacement</th><th class="num-cell">Achat</th><th class="num-cell">Vente</th><th class="num-cell">Stock</th><th>Unité</th><th></th></tr>
         </thead>
         <tbody id="stockBody"></tbody>
       </table>
       <div class="empty" id="stockEmpty" style="display:none;">Aucun produit pour l'instant — ajoute ton premier article ci-dessus.</div>
+    </div>
+
+    <div class="card">
+      <div class="row-head"><h2>🗑️ Déclarer une casse / perte</h2></div>
+      <p class="hint-text" style="margin-top:0;">Pour du stock cassé, abîmé, détruit, périmé ou volé — ça sort du stock sans passer par une vente.</p>
+      <div class="field-grid">
+        <div>
+          <label>Produit</label>
+          <select id="ps-produit"></select>
+        </div>
+        <div><label>Quantité perdue</label><input id="ps-qte" type="number" min="0" step="any" value="1"></div>
+        <div>
+          <label>Raison</label>
+          <select id="ps-raison">
+            <option>Casse</option>
+            <option>Abîmé</option>
+            <option>Détruit</option>
+            <option>Périmé</option>
+            <option>Volé</option>
+            <option>Autre</option>
+          </select>
+        </div>
+        <div><label>Note (optionnel)</label><input id="ps-note" placeholder="Précision"></div>
+      </div>
+      <button class="primary" id="btnAddPerte" style="background:var(--danger);">Enregistrer la perte</button>
     </div>
   </section>
 
@@ -740,6 +768,71 @@
     </div>
   </section>
 
+  <!-- COMPTABILITÉ -->
+  <section class="panel" id="panel-comptabilite">
+    <div class="card">
+      <div class="row-head"><h2>💰 Période</h2></div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+        <button class="ghost cp-preset active" data-preset="mois">Ce mois-ci</button>
+        <button class="ghost cp-preset" data-preset="7j">7 derniers jours</button>
+        <button class="ghost cp-preset" data-preset="tout">Depuis le début</button>
+      </div>
+      <div class="field-grid">
+        <div><label>Du</label><input id="cp-du" type="date"></div>
+        <div><label>Au</label><input id="cp-au" type="date"></div>
+      </div>
+    </div>
+
+    <div class="cluster">
+      <div class="stat"><div class="num" id="cpCa">–</div><div class="lbl">Chiffre d'affaires (facturé)</div></div>
+      <div class="stat"><div class="num alert" id="cpCogs">–</div><div class="lbl">Coût des marchandises vendues</div></div>
+      <div class="stat"><div class="num alert" id="cpDepenses">–</div><div class="lbl">Dépenses générales</div></div>
+      <div class="stat"><div class="num alert" id="cpPertes">–</div><div class="lbl">🗑️ Casse / pertes (valeur)</div></div>
+      <div class="stat"><div class="num" id="cpNet">–</div><div class="lbl">✅ Bénéfice net estimé</div></div>
+    </div>
+    <p class="hint-text">Bénéfice net = Chiffre d'affaires − coût des marchandises vendues − dépenses générales − valeur de la casse/pertes. Approximatif si les prix d'achat ont changé depuis.</p>
+
+    <div class="card">
+      <div class="row-head"><h2>Ajouter une dépense</h2></div>
+      <div class="field-grid">
+        <div>
+          <label>Catégorie</label>
+          <select id="dp-categorie">
+            <option>Loyer</option>
+            <option>Électricité / Eau</option>
+            <option>Salaires</option>
+            <option>Transport</option>
+            <option>Réparations</option>
+            <option>Fournitures</option>
+            <option>Autre</option>
+          </select>
+        </div>
+        <div><label>Montant (FCFA)</label><input id="dp-montant" type="number" min="0" step="1" value="0"></div>
+        <div><label>Date</label><input id="dp-date" type="date"></div>
+        <div><label>Note (optionnel)</label><input id="dp-note" placeholder="Précision"></div>
+      </div>
+      <button class="primary" id="btnAddDepense">Enregistrer la dépense</button>
+    </div>
+
+    <div class="row-head"><h2>Répartition des dépenses par catégorie</h2></div>
+    <div class="table-wrap short">
+      <table>
+        <thead><tr><th>Catégorie</th><th class="num-cell">Total</th></tr></thead>
+        <tbody id="cpCategBody"></tbody>
+      </table>
+      <div class="empty" id="cpCategEmpty" style="display:none;">Aucune dépense sur cette période.</div>
+    </div>
+
+    <div class="row-head"><h2>Détail des dépenses</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Catégorie</th><th>Note</th><th class="num-cell">Montant</th><th></th></tr></thead>
+        <tbody id="cpDepBody"></tbody>
+      </table>
+      <div class="empty" id="cpDepEmpty" style="display:none;">Aucune dépense enregistrée.</div>
+    </div>
+  </section>
+
   <!-- DONNÉES -->
   <section class="panel" id="panel-donnees">
     <div class="card">
@@ -829,7 +922,7 @@
 (function () {
   "use strict";
 
-  const state = { db: null, downloads: null, products: [], invoices: [], movements: [], fournisseurs: [], commandes: [], clients: [], paiements: [], currentUser: null };
+  const state = { db: null, downloads: null, products: [], invoices: [], movements: [], fournisseurs: [], commandes: [], clients: [], paiements: [], depenses: [], currentUser: null };
   const euros = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR') + ' FCFA';
   const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -850,8 +943,8 @@
   // ================= Utilisateur / rôle / commerce =================
   const ROLE_LABEL = { proprietaire: 'Propriétaire', admin: 'Admin', caissier: 'Caissier', employe: 'Employé' };
   const ROLE_TABS = {
-    proprietaire: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'parametres', 'donnees', 'soon'],
-    admin: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'parametres', 'donnees', 'soon'],
+    proprietaire: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'parametres', 'comptabilite', 'donnees', 'soon'],
+    admin: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'parametres', 'comptabilite', 'donnees', 'soon'],
     caissier: ['dashboard', 'ventes', 'factures', 'clients'],
     employe: ['dashboard', 'scanner', 'produits'],
   };
@@ -1052,6 +1145,7 @@
       if (btn.dataset.tab === 'scanner') { renderMovements(); focusUsbInput(); }
       if (btn.dataset.tab === 'rapports') renderRapports();
       if (btn.dataset.tab === 'parametres') loadTeam();
+      if (btn.dataset.tab === 'comptabilite') renderComptabilite();
       else { stopCameraScan(); }
       if (btn.dataset.tab === 'fournisseurs') renderFournisseurs();
     });
@@ -1155,7 +1249,7 @@
 
     const filtered = state.products.filter(p => {
       if (!stockFilter) return true;
-      return (p.ref || '').toLowerCase().includes(stockFilter) || (p.nom || '').toLowerCase().includes(stockFilter) || (p.codeBarre || '').toLowerCase().includes(stockFilter);
+      return (p.ref || '').toLowerCase().includes(stockFilter) || (p.nom || '').toLowerCase().includes(stockFilter) || (p.codeBarre || '').toLowerCase().includes(stockFilter) || (p.emplacement || '').toLowerCase().includes(stockFilter);
     }).sort((a, b) => (a.ref || '').localeCompare(b.ref || ''));
 
     document.getElementById('catalogCount').textContent = state.products.length ? `(${filtered.length} affiché${filtered.length > 1 ? 's' : ''} sur ${state.products.length})` : '';
@@ -1177,6 +1271,7 @@
           <td class="muted">${escapeHtml(p.codeBarre || '—')}</td>
           <td class="muted">${escapeHtml(p.fournisseur || '—')}</td>
           <td class="muted">${escapeHtml(p.categorie || '—')}</td>
+          <td class="muted">${escapeHtml(p.emplacement || '—')}</td>
           <td class="num-cell">${euros(p.prixAchat)}</td>
           <td class="num-cell">${euros(p.prixVente)}</td>
           <td class="num-cell ${zero ? '' : (low ? 'stock-low' : 'stock-ok')}">${zero ? `<span class="stock-zero">0</span>` : p.stock}${low ? ' <span class="badge warn">bas</span>' : ''}</td>
@@ -1204,6 +1299,17 @@
     body.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => startEditProduct(b.dataset.edit)));
 
     if (state.products.length > 3000) setSync(true, `synchronisé · ${state.products.length} réf. — catalogue volumineux, pense à archiver les articles inactifs`);
+
+    updatePerteSelect();
+  }
+
+  function updatePerteSelect() {
+    const sel = document.getElementById('ps-produit');
+    if (!sel) return;
+    const current = sel.value;
+    sel.innerHTML = state.products.slice().sort((a, b) => (a.nom || '').localeCompare(b.nom || ''))
+      .map(p => `<option value="${p.id}">${escapeHtml(p.nom)} (${escapeHtml(p.ref || '')}) — stock : ${p.stock} ${escapeHtml(p.unite || '')}</option>`).join('');
+    if (current && state.products.some(p => p.id === current)) sel.value = current;
   }
 
   // ================= Inventaire intelligent =================
@@ -1724,15 +1830,44 @@
     }
   });
 
-  async function logMovement({ productId, ref, nom, quantite, ancienStock, nouveauStock, unite, source }) {
+  async function logMovement({ productId, ref, nom, quantite, ancienStock, nouveauStock, unite, source, raison, note }) {
     if (!state.db) return;
     const id = 'mv-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
     const operateur = state.currentUser ? `${state.currentUser.nom} (${ROLE_LABEL[state.currentUser.role]})` : '';
-    await state.db.doc('mouvements/' + id).set({
+    const doc = {
       productId, ref, nom, quantite, ancienStock, nouveauStock, unite, source, operateur,
       date: todayStr(), createdAt: Date.now(),
-    });
+    };
+    if (raison) doc.raison = raison;
+    if (note) doc.note = note;
+    await state.db.doc('mouvements/' + id).set(doc);
   }
+
+  document.getElementById('btnAddPerte').addEventListener('click', async () => {
+    const productId = document.getElementById('ps-produit').value;
+    const qte = Number(document.getElementById('ps-qte').value) || 0;
+    const raison = document.getElementById('ps-raison').value;
+    const note = document.getElementById('ps-note').value.trim();
+
+    const prod = state.products.find(p => p.id === productId);
+    if (!prod) { toast('Choisis un produit.'); return; }
+    if (qte <= 0) { toast('La quantité doit être supérieure à 0.'); return; }
+    if (!state.db) { toast('Connexion non disponible.'); return; }
+
+    const ancienStock = Number(prod.stock) || 0;
+    const nouveauStock = Math.max(0, ancienStock - qte);
+
+    try {
+      await state.db.doc('produits/' + productId).update({ stock: nouveauStock });
+      await logMovement({ productId, ref: prod.ref, nom: prod.nom, quantite: qte, ancienStock, nouveauStock, unite: prod.unite, source: 'perte', raison, note });
+      document.getElementById('ps-qte').value = '1';
+      document.getElementById('ps-note').value = '';
+      toast(`Perte enregistrée : ${qte} ${prod.unite || ''} de "${prod.nom}" (${raison}).`);
+    } catch (err) {
+      console.error(err);
+      toast('Erreur : ' + (err.message || err));
+    }
+  });
 
   function renderMovements() {
     const box = document.getElementById('movementsList');
@@ -1741,10 +1876,13 @@
     const list = (state.movements || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 12);
     if (list.length === 0) { box.innerHTML = ''; empty.style.display = 'block'; return; }
     empty.style.display = 'none';
-    const srcLabel = { 'scan-usb': 'scan USB/BT', 'scan-camera': 'scan caméra', 'manuel': 'saisie manuelle' };
-    box.innerHTML = list.map(m => `
-      <li><span>${escapeHtml(m.nom)} — +${m.quantite} ${escapeHtml(m.unite || '')} <span class="r">(${srcLabel[m.source] || m.source || ''}${m.operateur ? ' · ' + escapeHtml(m.operateur) : ''})</span></span><span class="r">${m.ancienStock} → ${m.nouveauStock}</span></li>
-    `).join('');
+    const srcLabel = { 'scan-usb': 'scan USB/BT', 'scan-camera': 'scan caméra', 'manuel': 'saisie manuelle', 'perte': 'casse / perte' };
+    box.innerHTML = list.map(m => {
+      const isPerte = m.source === 'perte';
+      const sign = isPerte ? '−' : '+';
+      const raisonTxt = isPerte && m.raison ? ` · ${escapeHtml(m.raison)}` : '';
+      return `<li><span>${escapeHtml(m.nom)} — ${sign}${m.quantite} ${escapeHtml(m.unite || '')} <span class="r">(${srcLabel[m.source] || m.source || ''}${raisonTxt}${m.operateur ? ' · ' + escapeHtml(m.operateur) : ''})</span></span><span class="r">${m.ancienStock} → ${m.nouveauStock}</span></li>`;
+    }).join('');
   }
 
   // ================= Produits: add / restock / edit =================
@@ -1778,6 +1916,7 @@
     document.getElementById('p-barcode').value = p.codeBarre || '';
     document.getElementById('p-fournisseur').value = p.fournisseur || '';
     document.getElementById('p-categorie').value = p.categorie || '';
+    document.getElementById('p-emplacement').value = p.emplacement || '';
     document.getElementById('p-stock').value = p.stock ?? 0;
     document.getElementById('p-unite').value = p.unite || '';
     document.getElementById('p-prixachat').value = p.prixAchat ?? 0;
@@ -1796,7 +1935,7 @@
 
   function resetProductForm() {
     editingId = null;
-    ['p-ref','p-nom','p-barcode','p-fournisseur','p-categorie','p-unite'].forEach(id => document.getElementById(id).value = '');
+    ['p-ref','p-nom','p-barcode','p-fournisseur','p-categorie','p-emplacement','p-unite'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('p-stock').value = '0';
     document.getElementById('p-prixachat').value = '0';
     document.getElementById('p-prixvente').value = '0';
@@ -1815,6 +1954,7 @@
     const codeBarre = document.getElementById('p-barcode').value.trim();
     const fournisseur = document.getElementById('p-fournisseur').value.trim();
     const categorie = document.getElementById('p-categorie').value.trim();
+    const emplacement = document.getElementById('p-emplacement').value.trim();
     const stockInput = Number(document.getElementById('p-stock').value) || 0;
     const unite = document.getElementById('p-unite').value.trim() || 'unité';
     const prixAchat = Number(document.getElementById('p-prixachat').value) || 0;
@@ -1828,7 +1968,7 @@
     try {
       if (editingId) {
         // Mode édition : remplace tous les champs, y compris le stock en valeur exacte.
-        await state.db.doc('produits/' + editingId).update({ ref, nom, codeBarre, fournisseur, categorie, stock: stockInput, unite, prixAchat, prixVente, seuil });
+        await state.db.doc('produits/' + editingId).update({ ref, nom, codeBarre, fournisseur, categorie, emplacement, stock: stockInput, unite, prixAchat, prixVente, seuil });
         toast(`"${nom}" mis à jour.`);
         resetProductForm();
         return;
@@ -1845,6 +1985,7 @@
         if (codeBarre && codeBarre !== existing.codeBarre) updates.codeBarre = codeBarre;
         if (fournisseur && fournisseur !== existing.fournisseur) updates.fournisseur = fournisseur;
         if (categorie && categorie !== existing.categorie) updates.categorie = categorie;
+        if (emplacement && emplacement !== existing.emplacement) updates.emplacement = emplacement;
         await state.db.doc('produits/' + existing.id).update(updates);
         if (stockInput > 0) {
           logMovement({ productId: existing.id, ref: existing.ref, nom: existing.nom, quantite: stockInput, ancienStock: Number(existing.stock), nouveauStock: newStock, unite: updates.unite || existing.unite || 'unité', source: 'manuel' }).catch(() => {});
@@ -1853,7 +1994,7 @@
       } else {
         if (state.products.length >= 3000) toast("Catalogue proche de 3000 références — pense à archiver les articles inactifs.");
         const id = 'p-' + ref.toLowerCase().replace(/[^a-z0-9_.-]/g, '-').slice(0, 60) + '-' + Date.now().toString(36);
-        await state.db.doc('produits/' + id).set({ ref, nom, codeBarre, fournisseur, categorie, stock: stockInput, unite, prixAchat, prixVente, seuil, createdAt: Date.now() });
+        await state.db.doc('produits/' + id).set({ ref, nom, codeBarre, fournisseur, categorie, emplacement, stock: stockInput, unite, prixAchat, prixVente, seuil, createdAt: Date.now() });
         toast('Produit ajouté au catalogue.');
       }
       resetProductForm();
@@ -2447,6 +2588,112 @@
   }
   document.getElementById('btnRefreshTeam').addEventListener('click', loadTeam);
 
+  // ================= Comptabilité =================
+  function applyCpPreset(preset) {
+    const today = new Date();
+    const iso = (d) => d.toISOString().slice(0, 10);
+    let du, au = todayStr();
+    if (preset === '7j') { const d = new Date(today); d.setDate(d.getDate() - 6); du = iso(d); }
+    else if (preset === 'mois') { du = iso(new Date(today.getFullYear(), today.getMonth(), 1)); }
+    else if (preset === 'tout') { du = '2000-01-01'; }
+    document.getElementById('cp-du').value = du;
+    document.getElementById('cp-au').value = au;
+    document.querySelectorAll('.cp-preset').forEach(b => b.classList.toggle('active', b.dataset.preset === preset));
+    renderComptabilite();
+  }
+  document.querySelectorAll('.cp-preset').forEach(b => b.addEventListener('click', () => applyCpPreset(b.dataset.preset)));
+  document.getElementById('cp-du').addEventListener('change', () => { document.querySelectorAll('.cp-preset').forEach(b => b.classList.remove('active')); renderComptabilite(); });
+  document.getElementById('cp-au').addEventListener('change', () => { document.querySelectorAll('.cp-preset').forEach(b => b.classList.remove('active')); renderComptabilite(); });
+
+  function depensesPeriode() {
+    const du = document.getElementById('cp-du').value || '2000-01-01';
+    const au = document.getElementById('cp-au').value || todayStr();
+    return (state.depenses || []).filter(d => d.date >= du && d.date <= au);
+  }
+
+  function renderComptabilite() {
+    if (!document.getElementById('cp-du').value) return; // pas encore initialisé
+    const du = document.getElementById('cp-du').value;
+    const au = document.getElementById('cp-au').value;
+    const factures = state.invoices.filter(i => !i.annulee && i.date >= du && i.date <= au);
+    const ca = factures.reduce((s, i) => s + (Number(i.total) || 0), 0);
+
+    let cogs = 0;
+    factures.forEach(inv => (inv.lignes || []).forEach(l => {
+      const prod = l.productId ? state.products.find(p => p.id === l.productId) : null;
+      if (prod) cogs += (Number(prod.prixAchat) || 0) * (Number(l.qte) || 0);
+    }));
+
+    const depenses = depensesPeriode();
+    const totalDepenses = depenses.reduce((s, d) => s + (Number(d.montant) || 0), 0);
+
+    const pertes = (state.movements || []).filter(m => m.source === 'perte' && m.date >= du && m.date <= au);
+    const valeurPertes = pertes.reduce((s, m) => {
+      const prod = m.productId ? state.products.find(p => p.id === m.productId) : null;
+      return s + (prod ? (Number(prod.prixAchat) || 0) * (Number(m.quantite) || 0) : 0);
+    }, 0);
+
+    const net = ca - cogs - totalDepenses - valeurPertes;
+
+    document.getElementById('cpCa').textContent = euros(ca);
+    document.getElementById('cpCogs').textContent = euros(cogs);
+    document.getElementById('cpDepenses').textContent = euros(totalDepenses);
+    document.getElementById('cpPertes').textContent = euros(valeurPertes);
+    document.getElementById('cpNet').textContent = euros(net);
+
+    const parCateg = {};
+    depenses.forEach(d => { parCateg[d.categorie || 'Autre'] = (parCateg[d.categorie || 'Autre'] || 0) + (Number(d.montant) || 0); });
+    const categBody = document.getElementById('cpCategBody');
+    const categEmpty = document.getElementById('cpCategEmpty');
+    const categEntries = Object.entries(parCateg).sort((a, b) => b[1] - a[1]);
+    if (categEntries.length === 0) { categBody.innerHTML = ''; categEmpty.style.display = 'block'; }
+    else { categEmpty.style.display = 'none'; categBody.innerHTML = categEntries.map(([cat, mt]) => `<tr><td>${escapeHtml(cat)}</td><td class="num-cell">${euros(mt)}</td></tr>`).join(''); }
+
+    const depBody = document.getElementById('cpDepBody');
+    const depEmpty = document.getElementById('cpDepEmpty');
+    if (depenses.length === 0) { depBody.innerHTML = ''; depEmpty.style.display = 'block'; }
+    else {
+      depEmpty.style.display = 'none';
+      depBody.innerHTML = depenses.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(d => `
+        <tr>
+          <td class="muted">${escapeHtml(d.date || '')}</td>
+          <td>${escapeHtml(d.categorie || '')}</td>
+          <td class="muted">${escapeHtml(d.note || '—')}</td>
+          <td class="num-cell">${euros(d.montant)}</td>
+          <td class="num-cell"><button class="icon-btn" data-del-dep="${d.id}" title="Supprimer">✕</button></td>
+        </tr>`).join('');
+      depBody.querySelectorAll('[data-del-dep]').forEach(b => b.addEventListener('click', () => deleteDepense(b.dataset.delDep)));
+    }
+  }
+
+  document.getElementById('btnAddDepense').addEventListener('click', async () => {
+    const categorie = document.getElementById('dp-categorie').value;
+    const montant = Number(document.getElementById('dp-montant').value) || 0;
+    const date = document.getElementById('dp-date').value || todayStr();
+    const note = document.getElementById('dp-note').value.trim();
+    if (montant <= 0) { toast('Le montant doit être supérieur à 0.'); return; }
+    if (!state.db) { toast('Connexion non disponible.'); return; }
+    try {
+      const id = 'dp-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+      await state.db.doc('depenses/' + id).set({ categorie, montant, date, note, operateur: state.currentUser ? state.currentUser.nom : '', createdAt: Date.now() });
+      document.getElementById('dp-montant').value = '0';
+      document.getElementById('dp-note').value = '';
+      toast('Dépense enregistrée.');
+    } catch (err) {
+      console.error(err);
+      toast('Erreur : ' + (err.message || err));
+    }
+  });
+
+  async function deleteDepense(id) {
+    if (!state.db) return;
+    if (!confirm('Supprimer cette dépense ?')) return;
+    try {
+      await state.db.doc('depenses/' + id).delete();
+      toast('Dépense supprimée.');
+    } catch (err) { console.error(err); toast('Erreur lors de la suppression.'); }
+  }
+
   // ================= Export / Import / Sauvegarde =================
   const LOCAL_BACKUP_KEY = 'stockflow_pro_backup_v1';
   let xlsxLoadingPromise = null;
@@ -2658,7 +2905,7 @@
   try { supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch (e) { console.error(e); }
 
   // Table où chaque ligne appartient à UN commerce précis (isolation multi-tenant)
-  const TENANT_TABLES = new Set(['produits', 'factures', 'mouvements', 'fournisseurs', 'commandes_fournisseurs', 'clients', 'paiements']);
+  const TENANT_TABLES = new Set(['produits', 'factures', 'mouvements', 'fournisseurs', 'commandes_fournisseurs', 'clients', 'paiements', 'depenses']);
   let CURRENT_COMMERCE_ID = null;
 
   // Les tables Postgres utilisent des noms en snake_case ; l'app utilise du camelCase.
@@ -2672,6 +2919,7 @@
     commerces: { logoUrl: 'logo_url', numeroFiscal: 'numero_fiscal', inviteCode: 'invite_code', createdAt: 'created_at' },
     clients: { createdAt: 'created_at' },
     paiements: { factureId: 'facture_id', clientId: 'client_id', createdAt: 'created_at' },
+    depenses: { createdAt: 'created_at' },
   };
 
   function toDbRow(table, obj) {
@@ -2758,11 +3006,11 @@
       (err) => { console.error(err); setSync(false, 'connexion perdue'); }
     );
     db.collection('factures').onSnapshot(
-      (snap) => { state.invoices = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderHistory(); renderDashboard(); renderClients(); if (selectedClientId) renderClientDetail(); renderRapports(); scheduleAutoBackup(); },
+      (snap) => { state.invoices = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderHistory(); renderDashboard(); renderClients(); if (selectedClientId) renderClientDetail(); renderRapports(); renderComptabilite(); scheduleAutoBackup(); },
       (err) => console.error(err)
     );
     db.collection('mouvements').onSnapshot(
-      (snap) => { state.movements = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderMovements(); scheduleAutoBackup(); },
+      (snap) => { state.movements = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderMovements(); renderComptabilite(); scheduleAutoBackup(); },
       (err) => console.error(err)
     );
     db.collection('fournisseurs').onSnapshot(
@@ -2781,11 +3029,17 @@
       (snap) => { state.paiements = snap.docs.map(d => ({ id: d.id, ...d.data() })); if (selectedClientId) renderClientDetail(); scheduleAutoBackup(); },
       (err) => console.error(err)
     );
+    db.collection('depenses').onSnapshot(
+      (snap) => { state.depenses = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderComptabilite(); scheduleAutoBackup(); },
+      (err) => console.error(err)
+    );
   }
 
   async function boot() {
     document.getElementById('f-date').value = todayStr();
+    document.getElementById('dp-date').value = todayStr();
     applyRpPreset('today');
+    applyCpPreset('mois');
 
     let db = null;
     try { db = createSupabaseDb(supabaseClient); } catch (e) { console.error(e); db = null; }
