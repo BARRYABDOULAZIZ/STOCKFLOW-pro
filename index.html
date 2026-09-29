@@ -1053,11 +1053,13 @@
     const password = document.getElementById('signup-password').value;
     if (!commerceNom || !nom || !email || !password) { showAuthError('Remplis tous les champs.'); return; }
     if (password.length < 8) { showAuthError('Le mot de passe doit faire au moins 8 caractères.'); return; }
+    state.signupInProgress = true;
     const { data, error } = await supabaseClient.auth.signUp({ email, password });
-    if (error) { showAuthError(error.message); return; }
-    if (!data.session) { showAuthError('Compte créé. Vérifie ta boîte mail pour confirmer, puis reviens te connecter.'); showAuthTab('login'); return; }
+    if (error) { state.signupInProgress = false; showAuthError(error.message); return; }
+    if (!data.session) { state.signupInProgress = false; showAuthError('Compte créé. Vérifie ta boîte mail pour confirmer, puis reviens te connecter.'); showAuthTab('login'); return; }
     const { error: rpcErr } = await supabaseClient.rpc('create_commerce_and_owner', { p_commerce_nom: commerceNom, p_user_nom: nom });
-    if (rpcErr) { showAuthError("Compte créé mais erreur lors de la création du commerce : " + rpcErr.message); return; }
+    if (rpcErr) { await abortSignup("Compte créé mais erreur lors de la création du commerce : " + rpcErr.message); return; }
+    await finishSignup(data.session.user);
   });
 
   document.getElementById('btnJoin').addEventListener('click', async () => {
@@ -1069,17 +1071,30 @@
     const password = document.getElementById('join-password').value;
     if (!code || !nom || !email || !password) { showAuthError('Remplis tous les champs.'); return; }
     if (password.length < 8) { showAuthError('Le mot de passe doit faire au moins 8 caractères.'); return; }
+    state.signupInProgress = true;
     const { data, error } = await supabaseClient.auth.signUp({ email, password });
-    if (error) { showAuthError(error.message); return; }
-    if (!data.session) { showAuthError('Compte créé. Vérifie ta boîte mail pour confirmer, puis reviens te connecter.'); showAuthTab('login'); return; }
+    if (error) { state.signupInProgress = false; showAuthError(error.message); return; }
+    if (!data.session) { state.signupInProgress = false; showAuthError('Compte créé. Vérifie ta boîte mail pour confirmer, puis reviens te connecter.'); showAuthTab('login'); return; }
     const { error: rpcErr } = await supabaseClient.rpc('join_commerce', { p_invite_code: code, p_user_nom: nom, p_role: role });
-    if (rpcErr) { showAuthError(rpcErr.message.includes('invalide') ? 'Code invitation invalide.' : rpcErr.message); return; }
+    if (rpcErr) { await abortSignup(rpcErr.message.includes('invalide') ? 'Code invitation invalide.' : rpcErr.message); return; }
+    await finishSignup(data.session.user);
   });
 
   document.getElementById('userBadge').addEventListener('click', async () => {
     if (!confirm('Se déconnecter ?')) return;
     await supabaseClient.auth.signOut();
   });
+
+  // Fin d'inscription : le profil existe maintenant, on peut le charger (l'écouteur d'auth l'ignorait pendant l'inscription)
+  async function finishSignup(user) {
+    state.signupInProgress = false;
+    await loadProfileAndCommerce(user);
+  }
+  async function abortSignup(message) {
+    state.signupInProgress = false;
+    await supabaseClient.auth.signOut();
+    showAuthError(message);
+  }
 
   async function loadProfileAndCommerce(user) {
     try {
@@ -1115,6 +1130,7 @@
   }
 
   function handleSignedOut() {
+    stopAllPolling();
     CURRENT_COMMERCE_ID = null;
     state.currentUser = null;
     state.commerce = null;
@@ -1128,8 +1144,13 @@
   function initAuth() {
     if (!supabaseClient) { showAuthError('Connexion indisponible.'); document.getElementById('loginOverlay').style.display = 'flex'; return; }
     supabaseClient.auth.onAuthStateChange((event, session) => {
-      if (session && session.user) loadProfileAndCommerce(session.user);
-      else handleSignedOut();
+      if (session && session.user) {
+        if (state.signupInProgress) return;               // inscription en cours : le profil n'existe pas encore
+        if (event === 'TOKEN_REFRESHED' && state.currentUser) return; // simple renouvellement de jeton
+        loadProfileAndCommerce(session.user);
+      } else {
+        handleSignedOut();
+      }
     });
   }
 
@@ -2720,6 +2741,9 @@
       mouvements: state.movements,
       fournisseurs: state.fournisseurs,
       commandes_fournisseurs: state.commandes,
+      clients: state.clients,
+      paiements: state.paiements,
+      depenses: state.depenses,
     };
   }
 
@@ -2822,13 +2846,16 @@
     const mouvements = Array.isArray(data.mouvements) ? data.mouvements : [];
     const fournisseurs = Array.isArray(data.fournisseurs) ? data.fournisseurs : [];
     const commandes = Array.isArray(data.commandes_fournisseurs) ? data.commandes_fournisseurs : [];
-    if (produits.length === 0 && factures.length === 0 && mouvements.length === 0 && fournisseurs.length === 0 && commandes.length === 0) {
+    const clients = Array.isArray(data.clients) ? data.clients : [];
+    const paiements = Array.isArray(data.paiements) ? data.paiements : [];
+    const depenses = Array.isArray(data.depenses) ? data.depenses : [];
+    if (produits.length === 0 && factures.length === 0 && mouvements.length === 0 && fournisseurs.length === 0 && commandes.length === 0 && clients.length === 0 && paiements.length === 0 && depenses.length === 0) {
       statusEl.textContent = "Ce fichier ne contient aucune donnée reconnue.";
       statusEl.style.color = 'var(--danger)';
       return;
     }
-    const total = produits.length + factures.length + mouvements.length + fournisseurs.length + commandes.length;
-    if (!confirm(`Importer ${produits.length} produit(s), ${factures.length} facture(s), ${mouvements.length} mouvement(s), ${fournisseurs.length} fournisseur(s) et ${commandes.length} commande(s) ? Les éléments ayant le même identifiant seront remplacés.`)) return;
+    const total = produits.length + factures.length + mouvements.length + fournisseurs.length + commandes.length + clients.length + paiements.length + depenses.length;
+    if (!confirm(`Importer ${produits.length} produit(s), ${factures.length} facture(s), ${mouvements.length} mouvement(s), ${fournisseurs.length} fournisseur(s), ${commandes.length} commande(s), ${clients.length} client(s), ${paiements.length} paiement(s) et ${depenses.length} dépense(s) ? Les éléments ayant le même identifiant seront remplacés.`)) return;
     if (!state.db) { statusEl.textContent = 'Connexion non disponible.'; return; }
 
     statusEl.style.color = '';
@@ -2840,6 +2867,9 @@
       for (const m of mouvements) { const { id, ...rest } = m; if (id) { await state.db.doc('mouvements/' + id).set(rest); done++; statusEl.textContent = `Import en cours… ${done} / ${total}`; } }
       for (const s of fournisseurs) { const { id, ...rest } = s; if (id) { await state.db.doc('fournisseurs/' + id).set(rest); done++; statusEl.textContent = `Import en cours… ${done} / ${total}`; } }
       for (const c of commandes) { const { id, ...rest } = c; if (id) { await state.db.doc('commandes_fournisseurs/' + id).set(rest); done++; statusEl.textContent = `Import en cours… ${done} / ${total}`; } }
+      for (const c of clients) { const { id, ...rest } = c; if (id) { await state.db.doc('clients/' + id).set(rest); done++; statusEl.textContent = `Import en cours… ${done} / ${total}`; } }
+      for (const c of paiements) { const { id, ...rest } = c; if (id) { await state.db.doc('paiements/' + id).set(rest); done++; statusEl.textContent = `Import en cours… ${done} / ${total}`; } }
+      for (const c of depenses) { const { id, ...rest } = c; if (id) { await state.db.doc('depenses/' + id).set(rest); done++; statusEl.textContent = `Import en cours… ${done} / ${total}`; } }
       statusEl.textContent = `Import terminé : ${done} élément(s) importé(s).`;
       toast('Import terminé.');
     } catch (err) {
@@ -2905,6 +2935,8 @@
   try { supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch (e) { console.error(e); }
 
   // Table où chaque ligne appartient à UN commerce précis (isolation multi-tenant)
+  const activePolls = new Set();
+  function stopAllPolling() { [...activePolls].forEach(stop => stop()); }
   const TENANT_TABLES = new Set(['produits', 'factures', 'mouvements', 'fournisseurs', 'commandes_fournisseurs', 'clients', 'paiements', 'depenses']);
   let CURRENT_COMMERCE_ID = null;
 
@@ -2985,8 +3017,10 @@
             onNext({ docs });
           }
           fetchAll();
-          const interval = setInterval(fetchAll, 5000); // rafraîchit toutes les 5s
-          return () => { stopped = true; clearInterval(interval); };
+          const interval = setInterval(() => { if (!document.hidden) fetchAll(); }, 5000); // toutes les 5s, sauf onglet caché
+          const stop = () => { stopped = true; clearInterval(interval); activePolls.delete(stop); };
+          activePolls.add(stop);
+          return stop;
         },
       };
     }
