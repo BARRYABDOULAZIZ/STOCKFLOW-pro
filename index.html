@@ -3090,9 +3090,17 @@
           let stopped = false;
           async function fetchAll() {
             if (tenant && !CURRENT_COMMERCE_ID) { onNext({ docs: [] }); return; }
-            let q = client.from(table).select('*');
-            if (tenant) q = q.eq('commerce_id', CURRENT_COMMERCE_ID);
-            const { data, error } = await q;
+            // Supabase renvoie 1000 lignes maximum par requête : on charge par tranches jusqu'à tout avoir.
+            const PAGE = 1000;
+            let data = [], error = null;
+            for (let from = 0; ; from += PAGE) {
+              let q = client.from(table).select('*');
+              if (tenant) q = q.eq('commerce_id', CURRENT_COMMERCE_ID);
+              const res = await q.order('id', { ascending: true }).range(from, from + PAGE - 1);
+              if (res.error) { error = res.error; break; }
+              data = data.concat(res.data);
+              if (res.data.length < PAGE) break;
+            }
             if (stopped) return;
             if (error) { if (onError) onError(error); return; }
             const docs = data.map(row => {
