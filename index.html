@@ -1563,9 +1563,20 @@
     if (row) { const line = invoiceLines[idx]; row.querySelector('.ltotal-box').textContent = euros((Number(line.prix) || 0) * (Number(line.qte) || 0)); }
     updateGrandTotal(); updateFinalizeHint();
   }
+  // WhatsApp exige le format international (ex : 221771234567). Numéro local (9 chiffres ou moins) => on ajoute l'indicatif du Sénégal.
+  const DEFAULT_COUNTRY_CODE = '221';
+  function toWhatsAppNumber(raw) {
+    let d = String(raw || '').replace(/[^0-9]/g, '');
+    if (!d) return '';
+    if (d.startsWith('00')) return d.slice(2);
+    if (String(raw).trim().startsWith('+')) return d;
+    if (d.length <= 9) return DEFAULT_COUNTRY_CODE + d;
+    return d;
+  }
+
   function getWhatsAppLink(telephone, produitNom, ref) {
     if (!telephone) return null;
-    const cleanPhone = telephone.replace(/[^0-9]/g, '');
+    const cleanPhone = toWhatsAppNumber(telephone);
     if (!cleanPhone) return null;
     const msg = `Bonjour, je souhaite passer une commande pour le produit "${produitNom}"${ref ? ' (Réf: ' + ref + ')' : ''}. Merci de m'indiquer la disponibilité et le délai de livraison.`;
     return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
@@ -2231,7 +2242,7 @@
 
     document.getElementById('fsd-nom').textContent = f.nom;
     const phone = f.telephone || '';
-    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    const cleanPhone = toWhatsAppNumber(phone);
     const globalWaUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent('Bonjour ' + f.nom + ', je souhaite passer une commande.')}` : null;
     document.getElementById('fsd-tel').innerHTML = phone
       ? `${escapeHtml(phone)} ${globalWaUrl ? `<a href="${globalWaUrl}" target="_blank" rel="noopener noreferrer" style="margin-left:6px; text-decoration:none; font-weight:600; color:var(--moss);">💬 WhatsApp</a>` : ''}`
