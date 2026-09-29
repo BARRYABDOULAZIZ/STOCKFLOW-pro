@@ -1098,13 +1098,28 @@
 
   async function loadProfileAndCommerce(user) {
     try {
-      const { data: profile, error: pErr } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
+      // Réessaie quelques fois si le serveur répond « JWT issued at future » (petit décalage d'horloge temporaire juste après la connexion)
+      let profile = null, pErr = null;
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const r = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
+        profile = r.data; pErr = r.error;
+        const clockIssue = pErr && (pErr.code === 'PGRST303' || /issued at future/i.test(pErr.message || ''));
+        if (!clockIssue) break;
+        await new Promise(res => setTimeout(res, 1500));
+      }
       if (pErr || !profile) {
         showAuthError("Profil introuvable — détail technique : " + (pErr ? (pErr.message + (pErr.code ? ' [' + pErr.code + ']' : '')) : 'aucune ligne trouvée pour cet utilisateur'));
         await supabaseClient.auth.signOut();
         return;
       }
-      const { data: commerce, error: cErr } = await supabaseClient.from('commerces').select('*').eq('id', profile.commerce_id).single();
+      let commerce = null, cErr = null;
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const r = await supabaseClient.from('commerces').select('*').eq('id', profile.commerce_id).single();
+        commerce = r.data; cErr = r.error;
+        const clockIssue = cErr && (cErr.code === 'PGRST303' || /issued at future/i.test(cErr.message || ''));
+        if (!clockIssue) break;
+        await new Promise(res => setTimeout(res, 1500));
+      }
       if (cErr || !commerce) {
         showAuthError("Commerce introuvable — détail technique : " + (cErr ? (cErr.message + (cErr.code ? ' [' + cErr.code + ']' : '')) : 'aucune ligne trouvée'));
         await supabaseClient.auth.signOut();
