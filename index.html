@@ -257,7 +257,6 @@
     <button data-tab="parametres">⚙️ Paramètres</button>
     <button data-tab="comptabilite">💰 Comptabilité</button>
     <button data-tab="donnees">💾 Données</button>
-    <button data-tab="soon">…</button>
   </nav>
 
   <!-- DASHBOARD -->
@@ -891,13 +890,7 @@
     </div>
   </section>
 
-  <!-- SOON -->
-  <section class="panel" id="panel-soon">
-    <div class="soon-card">
-      <div class="display">Rapports · Comptabilité · Paramètres</div>
-      <p style="margin:0;">Ces modules arrivent dans une prochaine étape — dis-le quand tu veux qu'on s'y attaque.</p>
-    </div>
-  </section>
+
 
 </div>
 
@@ -947,8 +940,8 @@
   // ================= Utilisateur / rôle / commerce =================
   const ROLE_LABEL = { proprietaire: 'Propriétaire', admin: 'Admin', caissier: 'Caissier', employe: 'Employé' };
   const ROLE_TABS = {
-    proprietaire: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'parametres', 'comptabilite', 'donnees', 'soon'],
-    admin: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'parametres', 'comptabilite', 'donnees', 'soon'],
+    proprietaire: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'parametres', 'comptabilite', 'donnees'],
+    admin: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'parametres', 'comptabilite', 'donnees'],
     caissier: ['dashboard', 'ventes', 'factures', 'clients'],
     employe: ['dashboard', 'scanner', 'produits'],
   };
@@ -1186,7 +1179,7 @@
       if (btn.dataset.tab === 'rapports') renderRapports();
       if (btn.dataset.tab === 'parametres') loadTeam();
       if (btn.dataset.tab === 'comptabilite') renderComptabilite();
-      else { stopCameraScan(); }
+      if (btn.dataset.tab !== 'scanner') stopCameraScan();
       if (btn.dataset.tab === 'fournisseurs') renderFournisseurs();
     });
   });
@@ -1477,7 +1470,10 @@
       for (const [productId, qte] of Object.entries(restocks)) {
         const prod = state.products.find(p => p.id === productId);
         if (!prod) continue; // le produit a peut-être été supprimé depuis
-        await adjustStock(productId, qte);
+        const nouveauStock = await adjustStock(productId, qte);
+        try {
+          await logMovement({ productId, ref: prod.ref, nom: prod.nom, quantite: qte, ancienStock: nouveauStock - qte, nouveauStock, unite: prod.unite || 'unité', source: 'annulation', note: 'FAC-' + String(inv.num).padStart(4, '0') });
+        } catch (e3) { console.error(e3); }
       }
       await state.db.doc('factures/' + inv.id).update({ annulee: true });
       toast(`Facture FAC-${String(inv.num).padStart(4, '0')} annulée — stock restauré.`);
@@ -1494,7 +1490,7 @@
     document.getElementById('pi-commerce-adresse').textContent = state.commerce ? [state.commerce.adresse, state.commerce.telephone].filter(Boolean).join(' · ') : '';
     document.getElementById('pi-client').textContent = inv.client || '—';
     document.getElementById('pi-lines').innerHTML = (inv.lignes || []).map(l => `
-      <tr><td>${escapeHtml(l.ref || '—')}</td><td>${escapeHtml(l.nom)}</td><td class="num-cell">${l.qte}</td><td>${escapeHtml(l.unite || '')}</td><td class="num-cell">${euros(l.prix)}</td><td class="num-cell">${euros((Number(l.prix) || 0) * (Number(l.qte) || 0))}</td></tr>
+      <tr><td>${escapeHtml(l.ref || '—')}</td><td>${escapeHtml(l.nom)}</td><td class="num-cell">${escapeHtml(String(l.qte))}</td><td>${escapeHtml(l.unite || '')}</td><td class="num-cell">${euros(l.prix)}</td><td class="num-cell">${euros((Number(l.prix) || 0) * (Number(l.qte) || 0))}</td></tr>
     `).join('');
     document.getElementById('pi-total').textContent = euros(inv.total);
     const paye = Number(inv.montantPaye) || 0;
@@ -1644,8 +1640,9 @@
   // Modifie le stock de façon atomique côté base (fonction SQL adjust_stock) :
   // delta négatif = vente, delta positif = remise en stock. Évite les écrasements si deux personnes vendent en même temps.
   async function adjustStock(productId, delta) {
-    const { error } = await supabaseClient.rpc('adjust_stock', { p_product_id: productId, p_delta: delta });
+    const { data, error } = await supabaseClient.rpc('adjust_stock', { p_product_id: productId, p_delta: delta });
     if (error) throw new Error(error.message);
+    return Number(data);
   }
 
   async function finalizeInvoice() {
@@ -1964,7 +1961,7 @@
     const list = (state.movements || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 12);
     if (list.length === 0) { box.innerHTML = ''; empty.style.display = 'block'; return; }
     empty.style.display = 'none';
-    const srcLabel = { 'scan-usb': 'scan USB/BT', 'scan-camera': 'scan caméra', 'manuel': 'saisie manuelle', 'perte': 'casse / perte' };
+    const srcLabel = { 'scan-usb': 'scan USB/BT', 'scan-camera': 'scan caméra', 'manuel': 'saisie manuelle', 'perte': 'casse / perte', 'annulation': 'annulation facture' };
     box.innerHTML = list.map(m => {
       const isPerte = m.source === 'perte';
       const sign = isPerte ? '−' : '+';
@@ -2018,7 +2015,8 @@
     document.getElementById('btnAddProduct').textContent = 'Enregistrer les modifications';
     document.getElementById('btnCancelEdit').style.display = 'inline-block';
 
-    document.querySelector('.card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const formCard = document.getElementById('p-ref').closest('.card') || document.querySelector('.card');
+    formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function resetProductForm() {
