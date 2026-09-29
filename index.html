@@ -500,7 +500,11 @@
       <div class="field-grid">
         <div><label>Client</label><input id="f-client" placeholder="Nom du client"></div>
         <div><label>Date</label><input id="f-date" type="date"></div>
-        <div><label>Montant payé (FCFA)</label><input id="f-paye" type="number" min="0" step="1" placeholder="Laisser vide = payé en totalité"></div>
+        <div>
+          <label>Montant payé (FCFA)</label>
+          <input id="f-paye" type="number" min="0" step="1" placeholder="Laisser vide = payé en totalité">
+          <div id="f-rendu-info" style="font-size:12.5px; font-weight:700; margin-top:5px;"></div>
+        </div>
         <div>
           <label>Mode de paiement</label>
           <select id="f-mode-paiement">
@@ -1269,7 +1273,10 @@
       lowEmpty.style.display = 'none';
       lowBox.innerHTML = low.map(p => {
         const tag = Number(p.stock) <= 0 ? 'Rupture' : 'Réappro nécessaire';
-        return `<li><span>${escapeHtml(p.nom)}</span><span class="r">${p.stock} ${escapeHtml(p.unite || 'unité')} · ${tag}</span></li>`;
+        const fs = state.fournisseurs.find(f => (f.nom || '').trim().toLowerCase() === (p.fournisseur || '').trim().toLowerCase());
+        const waUrl = fs && fs.telephone ? getWhatsAppLink(fs.telephone, p.nom, p.ref) : null;
+        const waBtn = waUrl ? `<a href="${waUrl}" target="_blank" rel="noopener noreferrer" style="text-decoration:none; margin-left:8px; font-size:13px;" title="Commander sur WhatsApp">💬</a>` : '';
+        return `<li><span>${escapeHtml(p.nom)}${waBtn}</span><span class="r">${p.stock} ${escapeHtml(p.unite || 'unité')} · ${tag}</span></li>`;
       }).join('');
     }
   }
@@ -1470,7 +1477,7 @@
       for (const [productId, qte] of Object.entries(restocks)) {
         const prod = state.products.find(p => p.id === productId);
         if (!prod) continue; // le produit a peut-être été supprimé depuis
-        await state.db.doc('produits/' + productId).update({ stock: Number(prod.stock) + qte });
+        await adjustStock(productId, qte);
       }
       await state.db.doc('factures/' + inv.id).update({ annulee: true });
       toast(`Facture FAC-${String(inv.num).padStart(4, '0')} annulée — stock restauré.`);
@@ -1560,10 +1567,39 @@
     if (row) { const line = invoiceLines[idx]; row.querySelector('.ltotal-box').textContent = euros((Number(line.prix) || 0) * (Number(line.qte) || 0)); }
     updateGrandTotal(); updateFinalizeHint();
   }
+  function getWhatsAppLink(telephone, produitNom, ref) {
+    if (!telephone) return null;
+    const cleanPhone = telephone.replace(/[^0-9]/g, '');
+    if (!cleanPhone) return null;
+    const msg = `Bonjour, je souhaite passer une commande pour le produit "${produitNom}"${ref ? ' (Réf: ' + ref + ')' : ''}. Merci de m'indiquer la disponibilité et le délai de livraison.`;
+    return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+  }
+
   function updateGrandTotal() {
     const total = invoiceLines.reduce((s, l) => s + (Number(l.prix) || 0) * (Number(l.qte) || 0), 0);
     document.getElementById('invGrandTotal').textContent = euros(total);
+
+    const payeVal = document.getElementById('f-paye').value.trim();
+    const infoEl = document.getElementById('f-rendu-info');
+    if (infoEl) {
+      if (payeVal !== '' && total > 0) {
+        const paye = Number(payeVal) || 0;
+        if (paye > total) {
+          infoEl.textContent = `💵 Monnaie à rendre : ${euros(paye - total)}`;
+          infoEl.style.color = 'var(--moss)';
+        } else if (paye < total) {
+          infoEl.textContent = `⚠ Reste dû : ${euros(total - paye)}`;
+          infoEl.style.color = 'var(--danger)';
+        } else {
+          infoEl.textContent = `✓ Compte exact`;
+          infoEl.style.color = 'var(--moss)';
+        }
+      } else {
+        infoEl.textContent = '';
+      }
+    }
   }
+  document.getElementById('f-paye').addEventListener('input', updateGrandTotal);
   function updateFinalizeHint() {
     const hint = document.getElementById('finalizeHint');
     const shortages = invoiceLines.filter(l => l.matched).map(l => {
@@ -1604,6 +1640,13 @@
 
   document.getElementById('btnAddLine').addEventListener('click', () => { invoiceLines.push(freshLine()); renderInvoiceLines(); });
   document.getElementById('btnFinalize').addEventListener('click', finalizeInvoice);
+
+  // Modifie le stock de façon atomique côté base (fonction SQL adjust_stock) :
+  // delta négatif = vente, delta positif = remise en stock. Évite les écrasements si deux personnes vendent en même temps.
+  async function adjustStock(productId, delta) {
+    const { error } = await supabaseClient.rpc('adjust_stock', { p_product_id: productId, p_delta: delta });
+    if (error) throw new Error(error.message);
+  }
 
   async function finalizeInvoice() {
     const validLines = invoiceLines.filter(l => l.nom && Number(l.qte) > 0);
@@ -1648,13 +1691,6 @@
       let montantPaye = payeRaw === '' ? total : Math.max(0, Math.min(total, Number(payeRaw) || 0));
       invDoc.montantPaye = montantPaye;
       const invId = 'fac-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
-      await state.db.collection('factures').doc(invId).set(invDoc);
-
-      // Trace ce premier paiement dans l'historique du client, comme un paiement enregistré depuis sa fiche.
-      if (montantPaye > 0 && clientId) {
-        const payId = 'pa-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
-        await state.db.doc('paiements/' + payId).set({ factureId: invId, clientId, montant: montantPaye, mode, date, operateur: state.currentUser ? state.currentUser.nom : '', createdAt: Date.now() });
-      }
 
       // Regrouper les quantités par produit avant de déduire, pour éviter d'écraser
       // la déduction si le même article apparaît sur plusieurs lignes de la facture.
@@ -1663,10 +1699,26 @@
         if (!l.matched || !l.productId) continue;
         deductions[l.productId] = (deductions[l.productId] || 0) + Number(l.qte);
       }
-      for (const [productId, qteTotale] of Object.entries(deductions)) {
-        const prod = state.products.find(p => p.id === productId);
-        if (!prod) continue;
-        await state.db.doc('produits/' + productId).update({ stock: Number(prod.stock) - qteTotale });
+
+      // 1) Le stock d'abord (atomique côté base : refuse si le stock est insuffisant)
+      const deducted = [];
+      try {
+        for (const [productId, qteTotale] of Object.entries(deductions)) {
+          await adjustStock(productId, -qteTotale);
+          deducted.push([productId, qteTotale]);
+        }
+        // 2) Puis la facture et son premier paiement
+        await state.db.collection('factures').doc(invId).set(invDoc);
+
+        // Trace ce premier paiement dans l'historique du client, comme un paiement enregistré depuis sa fiche.
+        if (montantPaye > 0 && clientId) {
+          const payId = 'pa-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+          await state.db.doc('paiements/' + payId).set({ factureId: invId, clientId, montant: montantPaye, mode, date, operateur: state.currentUser ? state.currentUser.nom : '', createdAt: Date.now() });
+        }
+      } catch (saleErr) {
+        // En cas d'échec en cours de route, on remet le stock déjà déduit
+        for (const [productId, qte] of deducted) { try { await adjustStock(productId, qte); } catch (e2) { console.error(e2); } }
+        throw saleErr;
       }
 
       invoiceLines = [freshLine()];
@@ -2180,7 +2232,12 @@
     if (!f) { document.getElementById('fsDetailCard').style.display = 'none'; return; }
 
     document.getElementById('fsd-nom').textContent = f.nom;
-    document.getElementById('fsd-tel').textContent = f.telephone || '—';
+    const phone = f.telephone || '';
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    const globalWaUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent('Bonjour ' + f.nom + ', je souhaite passer une commande.')}` : null;
+    document.getElementById('fsd-tel').innerHTML = phone
+      ? `${escapeHtml(phone)} ${globalWaUrl ? `<a href="${globalWaUrl}" target="_blank" rel="noopener noreferrer" style="margin-left:6px; text-decoration:none; font-weight:600; color:var(--moss);">💬 WhatsApp</a>` : ''}`
+      : '—';
     document.getElementById('fsd-email').textContent = f.email || '—';
     document.getElementById('fsd-adresse').textContent = f.adresse || '—';
 
@@ -2814,6 +2871,19 @@
         'Ancien stock': m.ancienStock, 'Nouveau stock': m.nouveauStock, Source: m.source || '',
       })));
       window.XLSX.utils.book_append_sheet(wb, wsMouv, 'Mouvements');
+
+      const clientNom = (id) => { const c = state.clients.find(x => x.id === id); return c ? c.nom : ''; };
+      const wsClients = window.XLSX.utils.json_to_sheet(state.clients.map(c => ({ Nom: c.nom, Téléphone: c.telephone || '', Adresse: c.adresse || '' })));
+      window.XLSX.utils.book_append_sheet(wb, wsClients, 'Clients');
+
+      const wsPaiements = window.XLSX.utils.json_to_sheet(state.paiements.map(p => {
+        const inv = state.invoices.find(i => i.id === p.factureId);
+        return { Date: p.date, Client: clientNom(p.clientId), Facture: inv ? 'FAC-' + String(inv.num).padStart(4, '0') : '', Montant: p.montant, Mode: p.mode || '', Opérateur: p.operateur || '' };
+      }));
+      window.XLSX.utils.book_append_sheet(wb, wsPaiements, 'Paiements');
+
+      const wsDepenses = window.XLSX.utils.json_to_sheet(state.depenses.map(d => ({ Date: d.date, Catégorie: d.categorie || '', Montant: d.montant, Note: d.note || '', Opérateur: d.operateur || '' })));
+      window.XLSX.utils.book_append_sheet(wb, wsDepenses, 'Dépenses');
 
       const arrayBuf = window.XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
       const blob = new Blob([arrayBuf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
