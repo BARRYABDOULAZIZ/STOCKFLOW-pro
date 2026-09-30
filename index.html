@@ -1804,17 +1804,25 @@
   async function startCameraScan() {
     const statusEl = document.getElementById('cameraStatus');
     statusEl.textContent = 'Chargement du lecteur de codes-barres…';
+
     try {
       await loadZxing();
     } catch (e) {
-      statusEl.textContent = "Impossible de charger le lecteur de codes-barres — vérifie ta connexion.";
+      statusEl.textContent = "Impossible de charger le lecteur de codes-barres — vérifie ta connexion (ou désactive ton bloqueur de publicités).";
       return;
     }
+
     try {
+      // 1. Force le navigateur à demander l'autorisation de la caméra (préfère la caméra arrière sur téléphone)
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      stream.getTracks().forEach(track => track.stop()); // flux temporaire, on le ferme
+      await new Promise(res => setTimeout(res, 300));    // laisse la caméra se libérer
+
+      // 2. Lecteur de codes-barres, une fois l'autorisation accordée
       if (!zxingReader) zxingReader = new window.ZXing.BrowserMultiFormatReader();
       videoDevices = await window.ZXing.BrowserCodeReader.listVideoInputDevices();
       if (videoDevices.length === 0) { statusEl.textContent = 'Aucune caméra détectée sur cet appareil.'; return; }
-      const back = videoDevices.find(d => /back|rear|environment/i.test(d.label));
+      const back = videoDevices.find(d => /back|rear|environment|arrière/i.test(d.label));
       currentVideoDeviceId = (back || videoDevices[videoDevices.length - 1]).deviceId;
 
       document.getElementById('btnStartCamera').style.display = 'none';
@@ -1830,8 +1838,13 @@
         }
       });
     } catch (e) {
-      console.error(e);
-      statusEl.textContent = "Accès à la caméra refusé ou indisponible.";
+      console.error('Erreur caméra :', e);
+      let msg;
+      if (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) msg = "Caméra bloquée : autorise-la pour ce site (icône à gauche de l'adresse), puis recharge la page.";
+      else if (e && (e.name === 'NotFoundError' || e.name === 'OverconstrainedError')) msg = 'Aucune caméra trouvée sur cet appareil.';
+      else if (e && (e.name === 'NotReadableError' || e.name === 'AbortError')) msg = 'Caméra déjà utilisée par une autre application : ferme-la puis réessaie.';
+      else msg = 'Caméra indisponible.';
+      statusEl.textContent = msg + ' (' + ((e && (e.name || e.message)) || e) + ')';
     }
   }
 
