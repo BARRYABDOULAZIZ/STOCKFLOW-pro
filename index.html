@@ -1820,7 +1820,8 @@
 
       // 2. Lecteur de codes-barres, une fois l'autorisation accordée
       if (!zxingReader) zxingReader = new window.ZXing.BrowserMultiFormatReader();
-      videoDevices = await window.ZXing.BrowserCodeReader.listVideoInputDevices();
+      // Liste des caméras avec la fonction standard du navigateur (la version statique de la bibliothèque n'existe pas dans @zxing/library)
+      videoDevices = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
       if (videoDevices.length === 0) { statusEl.textContent = 'Aucune caméra détectée sur cet appareil.'; return; }
       const back = videoDevices.find(d => /back|rear|environment|arrière/i.test(d.label));
       currentVideoDeviceId = (back || videoDevices[videoDevices.length - 1]).deviceId;
@@ -1844,7 +1845,7 @@
       else if (e && (e.name === 'NotFoundError' || e.name === 'OverconstrainedError')) msg = 'Aucune caméra trouvée sur cet appareil.';
       else if (e && (e.name === 'NotReadableError' || e.name === 'AbortError')) msg = 'Caméra déjà utilisée par une autre application : ferme-la puis réessaie.';
       else msg = 'Caméra indisponible.';
-      statusEl.textContent = msg + ' (' + ((e && (e.name || e.message)) || e) + ')';
+      statusEl.textContent = msg + ' (' + ((e && e.name) || '') + (e && e.message ? ' : ' + e.message : '') + ')';
     }
   }
 
