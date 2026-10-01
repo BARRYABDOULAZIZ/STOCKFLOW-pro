@@ -895,6 +895,29 @@
         <button class="ghost" id="btnRestoreBackup">♻️ Restaurer les données</button>
       </div>
     </div>
+
+    <div class="card" style="margin-top:20px;">
+      <div class="row-head">
+        <h2>📋 Journal des actions</h2>
+        <button class="ghost" id="btnRefreshAudit">🔄 Actualiser</button>
+      </div>
+      <p class="hint-text">Opérations sensibles : annulations de factures, pertes de stock, suppressions de produits, tentatives refusées. Visible uniquement par le propriétaire et l'admin, impossible à modifier.</p>
+      <div style="overflow-x:auto; margin-top:12px;">
+        <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+          <thead>
+            <tr style="text-align:left; border-bottom:2px solid var(--line);">
+              <th style="padding:8px;">Date / heure</th>
+              <th style="padding:8px;">Utilisateur</th>
+              <th style="padding:8px;">Action</th>
+              <th style="padding:8px;">Détails</th>
+            </tr>
+          </thead>
+          <tbody id="auditLogsTbody">
+            <tr><td colspan="4" style="padding:12px; text-align:center;" class="muted">Aucune action enregistrée.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </section>
 
 
@@ -1200,6 +1223,7 @@
       if (btn.dataset.tab === 'scanner') { renderMovements(); focusUsbInput(); }
       if (btn.dataset.tab === 'rapports') renderRapports();
       if (btn.dataset.tab === 'parametres') loadTeam();
+      if (btn.dataset.tab === 'donnees') loadAuditLogs();
       if (btn.dataset.tab === 'comptabilite') renderComptabilite();
       if (btn.dataset.tab !== 'scanner') stopCameraScan();
       closeGlobalScanner();
@@ -1464,7 +1488,7 @@
           <td>${statutHtml}</td>
           <td class="num-cell" style="white-space:nowrap;">
             <button class="ghost" data-print="${inv.id}" style="padding:6px 12px; font-size:12px;">Imprimer</button>
-            ${annulee ? '' : `<button class="ghost" data-cancel="${inv.id}" style="padding:6px 12px; font-size:12px; margin-left:6px;">Annuler</button>`}
+            ${(annulee || !(state.currentUser && (state.currentUser.role === 'proprietaire' || state.currentUser.role === 'admin'))) ? '' : `<button class="ghost" data-cancel="${inv.id}" style="padding:6px 12px; font-size:12px; margin-left:6px;">Annuler</button>`}
           </td>
         `;
         body.appendChild(tr);
@@ -1481,28 +1505,38 @@
   async function cancelInvoice(invId) {
     const inv = state.invoices.find(i => i.id === invId);
     if (!inv || inv.annulee) return;
-    if (!confirm(`Annuler la facture FAC-${String(inv.num).padStart(4, '0')} ? Les quantités seront remises en stock.`)) return;
-    if (!state.db) { toast('Connexion non disponible.'); return; }
+    const numLabel = 'FAC-' + String(inv.num).padStart(4, '0');
+    const role = state.currentUser && state.currentUser.role;
+
+    // 1. Réservé au propriétaire et à l'admin (vérifié aussi côté base)
+    if (role !== 'proprietaire' && role !== 'admin') {
+      toast("🔒 Annulation réservée au propriétaire ou à l'admin.");
+      logAction('TENTATIVE_ANNULATION', `Tentative d'annulation refusée de la facture ${numLabel}`);
+      return;
+    }
+    // 2. Motif obligatoire
+    const reason = prompt(`Motif de l'annulation de la facture ${numLabel} (obligatoire) :`);
+    if (!reason || !reason.trim()) { toast('Annulation abandonnée : un motif est requis.'); return; }
+    // 3. Confirmation finale
+    if (!confirm(`Annuler définitivement la facture ${numLabel} (${euros(inv.total)}) ? Les quantités seront remises en stock.`)) return;
+    if (!supabaseClient) { toast('Connexion non disponible.'); return; }
 
     try {
-      // Regrouper par produit avant de restaurer, au cas où plusieurs lignes visent le même article.
-      const restocks = {};
-      (inv.lignes || []).forEach(l => {
-        if (l.matched && l.productId) restocks[l.productId] = (restocks[l.productId] || 0) + Number(l.qte || 0);
-      });
-      for (const [productId, qte] of Object.entries(restocks)) {
-        const prod = state.products.find(p => p.id === productId);
-        if (!prod) continue; // le produit a peut-être été supprimé depuis
-        const nouveauStock = await adjustStock(productId, qte);
+      // Annulation + remise en stock + journal, en une seule opération côté base
+      const { data, error } = await supabaseClient.rpc('cancel_invoice', { p_invoice_id: inv.id, p_reason: reason.trim() });
+      if (error) throw new Error(error.message);
+      // Historique des mouvements de stock (la base renvoie les nouveaux stocks)
+      for (const r of (data || [])) {
+        const prod = state.products.find(p => p.id === r.productId);
+        if (!prod) continue;
         try {
-          await logMovement({ productId, ref: prod.ref, nom: prod.nom, quantite: qte, ancienStock: nouveauStock - qte, nouveauStock, unite: prod.unite || 'unité', source: 'annulation', note: 'FAC-' + String(inv.num).padStart(4, '0') });
+          await logMovement({ productId: r.productId, ref: prod.ref, nom: prod.nom, quantite: r.qte, ancienStock: r.nouveauStock - r.qte, nouveauStock: r.nouveauStock, unite: prod.unite || 'unité', source: 'annulation', note: numLabel });
         } catch (e3) { console.error(e3); }
       }
-      await state.db.doc('factures/' + inv.id).update({ annulee: true });
-      toast(`Facture FAC-${String(inv.num).padStart(4, '0')} annulée — stock restauré.`);
+      toast(`Facture ${numLabel} annulée — stock restauré.`);
     } catch (err) {
       console.error(err);
-      toast("Erreur lors de l'annulation.");
+      toast("Erreur lors de l'annulation : " + (err.message || ''));
     }
   }
 
@@ -2092,6 +2126,7 @@
       await logMovement({ productId, ref: prod.ref, nom: prod.nom, quantite: qte, ancienStock, nouveauStock, unite: prod.unite, source: 'perte', raison, note });
       document.getElementById('ps-qte').value = '1';
       document.getElementById('ps-note').value = '';
+      logAction('PERTE_STOCK', `${qte} ${prod.unite || ''} de "${prod.nom}" (${raison})${note ? ' — ' + note : ''}`);
       toast(`Perte enregistrée : ${qte} ${prod.unite || ''} de "${prod.nom}" (${raison}).`);
     } catch (err) {
       console.error(err);
@@ -2235,11 +2270,40 @@
     }
   });
 
+  // ================= Journal des actions (audit) =================
+  // Enregistre une action sensible. Le journal est stocké en base, lisible seulement par propriétaire/admin, non modifiable.
+  function logAction(type, details) {
+    if (!supabaseClient || !state.currentUser) return;
+    supabaseClient.from('audit_logs')
+      .insert({ user_nom: state.currentUser.nom || state.currentUser.email || '', type, details })
+      .then(({ error }) => { if (error) console.error('Journal :', error.message); });
+  }
+
+  async function loadAuditLogs() {
+    const tbody = document.getElementById('auditLogsTbody');
+    if (!tbody || !supabaseClient) return;
+    const { data, error } = await supabaseClient.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100);
+    if (error) { tbody.innerHTML = '<tr><td colspan="4" style="padding:12px; text-align:center;" class="muted">Journal indisponible.</td></tr>'; return; }
+    if (!data.length) { tbody.innerHTML = '<tr><td colspan="4" style="padding:12px; text-align:center;" class="muted">Aucune action enregistrée.</td></tr>'; return; }
+    const colors = { ANNULATION_FACTURE: '#dc2626', TENTATIVE_ANNULATION: '#b91c1c', PERTE_STOCK: '#d97706', SUPPRESSION_PRODUIT: '#d97706' };
+    const labels = { ANNULATION_FACTURE: 'Annulation facture', TENTATIVE_ANNULATION: 'Tentative refusée', PERTE_STOCK: 'Perte / casse', SUPPRESSION_PRODUIT: 'Produit supprimé' };
+    tbody.innerHTML = data.map(l => `
+      <tr style="border-bottom:1px solid var(--line);">
+        <td style="padding:8px; white-space:nowrap;">${escapeHtml(new Date(l.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }))}</td>
+        <td style="padding:8px;"><strong>${escapeHtml(l.user_nom || '')}</strong> <small class="muted">(${escapeHtml(l.role || '')})</small></td>
+        <td style="padding:8px;"><span style="background:${colors[l.type] || '#4b5563'}; color:#fff; padding:2px 6px; border-radius:4px; font-size:0.75rem; font-weight:bold; white-space:nowrap;">${escapeHtml(labels[l.type] || l.type)}</span></td>
+        <td style="padding:8px;">${escapeHtml(l.details || '')}</td>
+      </tr>`).join('');
+  }
+  document.getElementById('btnRefreshAudit').addEventListener('click', loadAuditLogs);
+
   async function deleteProduct(id) {
     if (!state.db) return;
     if (!confirm('Supprimer ce produit du catalogue ?')) return;
+    const delProd = state.products.find(p => p.id === id);
     try {
       await state.db.doc('produits/' + id).delete();
+      logAction('SUPPRESSION_PRODUIT', `Produit supprimé : ${delProd ? delProd.nom + ' (' + (delProd.ref || '') + ')' : id}`);
       if (editingId === id) resetProductForm();
       toast('Produit supprimé.');
     } catch (err) { console.error(err); toast('Erreur lors de la suppression.'); }
