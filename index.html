@@ -256,6 +256,7 @@
     <button data-tab="clients">👥 Clients</button>
     <button data-tab="rapports">📈 Rapports</button>
     <button data-tab="parametres">⚙️ Paramètres</button>
+    <button data-tab="caisse">🧾 Caisse</button>
     <button data-tab="comptabilite">💰 Comptabilité</button>
     <button data-tab="donnees">💾 Données</button>
   </nav>
@@ -779,6 +780,60 @@
   </section>
 
   <!-- COMPTABILITÉ -->
+  <section class="panel" id="panel-caisse">
+    <div class="card">
+      <div class="row-head"><h2>🧾 Caisse — encaissements</h2></div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+        <button class="ghost cs-preset active" data-preset="jour">Aujourd'hui</button>
+        <button class="ghost cs-preset" data-preset="7j">7 derniers jours</button>
+        <button class="ghost cs-preset" data-preset="mois">Ce mois-ci</button>
+      </div>
+      <div class="field-grid">
+        <div><label>Du</label><input id="cs-du" type="date"></div>
+        <div><label>Au</label><input id="cs-au" type="date"></div>
+      </div>
+    </div>
+
+    <div class="cluster">
+      <div class="stat"><div class="num" id="csEsp">–</div><div class="lbl">💵 Espèces</div></div>
+      <div class="stat"><div class="num" id="csMobile">–</div><div class="lbl">📱 Mobile Money</div></div>
+      <div class="stat"><div class="num" id="csVirement">–</div><div class="lbl">🏦 Virement</div></div>
+      <div class="stat"><div class="num" id="csCheque">–</div><div class="lbl">📄 Chèque</div></div>
+      <div class="stat"><div class="num" id="csTotal">–</div><div class="lbl">Total encaissé</div></div>
+    </div>
+    <p class="hint-text" id="csHint"></p>
+
+    <div class="card">
+      <div class="row-head"><h2>Par vendeur</h2></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Vendeur</th><th class="num-cell">Espèces</th><th class="num-cell">Autres modes</th><th class="num-cell">Total</th></tr></thead>
+          <tbody id="csVendeurs"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row-head">
+        <h2>Détail des paiements</h2>
+        <select id="cs-mode-filter" style="max-width:220px;">
+          <option value="">Tous les modes</option>
+          <option value="Espèces">Espèces seulement</option>
+          <option value="Mobile Money">Mobile Money seulement</option>
+          <option value="Virement">Virement seulement</option>
+          <option value="Chèque">Chèque seulement</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Facture</th><th>Client</th><th>Mode</th><th class="num-cell">Montant</th><th>Encaissé par</th></tr></thead>
+          <tbody id="csPaiements"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="csEmpty" style="display:none;">Aucun paiement sur cette période.</div>
+    </div>
+  </section>
+
   <section class="panel" id="panel-comptabilite">
     <div class="card">
       <div class="row-head"><h2>💰 Période</h2></div>
@@ -984,8 +1039,8 @@
   // ================= Utilisateur / rôle / commerce =================
   const ROLE_LABEL = { proprietaire: 'Propriétaire', admin: 'Admin', caissier: 'Caissier', employe: 'Employé' };
   const ROLE_TABS = {
-    proprietaire: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'parametres', 'comptabilite', 'donnees'],
-    admin: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'parametres', 'comptabilite', 'donnees'],
+    proprietaire: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'parametres', 'comptabilite', 'donnees', 'caisse'],
+    admin: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'parametres', 'comptabilite', 'donnees', 'caisse'],
     caissier: ['dashboard', 'ventes', 'factures', 'clients'],
     employe: ['dashboard', 'scanner', 'produits'],
   };
@@ -1225,6 +1280,7 @@
       if (btn.dataset.tab === 'parametres') loadTeam();
       if (btn.dataset.tab === 'donnees') loadAuditLogs();
       if (btn.dataset.tab === 'comptabilite') renderComptabilite();
+      if (btn.dataset.tab === 'caisse') renderCaisse();
       if (btn.dataset.tab !== 'scanner') stopCameraScan();
       closeGlobalScanner();
       if (btn.dataset.tab === 'fournisseurs') renderFournisseurs();
@@ -1775,10 +1831,16 @@
         // 2) Puis la facture et son premier paiement
         await state.db.collection('factures').doc(invId).set(invDoc);
 
-        // Trace ce premier paiement dans l'historique du client, comme un paiement enregistré depuis sa fiche.
-        if (montantPaye > 0 && clientId) {
+        // Note le paiement (mode, vendeur) : sert à l'historique du client ET au suivi de la caisse.
+        if (montantPaye > 0) {
           const payId = 'pa-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
-          await state.db.doc('paiements/' + payId).set({ factureId: invId, clientId, montant: montantPaye, mode, date, operateur: state.currentUser ? state.currentUser.nom : '', createdAt: Date.now() });
+          try {
+            await state.db.doc('paiements/' + payId).set({ factureId: invId, clientId: clientId || null, montant: montantPaye, mode, date, operateur: state.currentUser ? state.currentUser.nom : '', createdAt: Date.now() });
+          } catch (payErr) {
+            if (clientId) throw payErr;
+            console.error(payErr);
+            toast("Vente enregistrée, mais le paiement n'a pas pu être noté dans la caisse.");
+          }
         }
       } catch (saleErr) {
         // En cas d'échec en cours de route, on remet le stock déjà déduit
@@ -2888,6 +2950,99 @@
   }
   document.getElementById('btnRefreshTeam').addEventListener('click', loadTeam);
 
+  // ================= Caisse (encaissements par mode de paiement) =================
+  const CAISSE_MODES = ['Espèces', 'Mobile Money', 'Virement', 'Chèque'];
+
+  function applyCaissePreset(preset) {
+    const today = new Date();
+    const iso = (d) => d.toISOString().slice(0, 10);
+    let du = todayStr(), au = todayStr();
+    if (preset === '7j') { const d = new Date(today); d.setDate(d.getDate() - 6); du = iso(d); }
+    else if (preset === 'mois') { du = iso(new Date(today.getFullYear(), today.getMonth(), 1)); }
+    document.getElementById('cs-du').value = du;
+    document.getElementById('cs-au').value = au;
+    document.querySelectorAll('.cs-preset').forEach(b => b.classList.toggle('active', b.dataset.preset === preset));
+    renderCaisse();
+  }
+  document.querySelectorAll('.cs-preset').forEach(b => b.addEventListener('click', () => applyCaissePreset(b.dataset.preset)));
+  ['cs-du', 'cs-au'].forEach(id => document.getElementById(id).addEventListener('change', () => {
+    document.querySelectorAll('.cs-preset').forEach(b => b.classList.remove('active'));
+    renderCaisse();
+  }));
+  document.getElementById('cs-mode-filter').addEventListener('change', renderCaisse);
+
+  // Paiements de la période, sans ceux des factures annulées
+  function caissePaiements() {
+    const du = document.getElementById('cs-du').value || '2000-01-01';
+    const au = document.getElementById('cs-au').value || todayStr();
+    const byId = {};
+    state.invoices.forEach(i => { byId[i.id] = i; });
+    return (state.paiements || []).filter(p => {
+      const inv = byId[p.factureId];
+      if (inv && inv.annulee) return false;
+      return p.date >= du && p.date <= au;
+    });
+  }
+
+  function renderCaisse() {
+    if (!document.getElementById('cs-du') || !document.getElementById('cs-du').value) return;
+    if (!document.getElementById('panel-caisse').classList.contains('active')) return;
+    const list = caissePaiements();
+
+    const totals = { 'Espèces': 0, 'Mobile Money': 0, 'Virement': 0, 'Chèque': 0 };
+    let autre = 0, total = 0;
+    const vendeurs = {};
+    list.forEach(p => {
+      const a = Number(p.montant) || 0;
+      total += a;
+      if (p.mode in totals) totals[p.mode] += a; else autre += a;
+      const v = p.operateur || '—';
+      if (!vendeurs[v]) vendeurs[v] = { esp: 0, autres: 0 };
+      if (p.mode === 'Espèces') vendeurs[v].esp += a; else vendeurs[v].autres += a;
+    });
+
+    document.getElementById('csEsp').textContent = euros(totals['Espèces']);
+    document.getElementById('csMobile').textContent = euros(totals['Mobile Money']);
+    document.getElementById('csVirement').textContent = euros(totals['Virement']);
+    document.getElementById('csCheque').textContent = euros(totals['Chèque']);
+    document.getElementById('csTotal').textContent = euros(total);
+
+    const du = document.getElementById('cs-du').value || '2000-01-01';
+    const au = document.getElementById('cs-au').value || todayStr();
+    const depenses = (state.depenses || []).filter(d => d.date >= du && d.date <= au).reduce((s, d) => s + (Number(d.montant) || 0), 0);
+    document.getElementById('csHint').textContent =
+      `Espèces encaissées : ${euros(totals['Espèces'])} − dépenses de la période : ${euros(depenses)} = ${euros(totals['Espèces'] - depenses)} d'espèces attendues en caisse (estimation, si les dépenses ont été payées en espèces).` +
+      (autre ? ` Autres modes non classés : ${euros(autre)}.` : '') +
+      ` Les ventes faites avant la mise en place de la caisse n'apparaissent pas ici.`;
+
+    document.getElementById('csVendeurs').innerHTML = Object.entries(vendeurs)
+      .sort((a, b) => (b[1].esp + b[1].autres) - (a[1].esp + a[1].autres))
+      .map(([nom, v]) => `<tr><td>${escapeHtml(nom)}</td><td class="num-cell">${euros(v.esp)}</td><td class="num-cell">${euros(v.autres)}</td><td class="num-cell">${euros(v.esp + v.autres)}</td></tr>`)
+      .join('') || '<tr><td colspan="4" class="muted">Aucun paiement.</td></tr>';
+
+    const modeFilter = document.getElementById('cs-mode-filter').value;
+    const invById = {};
+    state.invoices.forEach(i => { invById[i.id] = i; });
+    const rows = list
+      .filter(p => !modeFilter || p.mode === modeFilter)
+      .slice()
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    document.getElementById('csEmpty').style.display = rows.length ? 'none' : 'block';
+    document.getElementById('csPaiements').innerHTML = rows.map(p => {
+      const inv = invById[p.factureId];
+      const cl = state.clients.find(c => c.id === p.clientId);
+      const clientNom = cl ? cl.nom : ((inv && inv.client) || 'Client de passage');
+      return `<tr>
+        <td>${escapeHtml(p.date || '')}</td>
+        <td>${inv ? 'FAC-' + String(inv.num).padStart(4, '0') : '—'}</td>
+        <td>${escapeHtml(clientNom)}</td>
+        <td>${escapeHtml(p.mode || '—')}</td>
+        <td class="num-cell">${euros(p.montant)}</td>
+        <td>${escapeHtml(p.operateur || '—')}</td>
+      </tr>`;
+    }).join('');
+  }
+
   // ================= Comptabilité =================
   function applyCpPreset(preset) {
     const today = new Date();
@@ -3372,7 +3527,7 @@
       (err) => { console.error(err); setSync(false, 'connexion perdue'); }
     );
     db.collection('factures').onSnapshot(
-      (snap) => { state.invoices = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderHistory(); renderDashboard(); renderClients(); if (selectedClientId) renderClientDetail(); renderRapports(); renderComptabilite(); scheduleAutoBackup(); },
+      (snap) => { state.invoices = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderHistory(); renderDashboard(); renderClients(); if (selectedClientId) renderClientDetail(); renderRapports(); renderComptabilite(); renderCaisse(); scheduleAutoBackup(); },
       (err) => console.error(err)
     );
     db.collection('mouvements').onSnapshot(
@@ -3392,7 +3547,7 @@
       (err) => console.error(err)
     );
     db.collection('paiements').onSnapshot(
-      (snap) => { state.paiements = snap.docs.map(d => ({ id: d.id, ...d.data() })); if (selectedClientId) renderClientDetail(); scheduleAutoBackup(); },
+      (snap) => { state.paiements = snap.docs.map(d => ({ id: d.id, ...d.data() })); if (selectedClientId) renderClientDetail(); renderCaisse(); scheduleAutoBackup(); },
       (err) => console.error(err)
     );
     db.collection('depenses').onSnapshot(
@@ -3406,6 +3561,7 @@
     document.getElementById('dp-date').value = todayStr();
     applyRpPreset('today');
     applyCpPreset('mois');
+    applyCaissePreset('jour');
 
     let db = null;
     try { db = createSupabaseDb(supabaseClient); } catch (e) { console.error(e); db = null; }
