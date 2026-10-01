@@ -338,7 +338,7 @@
       <div class="field-grid">
         <div><label>Nom du produit</label><input id="p-nom" placeholder="Ciment, fer à béton, parpaing…"></div>
         <div><label>Référence interne</label><input id="p-ref" placeholder="REF-001"></div>
-        <div><label>Code-barres</label><input id="p-barcode" placeholder="EAN / code-barres"></div>
+        <div><label>Code-barres</label><div style="display:flex; gap:6px;"><input id="p-barcode" placeholder="EAN / code-barres"><button class="ghost" id="btnScanBarcodeField" type="button" title="Scanner le code-barres" style="padding:8px 12px;">📷</button></div></div>
         <div><label>Fournisseur</label><input id="p-fournisseur" placeholder="Nom du fournisseur"></div>
         <div><label>Catégorie</label><input id="p-categorie" placeholder="Gros œuvre, plomberie, électricité…"></div>
         <div><label>Emplacement</label><input id="p-emplacement" placeholder="Rayon 3, étagère A2…"></div>
@@ -375,7 +375,10 @@
 
     <div class="row-head">
       <h2>Catalogue <span class="muted" id="catalogCount"></span></h2>
-      <div class="search-box"><input id="stockSearch" placeholder="Nom, référence ou code-barres…"></div>
+      <div class="search-box" style="display:flex; gap:6px;">
+        <input id="stockSearch" placeholder="Nom, référence ou code-barres…">
+        <button class="ghost" id="btnScanCatalog" type="button" title="Scanner pour chercher" style="padding: 8px 12px;">📷</button>
+      </div>
     </div>
     <div class="table-wrap">
       <table>
@@ -517,7 +520,10 @@
       </div>
       <p class="hint-text" style="margin-top:0;">Cherche une référence du catalogue, ou tape librement pour une ligne hors-catalogue.</p>
       <div class="inv-lines" id="invLines"></div>
-      <button class="ghost" id="btnAddLine" style="margin-bottom:16px;">+ Ajouter une ligne</button>
+      <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+        <button class="ghost" id="btnAddLine">+ Ajouter une ligne</button>
+        <button class="ghost" id="btnQuickScanSale" style="color:var(--brick); border-color:var(--brick);">📷 Scan rapide article</button>
+      </div>
       <div class="inv-total-row"><span class="lbl">Total</span><span class="amt" id="invGrandTotal">0 FCFA</span></div>
       <div style="margin-top:18px; display:flex; gap:10px; justify-content:flex-end;">
         <button class="primary" id="btnFinalize">Finaliser la vente</button>
@@ -916,6 +922,20 @@
   <div style="clear:both;"></div>
 </div>
 
+<!-- Fenêtre de scan caméra universelle -->
+<div id="globalScanModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+  <div class="card" style="max-width:400px; width:100%; margin:0; background:var(--paper);">
+    <div class="row-head">
+      <h2 id="globalScanTitle">Scan caméra</h2>
+      <button class="ghost" id="btnCloseGlobalScan">✕ Fermer</button>
+    </div>
+    <p class="hint-text" style="margin-top:0;">Pointe la caméra vers le code-barres.</p>
+    <div style="max-width:100%; border-radius:var(--radius); overflow:hidden; border:1px solid var(--line); background:#000;">
+      <video id="globalScanVideo" style="width:100%; display:block;" playsinline muted></video>
+    </div>
+    <p class="muted" id="globalScanStatus" style="margin-top:10px; text-align:center;"></p>
+  </div>
+</div>
 <script>
 (function () {
   "use strict";
@@ -1182,6 +1202,7 @@
       if (btn.dataset.tab === 'parametres') loadTeam();
       if (btn.dataset.tab === 'comptabilite') renderComptabilite();
       if (btn.dataset.tab !== 'scanner') stopCameraScan();
+      closeGlobalScanner();
       if (btn.dataset.tab === 'fournisseurs') renderFournisseurs();
     });
   });
@@ -1848,6 +1869,103 @@
       statusEl.textContent = msg + ' (' + ((e && e.name) || '') + (e && e.message ? ' : ' + e.message : '') + ')';
     }
   }
+
+  // ================= SCANNER CAMÉRA UNIVERSEL (recherche produits, champ code-barres, ventes) =================
+  let globalZxingReader = null;
+  let currentScanCallback = null;
+
+  async function openGlobalScanner(title, onScanSuccess) {
+    const modal = document.getElementById('globalScanModal');
+    const statusEl = document.getElementById('globalScanStatus');
+    document.getElementById('globalScanTitle').textContent = title || 'Scan caméra';
+    modal.style.display = 'flex';
+    statusEl.textContent = 'Initialisation de la caméra…';
+    currentScanCallback = onScanSuccess;
+
+    try { await loadZxing(); }
+    catch (e) { statusEl.textContent = "Impossible de charger le lecteur de codes-barres — vérifie ta connexion."; return; }
+
+    try {
+      // Demande l'autorisation (caméra arrière si possible, sinon n'importe laquelle)
+      let stream = null;
+      try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }); }
+      catch (e) { stream = await navigator.mediaDevices.getUserMedia({ video: true }); }
+      if (stream) stream.getTracks().forEach(t => t.stop());
+      await new Promise(res => setTimeout(res, 300));
+
+      if (!globalZxingReader) globalZxingReader = new window.ZXing.BrowserMultiFormatReader();
+      // enumerateDevices (standard) : la version statique de ZXing n'existe pas dans @zxing/library
+      const devices = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+      if (!devices.length) { statusEl.textContent = 'Aucune caméra détectée sur cet appareil.'; return; }
+      const backDev = devices.find(d => /back|rear|environment|arrière/i.test(d.label)) || devices[devices.length - 1];
+      statusEl.textContent = 'Pointe vers le code-barres…';
+
+      globalZxingReader.decodeFromVideoDevice(backDev.deviceId, 'globalScanVideo', (result) => {
+        if (result) {
+          const code = result.getText();
+          const cb = currentScanCallback;
+          closeGlobalScanner();
+          if (typeof cb === 'function') cb(code);
+        }
+      });
+    } catch (err) {
+      console.error('Erreur caméra :', err);
+      let msg;
+      if (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError')) msg = "Caméra bloquée : autorise-la pour ce site, puis réessaie.";
+      else if (err && (err.name === 'NotFoundError' || err.name === 'OverconstrainedError')) msg = 'Aucune caméra trouvée sur cet appareil.';
+      else if (err && (err.name === 'NotReadableError' || err.name === 'AbortError')) msg = 'Caméra déjà utilisée par une autre application : ferme-la puis réessaie.';
+      else msg = 'Caméra indisponible.';
+      statusEl.textContent = msg + ' (' + ((err && err.name) || '') + ')';
+    }
+  }
+
+  function closeGlobalScanner() {
+    if (globalZxingReader) { try { globalZxingReader.reset(); } catch (e) {} }
+    const modal = document.getElementById('globalScanModal');
+    if (modal) modal.style.display = 'none';
+    currentScanCallback = null;
+  }
+
+  document.getElementById('btnCloseGlobalScan').addEventListener('click', closeGlobalScanner);
+
+  // 1. Recherche dans la liste des produits
+  document.getElementById('btnScanCatalog').addEventListener('click', () => {
+    openGlobalScanner('Chercher un produit', (code) => {
+      const input = document.getElementById('stockSearch');
+      input.value = code;
+      input.dispatchEvent(new Event('input')); // déclenche le filtre de la liste
+      toast(`Recherche pour : ${code}`);
+    });
+  });
+
+  // 2. Champ code-barres du formulaire produit
+  document.getElementById('btnScanBarcodeField').addEventListener('click', () => {
+    openGlobalScanner('Scanner le code-barres', (code) => {
+      document.getElementById('p-barcode').value = code;
+      toast(`Code-barres renseigné : ${code}`);
+    });
+  });
+
+  // 3. Scan rapide en caisse (onglet Ventes)
+  document.getElementById('btnQuickScanSale').addEventListener('click', () => {
+    openGlobalScanner('Ajouter un article à la vente', (code) => {
+      const c = code.trim();
+      const prod = state.products.find(p => (p.codeBarre || '').trim() === c || (p.ref || '').toLowerCase() === c.toLowerCase());
+      if (!prod) { toast(`⚠ Aucun produit trouvé pour le code : ${code}`); return; }
+      // Déjà sur une ligne ? On ajoute 1 à la quantité au lieu de créer un doublon
+      const existing = invoiceLines.find(l => l.matched && l.ref === prod.ref);
+      if (existing) {
+        existing.qte = (Number(existing.qte) || 0) + 1;
+      } else {
+        let line = invoiceLines.find(l => !l.nom && !l.ref);
+        if (!line) { line = freshLine(); invoiceLines.push(line); }
+        line.ref = prod.ref; line.nom = prod.nom; line.qte = 1;
+        line.prix = prod.prixVente; line.unite = prod.unite || ''; line.matched = true;
+      }
+      renderInvoiceLines();
+      toast(`✓ ${prod.nom} ajouté à la vente`);
+    });
+  });
 
   function stopCameraScan() {
     if (zxingReader) { try { zxingReader.reset(); } catch (e) {} }
