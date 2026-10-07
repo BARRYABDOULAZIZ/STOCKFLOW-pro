@@ -188,7 +188,7 @@
     <div class="card" style="max-width:400px; width:100%; margin:0;">
       <div class="row-head"><h2 id="authTitle">Connexion</h2></div>
 
-      <div style="display:flex; gap:8px; margin-bottom:14px;">
+      <div id="authTabsRow" style="display:flex; gap:8px; margin-bottom:14px;">
         <button type="button" class="tablike active" id="authTabLogin" style="flex:1;">Se connecter</button>
         <button type="button" class="tablike" id="authTabSignup" style="flex:1;">Créer mon commerce</button>
         <button type="button" class="tablike" id="authTabJoin" style="flex:1;">Rejoindre</button>
@@ -201,6 +201,28 @@
           <div><label>Mot de passe</label><input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password"></div>
         </div>
         <button class="primary" id="btnLogin" style="width:100%; margin-top:10px;">Se connecter</button>
+        <div style="text-align:center; margin-top:12px;"><a href="#" id="linkForgot" style="font-size:13px;">Mot de passe oublié ?</a></div>
+      </div>
+
+      <!-- Mot de passe oublié -->
+      <div id="authPaneForgot" style="display:none;">
+        <p class="hint-text" style="margin-top:0;">Entre l'email de ton compte : tu recevras un lien pour choisir un nouveau mot de passe.</p>
+        <div class="field-grid">
+          <div><label>Email</label><input id="forgot-email" type="email" placeholder="toi@exemple.com" autocomplete="username"></div>
+        </div>
+        <button class="primary" id="btnForgotSend" style="width:100%; margin-top:10px;">Envoyer le lien</button>
+        <p class="muted" id="forgotInfo" style="margin-top:10px; font-size:13px;"></p>
+        <div style="text-align:center; margin-top:8px;"><a href="#" id="linkForgotBack" style="font-size:13px;">← Retour à la connexion</a></div>
+      </div>
+
+      <!-- Nouveau mot de passe (après clic sur le lien reçu par email) -->
+      <div id="authPaneRecovery" style="display:none;">
+        <p class="hint-text" style="margin-top:0;">Choisis ton nouveau mot de passe (8 caractères minimum).</p>
+        <div class="field-grid">
+          <div><label>Nouveau mot de passe</label><input id="recovery-p1" type="password" placeholder="8 caractères min." autocomplete="new-password"></div>
+          <div><label>Confirme le mot de passe</label><input id="recovery-p2" type="password" placeholder="Répète le mot de passe" autocomplete="new-password"></div>
+        </div>
+        <button class="primary" id="btnRecoverySave" style="width:100%; margin-top:10px;">Enregistrer et me connecter</button>
       </div>
 
       <!-- Créer un commerce (Propriétaire) -->
@@ -1050,6 +1072,7 @@
   "use strict";
 
   const state = { db: null, downloads: null, products: [], invoices: [], movements: [], fournisseurs: [], commandes: [], clients: [], paiements: [], depenses: [], currentUser: null };
+  state.recoveryInProgress = /type=recovery/.test(window.location.hash) || /[?&]type=recovery/.test(window.location.search);
   const euros = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR') + ' FCFA';
   const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -1231,7 +1254,71 @@
       document.getElementById(paneId).style.display = key === name ? '' : 'none';
       document.getElementById('authTab' + key[0].toUpperCase() + key.slice(1)).classList.toggle('active', key === name);
     });
+    document.getElementById('authPaneForgot').style.display = 'none';
+    document.getElementById('authPaneRecovery').style.display = 'none';
+    document.getElementById('authTabsRow').style.display = 'flex';
+    document.getElementById('authTitle').textContent = 'Connexion';
   }
+
+  // ---- Mot de passe oublié ----
+  function showOnlyAuthPane(paneId, title) {
+    Object.values(authTabs).forEach(id => { document.getElementById(id).style.display = 'none'; });
+    document.getElementById('authPaneForgot').style.display = paneId === 'authPaneForgot' ? '' : 'none';
+    document.getElementById('authPaneRecovery').style.display = paneId === 'authPaneRecovery' ? '' : 'none';
+    document.getElementById('authTabsRow').style.display = 'none';
+    document.getElementById('authTitle').textContent = title;
+  }
+  document.getElementById('linkForgot').addEventListener('click', (e) => {
+    e.preventDefault();
+    clearAuthError();
+    document.getElementById('forgot-email').value = document.getElementById('login-email').value.trim();
+    document.getElementById('forgotInfo').textContent = '';
+    showOnlyAuthPane('authPaneForgot', 'Mot de passe oublié');
+  });
+  document.getElementById('linkForgotBack').addEventListener('click', (e) => { e.preventDefault(); clearAuthError(); showAuthTab('login'); });
+  document.getElementById('btnForgotSend').addEventListener('click', async () => {
+    if (!supabaseClient) { showAuthError('Connexion indisponible.'); return; }
+    clearAuthError();
+    const email = document.getElementById('forgot-email').value.trim();
+    const info = document.getElementById('forgotInfo');
+    if (!email) { showAuthError('Entre ton email.'); return; }
+    const btn = document.getElementById('btnForgotSend');
+    btn.disabled = true;
+    try {
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
+      if (error) {
+        if (error.status === 429 || /rate limit/i.test(error.message || '')) showAuthError('Trop de demandes. Réessaie dans quelques minutes.');
+        else showAuthError("Impossible d'envoyer l'email pour le moment. Demande à ton propriétaire de réinitialiser ton mot de passe.");
+        return;
+      }
+      info.textContent = "Si cet email correspond à un compte, un lien vient d'être envoyé. Pense à vérifier les courriers indésirables (spam).";
+    } finally { btn.disabled = false; }
+  });
+
+  // ---- Nouveau mot de passe, après le lien reçu par email ----
+  function showRecoveryForm() {
+    document.getElementById('loginOverlay').style.display = 'flex';
+    document.getElementById('recovery-p1').value = '';
+    document.getElementById('recovery-p2').value = '';
+    clearAuthError();
+    showOnlyAuthPane('authPaneRecovery', 'Nouveau mot de passe');
+  }
+  document.getElementById('btnRecoverySave').addEventListener('click', async () => {
+    if (!supabaseClient) { showAuthError('Connexion indisponible.'); return; }
+    clearAuthError();
+    const p1 = document.getElementById('recovery-p1').value;
+    const p2 = document.getElementById('recovery-p2').value;
+    if (p1.length < 8) { showAuthError('Le mot de passe doit faire au moins 8 caractères.'); return; }
+    if (p1 !== p2) { showAuthError('Les deux mots de passe ne sont pas identiques.'); return; }
+    const { error } = await supabaseClient.auth.updateUser({ password: p1 });
+    if (error) { showAuthError(error.message || 'Impossible de changer le mot de passe.'); return; }
+    state.recoveryInProgress = false;
+    try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
+    showAuthTab('login');
+    const { data } = await supabaseClient.auth.getSession();
+    if (data && data.session) loadProfileAndCommerce(data.session.user);
+    toast('Mot de passe modifié.');
+  });
   function clearAuthError() {
     document.getElementById('loginError').style.display = 'none';
   }
@@ -1368,7 +1455,9 @@
   function initAuth() {
     if (!supabaseClient) { showAuthError('Connexion indisponible.'); document.getElementById('loginOverlay').style.display = 'flex'; return; }
     supabaseClient.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') { state.recoveryInProgress = true; showRecoveryForm(); return; }
       if (session && session.user) {
+        if (state.recoveryInProgress) { showRecoveryForm(); return; } // lien « mot de passe oublié » : on choisit d'abord un nouveau mot de passe
         if (state.signupInProgress) return;               // inscription en cours : le profil n'existe pas encore
         if (event === 'TOKEN_REFRESHED' && state.currentUser) return; // simple renouvellement de jeton
         loadProfileAndCommerce(session.user);
