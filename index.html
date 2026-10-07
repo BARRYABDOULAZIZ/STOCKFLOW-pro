@@ -2467,8 +2467,8 @@
     const { data, error } = await supabaseClient.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100);
     if (error) { tbody.innerHTML = '<tr><td colspan="4" style="padding:12px; text-align:center;" class="muted">Journal indisponible.</td></tr>'; return; }
     if (!data.length) { tbody.innerHTML = '<tr><td colspan="4" style="padding:12px; text-align:center;" class="muted">Aucune action enregistrée.</td></tr>'; return; }
-    const colors = { ANNULATION_FACTURE: '#dc2626', TENTATIVE_ANNULATION: '#b91c1c', PERTE_STOCK: '#d97706', SUPPRESSION_PRODUIT: '#d97706' };
-    const labels = { ANNULATION_FACTURE: 'Annulation facture', TENTATIVE_ANNULATION: 'Tentative refusée', PERTE_STOCK: 'Perte / casse', SUPPRESSION_PRODUIT: 'Produit supprimé' };
+    const colors = { ANNULATION_FACTURE: '#dc2626', TENTATIVE_ANNULATION: '#b91c1c', PERTE_STOCK: '#d97706', SUPPRESSION_PRODUIT: '#d97706', REINITIALISATION_MDP: '#2563eb' };
+    const labels = { ANNULATION_FACTURE: 'Annulation facture', TENTATIVE_ANNULATION: 'Tentative refusée', PERTE_STOCK: 'Perte / casse', SUPPRESSION_PRODUIT: 'Produit supprimé', REINITIALISATION_MDP: 'Mot de passe réinitialisé' };
     tbody.innerHTML = data.map(l => `
       <tr style="border-bottom:1px solid var(--line);">
         <td style="padding:8px; white-space:nowrap;">${escapeHtml(new Date(l.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }))}</td>
@@ -3034,7 +3034,10 @@
                <option value="caissier" ${m.role === 'caissier' ? 'selected' : ''}>Caissier</option>
                <option value="employe" ${m.role === 'employe' ? 'selected' : ''}>Employé</option>
              </select>`;
-        const actionCell = (isProprio || isSelf) ? (isSelf ? '<span class="muted">(toi)</span>' : '') : `<button class="icon-btn" data-remove-member="${m.id}" title="Retirer l'accès">✕</button>`;
+        const myRole = state.currentUser.role;
+        const canReset = !isSelf && !isProprio && (myRole === 'proprietaire' || (myRole === 'admin' && (m.role === 'caissier' || m.role === 'employe')));
+        const resetBtn = canReset ? `<button class="icon-btn" data-reset-member="${m.id}" data-reset-name="${escapeHtml(m.nom || '')}" title="Définir un nouveau mot de passe" style="margin-right:6px;">🔑</button>` : '';
+        const actionCell = (isProprio || isSelf) ? (isSelf ? '<span class="muted">(toi)</span>' : '') : `${resetBtn}<button class="icon-btn" data-remove-member="${m.id}" title="Retirer l'accès">✕</button>`;
         return `<tr><td>${escapeHtml(m.nom || '—')}</td><td>${roleCell}</td><td class="num-cell">${actionCell}</td></tr>`;
       }).join('');
 
@@ -3048,6 +3051,22 @@
           } catch (err) {
             toast('Erreur : ' + (err.message || err));
             loadTeam();
+          }
+        });
+      });
+      body.querySelectorAll('[data-reset-member]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const nom = btn.dataset.resetName || 'cette personne';
+          const pwd = prompt(`Nouveau mot de passe pour ${nom} (8 caractères minimum) :`);
+          if (pwd === null) return;
+          if (pwd.length < 8) { toast('Mot de passe trop court : 8 caractères minimum.'); return; }
+          if (!confirm(`Changer le mot de passe de ${nom} ? Cette personne sera déconnectée de ses appareils.`)) return;
+          try {
+            const { error: rErr } = await supabaseClient.rpc('reset_team_password', { p_user_id: btn.dataset.resetMember, p_new_password: pwd });
+            if (rErr) throw rErr;
+            toast(`Mot de passe de ${nom} modifié. Donne-le lui en main propre.`);
+          } catch (err) {
+            toast('Erreur : ' + (err.message || err));
           }
         });
       });
