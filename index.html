@@ -910,6 +910,29 @@
         <div><label>Email</label><input id="cm-email" type="email" placeholder="Email"></div>
         <div><label>Numéro fiscal</label><input id="cm-fiscal" placeholder="Optionnel"></div>
       </div>
+
+      <div class="field-grid" style="margin-top:14px;">
+        <div>
+          <label>Logo (affiché sur les factures)</label>
+          <input id="cm-logo-file" type="file" accept="image/*">
+          <div style="margin-top:8px; display:flex; align-items:center; gap:10px;">
+            <img id="cm-logo-preview" alt="Logo" style="display:none; max-height:64px; max-width:140px; border:1px solid var(--line); border-radius:6px; background:#fff; padding:4px;">
+            <button class="ghost" id="btnRemoveLogo" type="button" style="display:none;">Retirer</button>
+          </div>
+        </div>
+        <div>
+          <label>Signature ou cachet (affiché sur les factures)</label>
+          <input id="cm-signature-file" type="file" accept="image/*">
+          <div style="margin-top:8px; display:flex; align-items:center; gap:10px;">
+            <img id="cm-signature-preview" alt="Signature" style="display:none; max-height:64px; max-width:160px; border:1px solid var(--line); border-radius:6px; background:#fff; padding:4px;">
+            <button class="ghost" id="btnRemoveSignature" type="button" style="display:none;">Retirer</button>
+          </div>
+        </div>
+      </div>
+      <div style="margin:14px 0;">
+        <label>Message de remerciement (en bas des factures)</label>
+        <input id="cm-message" maxlength="140" placeholder="Merci pour votre confiance, à bientôt !">
+      </div>
       <button class="primary" id="btnSaveCommerce">Enregistrer</button>
       <p class="muted" id="commerceStatus" style="margin-top:10px;"></p>
     </div>
@@ -984,6 +1007,7 @@
 <div id="printArea">
   <div class="pi-head">
     <div>
+      <img id="pi-logo" alt="" style="display:none; max-height:70px; max-width:170px; margin-bottom:8px;">
       <h1>Facture</h1>
       <div style="font-family:'Inter',sans-serif; font-size:15px; font-weight:800; margin-top:4px; color:#1d4ed8;" id="pi-commerce-nom">StockFlow Pro</div>
       <div style="font-family:'Inter',sans-serif; font-size:11px; color:#555;" id="pi-commerce-adresse"></div>
@@ -998,6 +1022,13 @@
   <div class="pi-total"><span>Total</span><span id="pi-total"></span></div>
   <div id="pi-statut" style="margin-top:10px; text-align:right; font-family:'Inter',sans-serif; font-weight:700; font-size:14px; padding:6px 14px; border-radius:6px; display:inline-block; float:right;"></div>
   <div style="clear:both;"></div>
+  <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:24px; margin-top:36px;">
+    <div id="pi-message" style="font-family:'Inter',sans-serif; font-size:13px; font-style:italic; color:#333; flex:1;"></div>
+    <div id="pi-signature-box" style="display:none; text-align:center;">
+      <img id="pi-signature" alt="" style="max-height:80px; max-width:200px; display:block; margin:0 auto 4px;">
+      <div style="font-family:'Inter',sans-serif; font-size:11px; border-top:1px solid #000; padding-top:3px; min-width:150px;">Signature / cachet</div>
+    </div>
+  </div>
 </div>
 
 <!-- Fenêtre de scan caméra universelle -->
@@ -1079,9 +1110,78 @@
     setIfIdle('cm-telephone', state.commerce.telephone);
     setIfIdle('cm-email', state.commerce.email);
     setIfIdle('cm-fiscal', state.commerce.numeroFiscal);
+    setIfIdle('cm-message', state.commerce.messageFacture);
+    renderCommerceImages();
     const codeEl = document.getElementById('inviteCodeDisplay');
     if (codeEl) codeEl.textContent = state.commerce.inviteCode || '------';
   }
+
+  // ----- Logo et signature (images réduites, stockées en base) -----
+  const pendingImages = {};   // undefined = inchangé, '' = retiré, 'data:image…' = nouvelle image
+  const IMAGE_KINDS = {
+    logo: { stateKey: 'logoUrl', col: 'logo_url', file: 'cm-logo-file', img: 'cm-logo-preview', rm: 'btnRemoveLogo', maxW: 320, maxH: 160 },
+    signature: { stateKey: 'signatureUrl', col: 'signature_url', file: 'cm-signature-file', img: 'cm-signature-preview', rm: 'btnRemoveSignature', maxW: 400, maxH: 200 },
+  };
+  const isImageData = (v) => typeof v === 'string' && /^data:image\/(png|jpeg|jpg|webp|gif);base64,/.test(v);
+
+  function fileToSmallDataUrl(file, maxW, maxH) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Lecture du fichier impossible'));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('Image illisible'));
+        img.onload = () => {
+          const ratio = Math.min(maxW / img.width, maxH / img.height, 1);
+          const w = Math.max(1, Math.round(img.width * ratio)), h = Math.max(1, Math.round(img.height * ratio));
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          let out = canvas.toDataURL('image/png');
+          if (out.length > 120000) { // photo lourde : version JPEG sur fond blanc
+            ctx.globalCompositeOperation = 'destination-over';
+            ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+            out = canvas.toDataURL('image/jpeg', 0.85);
+          }
+          resolve(out);
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderCommerceImages() {
+    Object.entries(IMAGE_KINDS).forEach(([kind, k]) => {
+      const imgEl = document.getElementById(k.img), rmEl = document.getElementById(k.rm);
+      if (!imgEl) return;
+      const src = pendingImages[kind] !== undefined ? pendingImages[kind] : ((state.commerce && state.commerce[k.stateKey]) || '');
+      if (isImageData(src)) { imgEl.src = src; imgEl.style.display = ''; rmEl.style.display = ''; }
+      else { imgEl.removeAttribute('src'); imgEl.style.display = 'none'; rmEl.style.display = 'none'; }
+    });
+  }
+
+  Object.entries(IMAGE_KINDS).forEach(([kind, k]) => {
+    document.getElementById(k.file).addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const statusEl = document.getElementById('commerceStatus');
+      try {
+        pendingImages[kind] = await fileToSmallDataUrl(file, k.maxW, k.maxH);
+        renderCommerceImages();
+        statusEl.textContent = 'Image prête — clique sur Enregistrer pour la valider.';
+      } catch (err) {
+        statusEl.textContent = "Impossible de lire cette image : " + err.message;
+      }
+      e.target.value = '';
+    });
+    document.getElementById(k.rm).addEventListener('click', () => {
+      pendingImages[kind] = '';
+      renderCommerceImages();
+      document.getElementById('commerceStatus').textContent = 'Image retirée — clique sur Enregistrer pour valider.';
+    });
+  });
 
   document.getElementById('btnSaveCommerce').addEventListener('click', async () => {
     if (!supabaseClient || !state.currentUser) return;
@@ -1093,10 +1193,22 @@
       email: document.getElementById('cm-email').value.trim(),
       numero_fiscal: document.getElementById('cm-fiscal').value.trim(),
     };
+    // Logo, signature et message : envoyés seulement s'ils ont changé
+    const extra = {};
+    Object.entries(IMAGE_KINDS).forEach(([kind, k]) => {
+      if (pendingImages[kind] !== undefined) extra[k.col] = pendingImages[kind] || null;
+    });
+    const msg = document.getElementById('cm-message').value.trim();
+    if (msg !== ((state.commerce && state.commerce.messageFacture) || '')) extra.message_facture = msg || null;
+    Object.assign(payload, extra);
     try {
       const { error } = await supabaseClient.from('commerces').update(payload).eq('id', state.currentUser.commerceId);
       if (error) throw error;
       state.commerce = { ...state.commerce, nom: payload.nom, adresse: payload.adresse, telephone: payload.telephone, email: payload.email, numeroFiscal: payload.numero_fiscal };
+      if ('logo_url' in extra) state.commerce.logoUrl = extra.logo_url;
+      if ('signature_url' in extra) state.commerce.signatureUrl = extra.signature_url;
+      if ('message_facture' in extra) state.commerce.messageFacture = extra.message_facture;
+      Object.keys(pendingImages).forEach(k => delete pendingImages[k]);
       updateCommerceForm();
       statusEl.textContent = '✅ Informations enregistrées.';
       toast('Commerce mis à jour.');
@@ -1602,6 +1714,14 @@
     document.getElementById('pi-commerce-nom').textContent = (state.commerce && state.commerce.nom) || 'StockFlow Pro';
     document.getElementById('pi-commerce-adresse').textContent = state.commerce ? [state.commerce.adresse, state.commerce.telephone].filter(Boolean).join(' · ') : '';
     document.getElementById('pi-client').textContent = inv.client || '—';
+    // Logo, message de remerciement et signature (réglés dans Données > Mon commerce)
+    const logoEl = document.getElementById('pi-logo');
+    const logoSrc = state.commerce && state.commerce.logoUrl;
+    if (isImageData(logoSrc)) { logoEl.src = logoSrc; logoEl.style.display = ''; } else { logoEl.removeAttribute('src'); logoEl.style.display = 'none'; }
+    const sigEl = document.getElementById('pi-signature');
+    const sigSrc = state.commerce && state.commerce.signatureUrl;
+    if (isImageData(sigSrc)) { sigEl.src = sigSrc; document.getElementById('pi-signature-box').style.display = ''; } else { sigEl.removeAttribute('src'); document.getElementById('pi-signature-box').style.display = 'none'; }
+    document.getElementById('pi-message').textContent = (state.commerce && state.commerce.messageFacture) || 'Merci pour votre confiance, à bientôt !';
     document.getElementById('pi-lines').innerHTML = (inv.lignes || []).map(l => `
       <tr><td>${escapeHtml(l.ref || '—')}</td><td>${escapeHtml(l.nom)}</td><td class="num-cell">${escapeHtml(String(l.qte))}</td><td>${escapeHtml(l.unite || '')}</td><td class="num-cell">${euros(l.prix)}</td><td class="num-cell">${euros((Number(l.prix) || 0) * (Number(l.qte) || 0))}</td></tr>
     `).join('');
@@ -1619,7 +1739,7 @@
       statutEl.textContent = '✓ PAYÉE INTÉGRALEMENT';
       statutEl.style.background = '#dcfce7'; statutEl.style.color = '#166534';
     }
-    setTimeout(() => window.print(), 80);
+    setTimeout(() => window.print(), 350);
   }
 
   // ================= Ventes (invoice builder) =================
@@ -3395,7 +3515,7 @@
     mouvements: { productId: 'product_id', ancienStock: 'ancien_stock', nouveauStock: 'nouveau_stock', createdAt: 'created_at' },
     fournisseurs: { createdAt: 'created_at' },
     commandes_fournisseurs: { fournisseurId: 'fournisseur_id', fournisseurNom: 'fournisseur_nom', montantCommande: 'montant_commande', montantPaye: 'montant_paye', createdAt: 'created_at' },
-    commerces: { logoUrl: 'logo_url', numeroFiscal: 'numero_fiscal', inviteCode: 'invite_code', createdAt: 'created_at' },
+    commerces: { logoUrl: 'logo_url', signatureUrl: 'signature_url', messageFacture: 'message_facture', numeroFiscal: 'numero_fiscal', inviteCode: 'invite_code', createdAt: 'created_at' },
     clients: { createdAt: 'created_at' },
     paiements: { factureId: 'facture_id', clientId: 'client_id', createdAt: 'created_at' },
     depenses: { createdAt: 'created_at' },
