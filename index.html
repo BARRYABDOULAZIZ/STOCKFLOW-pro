@@ -274,6 +274,7 @@
     <button data-tab="inventaire">📊 Inventaire</button>
     <button data-tab="ventes">🛒 Ventes</button>
     <button data-tab="factures">🧾 Factures</button>
+    <button data-tab="documents">📝 Devis & bons</button>
     <button data-tab="fournisseurs">🚚 Fournisseurs</button>
     <button data-tab="clients">👥 Clients</button>
     <button data-tab="rapports">📈 Rapports</button>
@@ -522,16 +523,27 @@
   <!-- VENTES -->
   <section class="panel" id="panel-ventes">
     <div class="card">
-      <div class="row-head"><h2>Nouvelle vente</h2></div>
+      <div class="row-head">
+        <h2 id="ventesTitle">Nouvelle vente</h2>
+        <select id="f-doctype" style="max-width:230px;">
+          <option value="facture">🧾 Facture (vente)</option>
+          <option value="devis">📝 Devis</option>
+          <option value="bon_commande">📦 Bon de commande</option>
+        </select>
+      </div>
       <div class="field-grid">
         <div><label>Client</label><input id="f-client" placeholder="Nom du client"></div>
         <div><label>Date</label><input id="f-date" type="date"></div>
-        <div>
+        <div id="f-paye-wrap">
           <label>Montant payé (FCFA)</label>
           <input id="f-paye" type="number" min="0" step="1" placeholder="Laisser vide = payé en totalité">
           <div id="f-rendu-info" style="font-size:12.5px; font-weight:700; margin-top:5px;"></div>
         </div>
-        <div>
+        <div id="f-validite-wrap" style="display:none;">
+          <label>Valable jusqu'au</label>
+          <input id="f-validite" type="date">
+        </div>
+        <div id="f-mode-wrap">
           <label>Mode de paiement</label>
           <select id="f-mode-paiement">
             <option value="Espèces">Espèces</option>
@@ -564,6 +576,26 @@
         <tbody id="histBody"></tbody>
       </table>
       <div class="empty" id="histEmpty" style="display:none;">Aucune facture émise pour l'instant.</div>
+    </div>
+  </section>
+
+  <!-- DEVIS & BONS DE COMMANDE -->
+  <section class="panel" id="panel-documents">
+    <div class="row-head">
+      <h2>Devis & bons de commande</h2>
+      <select id="docs-filter" style="max-width:230px;">
+        <option value="">Tous les documents</option>
+        <option value="devis">Devis seulement</option>
+        <option value="bon_commande">Bons de commande seulement</option>
+      </select>
+    </div>
+    <p class="hint-text">Ces documents ne touchent ni le stock, ni la caisse, ni les dettes. Le stock bouge seulement quand tu les transformes en facture.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>N°</th><th>Date</th><th>Client</th><th class="num-cell">Total</th><th>Statut</th><th></th></tr></thead>
+        <tbody id="docsBody"></tbody>
+      </table>
+      <div class="empty" id="docsEmpty" style="display:none;">Aucun devis ni bon de commande pour l'instant. Crée-en un dans l'onglet Ventes, en choisissant le type de document en haut.</div>
     </div>
   </section>
 
@@ -1030,7 +1062,7 @@
   <div class="pi-head">
     <div>
       <img id="pi-logo" alt="" style="display:none; max-height:70px; max-width:170px; margin-bottom:8px;">
-      <h1>Facture</h1>
+      <h1 id="pi-title">Facture</h1>
       <div style="font-family:'Inter',sans-serif; font-size:15px; font-weight:800; margin-top:4px; color:#1d4ed8;" id="pi-commerce-nom">StockFlow Pro</div>
       <div style="font-family:'Inter',sans-serif; font-size:11px; color:#555;" id="pi-commerce-adresse"></div>
     </div>
@@ -1046,6 +1078,10 @@
   <div style="clear:both;"></div>
   <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:24px; margin-top:36px;">
     <div id="pi-message" style="font-family:'Inter',sans-serif; font-size:13px; font-style:italic; color:#333; flex:1;"></div>
+    <div id="pi-client-sign" style="display:none; text-align:center;">
+      <div style="height:60px;"></div>
+      <div style="font-family:'Inter',sans-serif; font-size:11px; border-top:1px solid #000; padding-top:3px; min-width:170px;">Bon pour accord (client)</div>
+    </div>
     <div id="pi-signature-box" style="display:none; text-align:center;">
       <img id="pi-signature" alt="" style="max-height:80px; max-width:200px; display:block; margin:0 auto 4px;">
       <div style="font-family:'Inter',sans-serif; font-size:11px; border-top:1px solid #000; padding-top:3px; min-width:150px;">Signature / cachet</div>
@@ -1071,8 +1107,27 @@
 (function () {
   "use strict";
 
-  const state = { db: null, downloads: null, products: [], invoices: [], movements: [], fournisseurs: [], commandes: [], clients: [], paiements: [], depenses: [], currentUser: null };
+  const state = { db: null, downloads: null, products: [], invoices: [], movements: [], fournisseurs: [], commandes: [], clients: [], paiements: [], depenses: [], documents: [], currentUser: null };
   state.recoveryInProgress = /type=recovery/.test(window.location.hash) || /[?&]type=recovery/.test(window.location.search);
+  // Lien reçu par email invalide, expiré ou déjà utilisé : on l'explique au lieu d'afficher une simple page de connexion
+  (function () {
+    const raw = (window.location.hash || '').replace(/^#/, '') || (window.location.search || '').replace(/^\?/, '');
+    const params = new URLSearchParams(raw);
+    const errCode = params.get('error_code'), errDesc = params.get('error_description');
+    if (errCode || (params.get('error') && errDesc)) {
+      const msg = (errCode === 'otp_expired')
+        ? "Ce lien a expiré ou a déjà été utilisé. Clique sur « Mot de passe oublié ? », puis ouvre le DERNIER email reçu, une seule fois."
+        : "Lien invalide : " + (errDesc || errCode).replace(/\+/g, ' ');
+      state.urlAuthError = msg;
+      try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
+      setTimeout(() => { try { showAuthError(msg); } catch (e) {} }, 800);
+    } else if (state.recoveryInProgress) {
+      // Le lien est censé ouvrir la page « Nouveau mot de passe » : si elle n'apparaît pas, on prévient
+      setTimeout(() => {
+        if (!state.recoveryFormShown) { try { showAuthError("Le lien n'a pas pu être validé. Refais « Mot de passe oublié ? » et ouvre le dernier email reçu, dans le même navigateur."); } catch (e) {} }
+      }, 4000);
+    }
+  })();
   const euros = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR') + ' FCFA';
   const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -1093,9 +1148,9 @@
   // ================= Utilisateur / rôle / commerce =================
   const ROLE_LABEL = { proprietaire: 'Propriétaire', admin: 'Admin', caissier: 'Caissier', employe: 'Employé' };
   const ROLE_TABS = {
-    proprietaire: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'parametres', 'comptabilite', 'donnees', 'caisse'],
-    admin: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'parametres', 'comptabilite', 'donnees', 'caisse'],
-    caissier: ['dashboard', 'ventes', 'factures', 'clients'],
+    proprietaire: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'parametres', 'comptabilite', 'donnees', 'caisse', 'documents'],
+    admin: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'parametres', 'comptabilite', 'donnees', 'caisse', 'documents'],
+    caissier: ['dashboard', 'ventes', 'factures', 'clients', 'documents'],
     employe: ['dashboard', 'scanner', 'produits'],
   };
 
@@ -1297,6 +1352,7 @@
 
   // ---- Nouveau mot de passe, après le lien reçu par email ----
   function showRecoveryForm() {
+    state.recoveryFormShown = true;
     document.getElementById('loginOverlay').style.display = 'flex';
     document.getElementById('recovery-p1').value = '';
     document.getElementById('recovery-p2').value = '';
@@ -1482,6 +1538,7 @@
       if (btn.dataset.tab === 'donnees') loadAuditLogs();
       if (btn.dataset.tab === 'comptabilite') renderComptabilite();
       if (btn.dataset.tab === 'caisse') renderCaisse();
+      if (btn.dataset.tab === 'documents') renderDocuments();
       if (btn.dataset.tab !== 'scanner') stopCameraScan();
       closeGlobalScanner();
       if (btn.dataset.tab === 'fournisseurs') renderFournisseurs();
@@ -1797,8 +1854,12 @@
     }
   }
 
-  function printInvoice(inv) {
-    document.getElementById('pi-num').textContent = 'N° FAC-' + String(inv.num).padStart(4, '0');
+  function printInvoice(inv, kind) {
+    kind = kind || 'facture';
+    document.getElementById('pi-title').textContent = kind === 'devis' ? 'Devis' : (kind === 'bon_commande' ? 'Bon de commande' : 'Facture');
+    document.getElementById('pi-client-sign').style.display = kind === 'facture' ? 'none' : '';
+    const numPrefix = kind === 'devis' ? 'DEV' : (kind === 'bon_commande' ? 'BC' : 'FAC');
+    document.getElementById('pi-num').textContent = 'N° ' + numPrefix + '-' + String(inv.num).padStart(4, '0');
     document.getElementById('pi-date').textContent = inv.date || '';
     document.getElementById('pi-commerce-nom').textContent = (state.commerce && state.commerce.nom) || 'StockFlow Pro';
     document.getElementById('pi-commerce-adresse').textContent = state.commerce ? [state.commerce.adresse, state.commerce.telephone].filter(Boolean).join(' · ') : '';
@@ -1818,7 +1879,10 @@
     const paye = Number(inv.montantPaye) || 0;
     const reste = Math.max(0, Number(inv.total || 0) - paye);
     const statutEl = document.getElementById('pi-statut');
-    if (paye <= 0) {
+    if (kind !== 'facture') {
+      statutEl.textContent = kind === 'devis' ? (inv.validite ? "Offre valable jusqu'au " + inv.validite : 'Offre sans engagement') : 'Commande à préparer / livrer';
+      statutEl.style.background = '#e0e7ff'; statutEl.style.color = '#3730a3';
+    } else if (paye <= 0) {
       statutEl.textContent = '⚠ NON PAYÉE — reste à payer : ' + euros(reste);
       statutEl.style.background = '#fee2e2'; statutEl.style.color = '#991b1b';
     } else if (reste > 0) {
@@ -1968,7 +2032,8 @@
   }
 
   document.getElementById('btnAddLine').addEventListener('click', () => { invoiceLines.push(freshLine()); renderInvoiceLines(); });
-  document.getElementById('btnFinalize').addEventListener('click', finalizeInvoice);
+  document.getElementById('btnFinalize').addEventListener('click', () => { if (currentDocType() === 'facture') finalizeInvoice(); else saveDocument(); });
+  document.getElementById('f-doctype').addEventListener('change', () => { convertingDocId = null; applyDocMode(); });
 
   // Modifie le stock de façon atomique côté base (fonction SQL adjust_stock) :
   // delta négatif = vente, delta positif = remise en stock. Évite les écrasements si deux personnes vendent en même temps.
@@ -2057,6 +2122,10 @@
         throw saleErr;
       }
 
+      if (convertingDocId) {
+        try { await state.db.doc('documents/' + convertingDocId).update({ statut: 'facture', factureId: invId }); } catch (e5) { console.error(e5); }
+        convertingDocId = null;
+      }
       invoiceLines = [freshLine()];
       document.getElementById('f-client').value = '';
       document.getElementById('f-paye').value = '';
@@ -2069,6 +2138,146 @@
       toast('Erreur : ' + detail);
     } finally {
       btn.disabled = false;
+    }
+  }
+
+  // ================= Devis et bons de commande =================
+  const DOC_LABELS = { devis: 'Devis', bon_commande: 'Bon de commande' };
+  const DOC_PREFIX = { devis: 'DEV', bon_commande: 'BC' };
+  let convertingDocId = null;
+  const docNumLabel = (d) => `${DOC_PREFIX[d.type] || 'DOC'}-${String(d.num).padStart(4, '0')}`;
+  const newId = (p) => p + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+  const isOwnerOrAdmin = () => !!(state.currentUser && (state.currentUser.role === 'proprietaire' || state.currentUser.role === 'admin'));
+
+  function currentDocType() { return document.getElementById('f-doctype').value; }
+
+  function applyDocMode() {
+    const t = currentDocType();
+    const isInv = t === 'facture';
+    document.getElementById('ventesTitle').textContent = isInv ? 'Nouvelle vente' : (t === 'devis' ? 'Nouveau devis' : 'Nouveau bon de commande');
+    document.getElementById('f-paye-wrap').style.display = isInv ? '' : 'none';
+    document.getElementById('f-mode-wrap').style.display = isInv ? '' : 'none';
+    document.getElementById('f-validite-wrap').style.display = t === 'devis' ? '' : 'none';
+    document.getElementById('finalizeHint').style.display = isInv ? '' : 'none';
+    document.getElementById('btnFinalize').textContent = isInv ? 'Finaliser la vente' : (t === 'devis' ? 'Enregistrer le devis' : 'Enregistrer le bon de commande');
+    if (t === 'devis' && !document.getElementById('f-validite').value) {
+      const d = new Date(); d.setDate(d.getDate() + 15);
+      document.getElementById('f-validite').value = d.toISOString().slice(0, 10);
+    }
+  }
+
+  async function saveDocument() {
+    const type = currentDocType();
+    const validLines = invoiceLines.filter(l => l.nom && Number(l.qte) > 0);
+    if (validLines.length === 0) { toast('Ajoute au moins une ligne valide (désignation + quantité).'); return; }
+    if (!state.db) { toast('Connexion non disponible — réessaie dans un instant.'); return; }
+    const btn = document.getElementById('btnFinalize');
+    btn.disabled = true;
+    try {
+      const num = state.documents.filter(d => d.type === type).reduce((m, d) => Math.max(m, Number(d.num) || 0), 0) + 1;
+      const total = validLines.reduce((s, l) => s + (Number(l.prix) || 0) * (Number(l.qte) || 0), 0);
+      const client = document.getElementById('f-client').value.trim();
+      const existing = client ? state.clients.find(c => (c.nom || '').trim().toLowerCase() === client.toLowerCase()) : null;
+      const doc = {
+        type, num,
+        date: document.getElementById('f-date').value || todayStr(),
+        client, clientId: existing ? existing.id : null,
+        lignes: validLines.map(l => {
+          const prod = l.matched ? state.products.find(p => p.ref === l.ref) : null;
+          return { ref: l.ref || '', nom: l.nom, qte: Number(l.qte), prix: Number(l.prix) || 0, unite: l.unite || '', matched: !!prod, productId: prod ? prod.id : null };
+        }),
+        total, statut: 'en_attente',
+        validite: type === 'devis' ? (document.getElementById('f-validite').value || '') : '',
+        operateur: state.currentUser ? `${state.currentUser.nom} (${ROLE_LABEL[state.currentUser.role]})` : '',
+        createdAt: Date.now(), factureId: null, sourceId: null,
+      };
+      await state.db.collection('documents').doc(newId('doc')).set(doc);
+      invoiceLines = [freshLine()];
+      document.getElementById('f-client').value = '';
+      renderInvoiceLines();
+      if (confirm(`${DOC_LABELS[type]} ${docNumLabel(doc)} enregistré. L'imprimer maintenant ?`)) printInvoice(doc, type);
+      else toast(`${DOC_LABELS[type]} ${docNumLabel(doc)} enregistré.`);
+    } catch (err) {
+      console.error(err);
+      toast('Erreur : ' + ((err && err.message) ? err.message : String(err)));
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function renderDocuments() {
+    const body = document.getElementById('docsBody');
+    if (!body || !document.getElementById('panel-documents').classList.contains('active')) return;
+    const filter = document.getElementById('docs-filter').value;
+    const list = state.documents.filter(d => !filter || d.type === filter).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    document.getElementById('docsEmpty').style.display = list.length ? 'none' : 'block';
+    const statutBadge = (d) => {
+      if (d.statut === 'accepte') return '<span class="badge" style="background:#16a34a; color:#fff;">Accepté</span>';
+      if (d.statut === 'refuse') return '<span class="badge" style="background:var(--danger); color:#fff;">Refusé</span>';
+      if (d.statut === 'facture') {
+        const inv = state.invoices.find(i => i.id === d.factureId);
+        return `<span class="badge" style="background:#2563eb; color:#fff;">Facturé${inv ? ' (FAC-' + String(inv.num).padStart(4, '0') + ')' : ''}</span>`;
+      }
+      return '<span class="badge">En attente</span>';
+    };
+    const btnStyle = 'padding:6px 10px; font-size:12px; margin:2px;';
+    body.innerHTML = list.map(d => {
+      const open = d.statut === 'en_attente' || d.statut === 'accepte';
+      return `<tr>
+        <td>${escapeHtml(docNumLabel(d))}<div class="muted" style="font-size:11px;">${escapeHtml(DOC_LABELS[d.type] || '')}</div></td>
+        <td class="muted">${escapeHtml(d.date || '')}</td>
+        <td>${escapeHtml(d.client || '—')}</td>
+        <td class="num-cell">${euros(d.total)}</td>
+        <td>${statutBadge(d)}</td>
+        <td class="num-cell" style="white-space:nowrap;">
+          <button class="ghost" data-doc-act="print" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">Imprimer</button>
+          ${d.type === 'devis' && d.statut === 'en_attente' ? `<button class="ghost" data-doc-act="accept" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">✓ Accepté</button><button class="ghost" data-doc-act="refuse" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">✗ Refusé</button>` : ''}
+          ${d.type === 'devis' && open ? `<button class="ghost" data-doc-act="tobc" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">→ Bon de commande</button>` : ''}
+          ${open ? `<button class="ghost" data-doc-act="toinv" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">→ Facture</button>` : ''}
+          ${isOwnerOrAdmin() ? `<button class="ghost" data-doc-act="delete" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">Supprimer</button>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+    body.querySelectorAll('[data-doc-act]').forEach(b => b.addEventListener('click', () => docAction(b.dataset.docAct, b.dataset.docId)));
+  }
+  document.getElementById('docs-filter').addEventListener('change', renderDocuments);
+
+  async function docAction(act, id) {
+    const d = state.documents.find(x => x.id === id);
+    if (!d || !state.db) return;
+    try {
+      if (act === 'print') { printInvoice(d, d.type); return; }
+      if (act === 'accept') { await state.db.doc('documents/' + id).update({ statut: 'accepte' }); toast(`${docNumLabel(d)} marqué comme accepté.`); return; }
+      if (act === 'refuse') { await state.db.doc('documents/' + id).update({ statut: 'refuse' }); toast(`${docNumLabel(d)} marqué comme refusé.`); return; }
+      if (act === 'delete') {
+        if (!confirm(`Supprimer définitivement ${docNumLabel(d)} ?`)) return;
+        await state.db.doc('documents/' + id).delete();
+        logAction('SUPPRESSION_DOCUMENT', `${DOC_LABELS[d.type]} ${docNumLabel(d)} supprimé (${euros(d.total)})`);
+        return;
+      }
+      if (act === 'tobc') {
+        const num = state.documents.filter(x => x.type === 'bon_commande').reduce((m, x) => Math.max(m, Number(x.num) || 0), 0) + 1;
+        const bc = { type: 'bon_commande', num, date: todayStr(), client: d.client || '', clientId: d.clientId || null, lignes: d.lignes || [], total: d.total || 0, statut: 'en_attente', validite: '', operateur: state.currentUser ? `${state.currentUser.nom} (${ROLE_LABEL[state.currentUser.role]})` : '', createdAt: Date.now(), factureId: null, sourceId: d.id };
+        await state.db.collection('documents').doc(newId('doc')).set(bc);
+        await state.db.doc('documents/' + id).update({ statut: 'accepte' });
+        toast(`Bon de commande ${docNumLabel(bc)} créé à partir du devis ${docNumLabel(d)}.`);
+        return;
+      }
+      if (act === 'toinv') {
+        document.getElementById('f-doctype').value = 'facture';
+        applyDocMode();
+        invoiceLines = (d.lignes || []).map(l => ({ ref: l.ref || '', nom: l.nom, qte: l.qte, prix: l.prix, unite: l.unite || '', matched: !!l.matched }));
+        if (invoiceLines.length === 0) invoiceLines = [freshLine()];
+        document.getElementById('f-client').value = d.client || '';
+        document.getElementById('f-paye').value = '';
+        convertingDocId = d.id;
+        renderInvoiceLines();
+        document.querySelector('[data-tab="ventes"]').click();
+        toast(`${docNumLabel(d)} chargé dans Ventes : vérifie, puis clique sur « Finaliser la vente ».`);
+      }
+    } catch (err) {
+      console.error(err);
+      toast('Erreur : ' + ((err && err.message) ? err.message : String(err)));
     }
   }
 
@@ -2556,8 +2765,8 @@
     const { data, error } = await supabaseClient.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100);
     if (error) { tbody.innerHTML = '<tr><td colspan="4" style="padding:12px; text-align:center;" class="muted">Journal indisponible.</td></tr>'; return; }
     if (!data.length) { tbody.innerHTML = '<tr><td colspan="4" style="padding:12px; text-align:center;" class="muted">Aucune action enregistrée.</td></tr>'; return; }
-    const colors = { ANNULATION_FACTURE: '#dc2626', TENTATIVE_ANNULATION: '#b91c1c', PERTE_STOCK: '#d97706', SUPPRESSION_PRODUIT: '#d97706', REINITIALISATION_MDP: '#2563eb' };
-    const labels = { ANNULATION_FACTURE: 'Annulation facture', TENTATIVE_ANNULATION: 'Tentative refusée', PERTE_STOCK: 'Perte / casse', SUPPRESSION_PRODUIT: 'Produit supprimé', REINITIALISATION_MDP: 'Mot de passe réinitialisé' };
+    const colors = { ANNULATION_FACTURE: '#dc2626', TENTATIVE_ANNULATION: '#b91c1c', PERTE_STOCK: '#d97706', SUPPRESSION_PRODUIT: '#d97706', SUPPRESSION_DOCUMENT: '#d97706', REINITIALISATION_MDP: '#2563eb' };
+    const labels = { ANNULATION_FACTURE: 'Annulation facture', TENTATIVE_ANNULATION: 'Tentative refusée', PERTE_STOCK: 'Perte / casse', SUPPRESSION_PRODUIT: 'Produit supprimé', SUPPRESSION_DOCUMENT: 'Document supprimé', REINITIALISATION_MDP: 'Mot de passe réinitialisé' };
     tbody.innerHTML = data.map(l => `
       <tr style="border-bottom:1px solid var(--line);">
         <td style="padding:8px; white-space:nowrap;">${escapeHtml(new Date(l.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }))}</td>
@@ -3612,7 +3821,7 @@
   // Table où chaque ligne appartient à UN commerce précis (isolation multi-tenant)
   const activePolls = new Set();
   function stopAllPolling() { [...activePolls].forEach(stop => stop()); }
-  const TENANT_TABLES = new Set(['produits', 'factures', 'mouvements', 'fournisseurs', 'commandes_fournisseurs', 'clients', 'paiements', 'depenses']);
+  const TENANT_TABLES = new Set(['produits', 'factures', 'mouvements', 'fournisseurs', 'commandes_fournisseurs', 'clients', 'paiements', 'depenses', 'documents']);
   let CURRENT_COMMERCE_ID = null;
 
   // Les tables Postgres utilisent des noms en snake_case ; l'app utilise du camelCase.
@@ -3620,6 +3829,7 @@
   const FIELD_MAPS = {
     produits: { codeBarre: 'code_barre', prixAchat: 'prix_achat', prixVente: 'prix_vente', createdAt: 'created_at' },
     factures: { createdAt: 'created_at', clientId: 'client_id', montantPaye: 'montant_paye' },
+    documents: { createdAt: 'created_at', clientId: 'client_id', factureId: 'facture_id', sourceId: 'source_id' },
     mouvements: { productId: 'product_id', ancienStock: 'ancien_stock', nouveauStock: 'nouveau_stock', createdAt: 'created_at' },
     fournisseurs: { createdAt: 'created_at' },
     commandes_fournisseurs: { fournisseurId: 'fournisseur_id', fournisseurNom: 'fournisseur_nom', montantCommande: 'montant_commande', montantPaye: 'montant_paye', createdAt: 'created_at' },
@@ -3780,6 +3990,10 @@
     );
     db.collection('depenses').onSnapshot(
       (snap) => { state.depenses = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderComptabilite(); scheduleAutoBackup(); },
+      (err) => console.error(err)
+    );
+    db.collection('documents').onSnapshot(
+      (snap) => { state.documents = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderDocuments(); },
       (err) => console.error(err)
     );
   }
