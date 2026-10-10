@@ -153,7 +153,25 @@
 
   @media (max-width: 720px) { .inv-line { grid-template-columns: 1fr 1fr; } .inv-line .rm-cell { grid-column: span 2; text-align: right; } }
 
-  #printArea { display: none; }
+  #printArea, #printInvSheet { display: none; }
+  @media print {
+    body.print-inv #printArea { display: none !important; }
+    body.print-inv #printInvSheet, body.print-inv #printInvSheet * { visibility: visible; }
+    body.print-inv #printInvSheet { display: block; position: absolute; left: 0; top: 0; width: 100%; padding: 14px; color: #000; background: #fff; font-family: 'Inter', Arial, sans-serif; }
+    #printInvSheet h1 { font-size: 20px; margin: 0 0 4px; }
+    #printInvSheet .is-meta { font-size: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    #printInvSheet table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    #printInvSheet thead { display: table-header-group; }
+    #printInvSheet tr { page-break-inside: avoid; }
+    #printInvSheet th, #printInvSheet td { border: 1px solid #000; padding: 6px 5px; vertical-align: middle; }
+    #printInvSheet th { background: #e5e7eb; text-align: left; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    #printInvSheet td.is-count { width: 90px; height: 30px; }
+    #printInvSheet td.is-obs { width: 170px; }
+    #printInvSheet td.is-num { text-align: right; white-space: nowrap; }
+    #printInvSheet .is-cat td { background: #f3f4f6; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    #printInvSheet .is-sign { display: flex; gap: 40px; margin-top: 26px; font-size: 12px; }
+    #printInvSheet .is-sign div { flex: 1; border-top: 1px solid #000; padding-top: 4px; }
+  }
   @media print {
     body * { visibility: hidden; }
     #printArea, #printArea * { visibility: visible; }
@@ -507,8 +525,45 @@
       <button class="ghost active" data-filter="tous">Tous les produits</button>
       <button class="ghost" data-filter="faible">Stock faible</button>
       <button class="ghost" data-filter="rupture">Rupture</button>
+      <button class="ghost" data-filter="reappro">À réapprovisionner</button>
       <select id="catFilter"><option value="">Toutes catégories</option></select>
     </div>
+
+    <div class="card" id="invSheetCard">
+      <div class="row-head"><h2>🖨 Feuille d'inventaire à imprimer</h2></div>
+      <p class="hint-text" style="margin-top:0;">Une feuille sans aucun prix, avec les colonnes : Référence, Code-barres, Produit, Quantité théorique, Quantité comptée (vide) et Observations (vide).</p>
+      <div class="field-grid">
+        <div>
+          <label>Quels produits ?</label>
+          <select id="is-scope">
+            <option value="tous">Tous les produits</option>
+            <option value="reappro">À réapprovisionner (faible + rupture)</option>
+            <option value="faible">Stock faible seulement</option>
+            <option value="rupture">Rupture seulement</option>
+          </select>
+        </div>
+        <div>
+          <label>Trier par</label>
+          <select id="is-sort">
+            <option value="categorie">Catégorie, puis nom</option>
+            <option value="emplacement">Emplacement (parcours du magasin)</option>
+            <option value="nom">Nom</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <label>Catégories (ne rien cocher = toutes)</label>
+        <div id="is-cats" style="display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:6px;"></div>
+      </div>
+      <label style="display:flex; align-items:center; gap:8px; margin-top:12px; font-weight:400;">
+        <input type="checkbox" id="is-blind" style="width:auto;"> Comptage à l'aveugle (masquer la quantité théorique)
+      </label>
+      <div style="margin-top:14px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <button class="primary" id="btnPrintInvSheet">🖨 Imprimer la feuille</button>
+        <span class="muted" id="is-count"></span>
+      </div>
+    </div>
+
     <div class="table-wrap">
       <table>
         <thead>
@@ -1058,6 +1113,7 @@
 
 <div class="toast" id="toast"></div>
 
+<div id="printInvSheet"></div>
 <div id="printArea">
   <div class="pi-head">
     <div>
@@ -1723,6 +1779,86 @@
   });
   document.getElementById('catFilter').addEventListener('change', e => { invCategorie = e.target.value; renderInventaire(); });
 
+  // ----- Feuille d'inventaire imprimable (sans prix) -----
+  const NO_CAT = '__sans_categorie__';
+  function renderInvSheetCats() {
+    const box = document.getElementById('is-cats');
+    if (!box) return;
+    const checked = new Set(Array.from(box.querySelectorAll('input:checked')).map(i => i.value));
+    const cats = Array.from(new Set(state.products.map(p => p.categorie).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+    if (state.products.some(p => !p.categorie)) cats.push(NO_CAT);
+    box.innerHTML = cats.map(c => `<label style="display:flex; align-items:center; gap:6px; font-weight:400; margin:0;"><input type="checkbox" style="width:auto;" value="${escapeHtml(c)}" ${checked.has(c) ? 'checked' : ''}> ${c === NO_CAT ? '(Sans catégorie)' : escapeHtml(c)}</label>`).join('') || '<span class="muted">Aucune catégorie.</span>';
+    updateInvSheetCount();
+  }
+  function invSheetList() {
+    const scope = document.getElementById('is-scope').value;
+    const sort = document.getElementById('is-sort').value;
+    const cats = new Set(Array.from(document.querySelectorAll('#is-cats input:checked')).map(i => i.value));
+    let list = state.products.slice();
+    if (scope === 'faible') list = list.filter(p => Number(p.stock) > 0 && Number(p.stock) <= Number(p.seuil));
+    else if (scope === 'rupture') list = list.filter(p => Number(p.stock) <= 0);
+    else if (scope === 'reappro') list = list.filter(p => Number(p.stock) <= Number(p.seuil));
+    if (cats.size) list = list.filter(p => cats.has(p.categorie || NO_CAT));
+    const cmp = (a, b) => (a || '').localeCompare(b || '', 'fr', { numeric: true });
+    list.sort((a, b) => {
+      if (sort === 'emplacement') return cmp(a.emplacement, b.emplacement) || cmp(a.nom, b.nom);
+      if (sort === 'categorie') return cmp(a.categorie, b.categorie) || cmp(a.nom, b.nom);
+      return cmp(a.nom, b.nom);
+    });
+    return list;
+  }
+  function updateInvSheetCount() {
+    const el = document.getElementById('is-count');
+    if (el) el.textContent = invSheetList().length + ' produit(s) sur la feuille';
+  }
+  ['is-scope', 'is-sort'].forEach(id => document.getElementById(id).addEventListener('change', updateInvSheetCount));
+  document.getElementById('is-cats').addEventListener('change', updateInvSheetCount);
+
+  function printInventorySheet() {
+    const list = invSheetList();
+    if (list.length === 0) { toast('Aucun produit à imprimer avec ces choix.'); return; }
+    const blind = document.getElementById('is-blind').checked;
+    const sort = document.getElementById('is-sort').value;
+    const scopeSel = document.getElementById('is-scope');
+    const scopeLabel = scopeSel.options[scopeSel.selectedIndex].text;
+    const cats = Array.from(document.querySelectorAll('#is-cats input:checked')).map(i => i.value === NO_CAT ? 'Sans catégorie' : i.value);
+    const commerceNom = (state.commerce && state.commerce.nom) || 'StockFlow Pro';
+    const cols = blind ? 6 : 7;
+    let rows = '', lastCat = null;
+    list.forEach(p => {
+      if (sort === 'categorie' && (p.categorie || '') !== lastCat) {
+        lastCat = p.categorie || '';
+        rows += `<tr class="is-cat"><td colspan="${cols}">${escapeHtml(lastCat || 'Sans catégorie')}</td></tr>`;
+      }
+      rows += `<tr>
+        <td>${escapeHtml(p.ref || '')}</td>
+        <td>${escapeHtml(p.codeBarre || '')}</td>
+        <td>${escapeHtml(p.nom || '')}${p.emplacement ? `<div style="font-size:10.5px; color:#444;">${escapeHtml(p.emplacement)}</div>` : ''}</td>
+        <td>${escapeHtml(p.unite || '')}</td>
+        ${blind ? '' : `<td class="is-num">${escapeHtml(String(Number(p.stock) || 0))}</td>`}
+        <td class="is-count"></td>
+        <td class="is-obs"></td>
+      </tr>`;
+    });
+    document.getElementById('printInvSheet').innerHTML = `
+      <h1>Feuille d'inventaire — ${escapeHtml(commerceNom)}</h1>
+      <div class="is-meta">
+        <span>Date : ${escapeHtml(todayStr())}</span>
+        <span>${escapeHtml(scopeLabel)}${cats.length ? ' · ' + escapeHtml(cats.join(', ')) : ''}</span>
+        <span>${list.length} produit(s)${blind ? ' · comptage à l\'aveugle' : ''}</span>
+      </div>
+      <table>
+        <thead><tr><th>Référence</th><th>Code-barres</th><th>Produit</th><th>Unité</th>${blind ? '' : '<th>Qté théorique</th>'}<th>Qté comptée</th><th>Observations</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="is-sign"><div>Compté par :</div><div>Vérifié par :</div><div>Date / heure :</div></div>`;
+    document.body.classList.add('print-inv');
+    const cleanup = () => { document.body.classList.remove('print-inv'); window.removeEventListener('afterprint', cleanup); };
+    window.addEventListener('afterprint', cleanup);
+    setTimeout(() => window.print(), 250);
+  }
+  document.getElementById('btnPrintInvSheet').addEventListener('click', printInventorySheet);
+
   function renderInventaire() {
     const catSel = document.getElementById('catFilter');
     const cats = Array.from(new Set(state.products.map(p => p.categorie).filter(Boolean))).sort();
@@ -1730,10 +1866,12 @@
     catSel.innerHTML = '<option value="">Toutes catégories</option>' + cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
     catSel.value = cats.includes(currentVal) ? currentVal : '';
     invCategorie = catSel.value;
+    renderInvSheetCats();
 
     let list = state.products.slice();
     if (invFilter === 'faible') list = list.filter(p => Number(p.stock) > 0 && Number(p.stock) <= Number(p.seuil));
     if (invFilter === 'rupture') list = list.filter(p => Number(p.stock) <= 0);
+    if (invFilter === 'reappro') list = list.filter(p => Number(p.stock) <= Number(p.seuil));
     if (invCategorie) list = list.filter(p => p.categorie === invCategorie);
     list.sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
 
