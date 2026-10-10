@@ -564,6 +564,25 @@
       </div>
     </div>
 
+    <div class="card" id="countCard">
+      <div class="row-head"><h2>✅ Comptage dans l'appli</h2></div>
+      <p class="hint-text" style="margin-top:0;">Utilise les mêmes choix que la feuille ci-dessus (produits, catégories, tri, aveugle). Saisis les quantités comptées : l'écart s'affiche tout de suite. Rien ne change dans le stock tant que tu ne cliques pas sur « Valider les écarts ».</p>
+      <button class="primary" id="btnStartCount">▶ Démarrer le comptage</button>
+      <div id="countArea" style="display:none; margin-top:14px;">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Réf.</th><th>Produit</th><th class="num-cell count-theo">Théorique</th><th class="num-cell">Compté</th><th class="num-cell">Écart</th><th>Observation</th></tr></thead>
+            <tbody id="countBody"></tbody>
+          </table>
+        </div>
+        <div id="countSummary" class="muted" style="margin:10px 0;"></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="primary" id="btnValidateCount">✔ Valider les écarts</button>
+          <button class="ghost" id="btnCancelCount">Annuler le comptage</button>
+        </div>
+      </div>
+    </div>
+
     <div class="table-wrap">
       <table>
         <thead>
@@ -1859,6 +1878,75 @@
   }
   document.getElementById('btnPrintInvSheet').addEventListener('click', printInventorySheet);
 
+  // ================= Comptage d'inventaire (saisie + écarts + correction du stock) =================
+  let countRows = [];
+  function startCount() {
+    countRows = invSheetList().map(p => ({ id: p.id, ref: p.ref, nom: p.nom, unite: p.unite || 'unité', theo: Number(p.stock) || 0, counted: '', obs: '' }));
+    if (!countRows.length) { toast('Aucun produit à compter avec ces choix.'); return; }
+    const blind = document.getElementById('is-blind').checked;
+    document.getElementById('countArea').style.display = 'block';
+    document.getElementById('countBody').innerHTML = countRows.map((r, i) => `
+      <tr data-i="${i}">
+        <td>${escapeHtml(r.ref || '')}</td>
+        <td>${escapeHtml(r.nom)}</td>
+        <td class="num-cell count-theo" style="${blind ? 'display:none;' : ''}">${r.theo} ${escapeHtml(r.unite)}</td>
+        <td class="num-cell"><input type="number" min="0" step="any" class="count-in" style="width:90px;"></td>
+        <td class="num-cell count-diff">${blind ? '—' : ''}</td>
+        <td><input type="text" class="count-obs" placeholder="Observation" style="min-width:140px;"></td>
+      </tr>`).join('');
+    document.querySelectorAll('.count-theo').forEach(el => { if (blind) el.style.display = 'none'; });
+    updateCountSummary();
+  }
+  function updateCountSummary() {
+    const blind = document.getElementById('is-blind').checked;
+    let done = 0, diffs = 0;
+    document.querySelectorAll('#countBody tr').forEach(tr => {
+      const r = countRows[Number(tr.dataset.i)];
+      const v = tr.querySelector('.count-in').value;
+      r.counted = v; r.obs = tr.querySelector('.count-obs').value.trim();
+      const cell = tr.querySelector('.count-diff');
+      if (v === '') { cell.textContent = blind ? '—' : ''; return; }
+      done++;
+      const d = Number(v) - r.theo;
+      if (d !== 0) diffs++;
+      if (!blind) { cell.textContent = (d > 0 ? '+' : '') + d; cell.style.color = d === 0 ? '' : (d > 0 ? '#16a34a' : '#dc2626'); cell.style.fontWeight = '700'; }
+    });
+    document.getElementById('countSummary').textContent = `${done} produit(s) compté(s) sur ${countRows.length}` + (blind ? ' — les écarts seront visibles à la validation.' : ` — ${diffs} écart(s).`);
+  }
+  async function validateCount() {
+    updateCountSummary();
+    const changes = countRows.filter(r => r.counted !== '' && Number(r.counted) >= 0).map(r => {
+      const prod = state.products.find(p => p.id === r.id);
+      const current = prod ? Number(prod.stock) || 0 : r.theo;
+      return { ...r, current, delta: Number(r.counted) - current };
+    }).filter(r => r.delta !== 0);
+    const counted = countRows.filter(r => r.counted !== '').length;
+    if (!counted) { toast('Saisis au moins une quantité comptée.'); return; }
+    if (!changes.length) { toast('Aucun écart : le stock est déjà exact. ✅'); finishCount(); return; }
+    const lines = changes.slice(0, 15).map(c => `• ${c.nom} : ${c.current} → ${c.counted} (${c.delta > 0 ? '+' : ''}${c.delta})`).join('\n');
+    if (!confirm(`${changes.length} correction(s) de stock vont être appliquées :\n\n${lines}${changes.length > 15 ? '\n… et ' + (changes.length - 15) + ' autre(s)' : ''}\n\nConfirmer ?`)) return;
+    const btn = document.getElementById('btnValidateCount');
+    btn.disabled = true;
+    let ok = 0, fail = 0;
+    try {
+      for (const c of changes) {
+        try {
+          const nouveau = await adjustStock(c.id, c.delta);
+          await logMovement({ productId: c.id, ref: c.ref, nom: c.nom, quantite: Math.abs(c.delta), ancienStock: c.current, nouveauStock: nouveau, unite: c.unite, source: 'inventaire', note: c.obs || 'Comptage d\'inventaire' });
+          ok++;
+        } catch (e) { console.error(e); fail++; }
+      }
+      logAction('INVENTAIRE', `Comptage validé : ${ok} correction(s) de stock sur ${counted} produit(s) compté(s)${fail ? ', ' + fail + ' échec(s)' : ''}.`);
+      toast(`Inventaire validé : ${ok} correction(s)` + (fail ? `, ${fail} échec(s)` : '') + '.');
+      finishCount();
+    } finally { btn.disabled = false; }
+  }
+  function finishCount() { countRows = []; document.getElementById('countArea').style.display = 'none'; document.getElementById('countBody').innerHTML = ''; }
+  document.getElementById('btnStartCount').addEventListener('click', startCount);
+  document.getElementById('btnCancelCount').addEventListener('click', () => { if (confirm('Annuler le comptage en cours ? Rien ne sera modifié.')) finishCount(); });
+  document.getElementById('btnValidateCount').addEventListener('click', validateCount);
+  document.getElementById('countBody').addEventListener('input', updateCountSummary);
+
   function renderInventaire() {
     const catSel = document.getElementById('catFilter');
     const cats = Array.from(new Set(state.products.map(p => p.categorie).filter(Boolean))).sort();
@@ -2759,10 +2847,10 @@
     const list = (state.movements || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 12);
     if (list.length === 0) { box.innerHTML = ''; empty.style.display = 'block'; return; }
     empty.style.display = 'none';
-    const srcLabel = { 'scan-usb': 'scan USB/BT', 'scan-camera': 'scan caméra', 'manuel': 'saisie manuelle', 'perte': 'casse / perte', 'annulation': 'annulation facture' };
+    const srcLabel = { 'scan-usb': 'scan USB/BT', 'scan-camera': 'scan caméra', 'manuel': 'saisie manuelle', 'perte': 'casse / perte', 'annulation': 'annulation facture', 'inventaire': 'inventaire' };
     box.innerHTML = list.map(m => {
       const isPerte = m.source === 'perte';
-      const sign = isPerte ? '−' : '+';
+      const sign = isPerte ? '−' : (m.source === 'inventaire' && Number(m.nouveauStock) < Number(m.ancienStock) ? '−' : '+');
       const raisonTxt = isPerte && m.raison ? ` · ${escapeHtml(m.raison)}` : '';
       return `<li><span>${escapeHtml(m.nom)} — ${sign}${m.quantite} ${escapeHtml(m.unite || '')} <span class="r">(${srcLabel[m.source] || m.source || ''}${raisonTxt}${m.operateur ? ' · ' + escapeHtml(m.operateur) : ''})</span></span><span class="r">${m.ancienStock} → ${m.nouveauStock}</span></li>`;
     }).join('');
@@ -2903,8 +2991,8 @@
     const { data, error } = await supabaseClient.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100);
     if (error) { tbody.innerHTML = '<tr><td colspan="4" style="padding:12px; text-align:center;" class="muted">Journal indisponible.</td></tr>'; return; }
     if (!data.length) { tbody.innerHTML = '<tr><td colspan="4" style="padding:12px; text-align:center;" class="muted">Aucune action enregistrée.</td></tr>'; return; }
-    const colors = { ANNULATION_FACTURE: '#dc2626', TENTATIVE_ANNULATION: '#b91c1c', PERTE_STOCK: '#d97706', SUPPRESSION_PRODUIT: '#d97706', SUPPRESSION_DOCUMENT: '#d97706', REINITIALISATION_MDP: '#2563eb' };
-    const labels = { ANNULATION_FACTURE: 'Annulation facture', TENTATIVE_ANNULATION: 'Tentative refusée', PERTE_STOCK: 'Perte / casse', SUPPRESSION_PRODUIT: 'Produit supprimé', SUPPRESSION_DOCUMENT: 'Document supprimé', REINITIALISATION_MDP: 'Mot de passe réinitialisé' };
+    const colors = { ANNULATION_FACTURE: '#dc2626', TENTATIVE_ANNULATION: '#b91c1c', PERTE_STOCK: '#d97706', SUPPRESSION_PRODUIT: '#d97706', SUPPRESSION_DOCUMENT: '#d97706', REINITIALISATION_MDP: '#2563eb', INVENTAIRE: '#7c3aed' };
+    const labels = { ANNULATION_FACTURE: 'Annulation facture', TENTATIVE_ANNULATION: 'Tentative refusée', PERTE_STOCK: 'Perte / casse', SUPPRESSION_PRODUIT: 'Produit supprimé', SUPPRESSION_DOCUMENT: 'Document supprimé', REINITIALISATION_MDP: 'Mot de passe réinitialisé', INVENTAIRE: 'Inventaire validé' };
     tbody.innerHTML = data.map(l => `
       <tr style="border-bottom:1px solid var(--line);">
         <td style="padding:8px; white-space:nowrap;">${escapeHtml(new Date(l.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }))}</td>
