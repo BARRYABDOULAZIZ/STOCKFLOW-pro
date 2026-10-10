@@ -408,6 +408,49 @@
     .hero-card .hval { font-size:26px; } .card { padding:16px 14px; } nav.tabs button { padding:10px 14px; }
   }
 
+
+  /* ===== Effets lumineux (glow, shine, néon) ===== */
+  :root { --glow:#00e5c0; --glow2:#22d3ee; }
+  .stat, .kpi-card, .card, .hero-card { transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+  .stat:hover, .kpi-card:hover, .card:hover { transform:translateY(-4px); border-color:var(--glow);
+    box-shadow:0 0 0 1px rgba(0,229,192,.55), 0 0 22px rgba(0,229,192,.35), 0 0 46px rgba(34,211,238,.22), 0 14px 30px rgba(20,20,60,.12); }
+  .hero-card:hover { box-shadow:0 0 28px rgba(34,211,238,.55), 0 18px 40px rgba(20,20,60,.25); }
+  tbody tr:hover { box-shadow:inset 4px 0 0 var(--glow), inset 0 0 24px rgba(0,229,192,.10); }
+
+  /* Voyant de synchro : onde lumineuse */
+  .sync .dot { position:relative; width:9px; height:9px; animation:none; box-shadow:0 0 8px #4dffc3; }
+  .sync .dot::before, .sync .dot::after { content:''; position:absolute; inset:0; border-radius:50%; border:2px solid #4dffc3; opacity:0; animation:ring 2.2s ease-out infinite; }
+  .sync .dot::after { animation-delay:1.1s; }
+  .sync.off .dot::before, .sync.off .dot::after { border-color:#ffb3c0; animation-duration:1.2s; }
+  @keyframes ring { 0% { transform:scale(1); opacity:.9; } 100% { transform:scale(3.4); opacity:0; } }
+
+  /* Boutons : reflet qui glisse (Shine) */
+  button.primary, #btnQuickScanSale, #btnScanCatalog, #btnScanBarcodeField { position:relative; overflow:hidden; isolation:isolate; }
+  button.primary::after, #btnQuickScanSale::after, #btnScanCatalog::after, #btnScanBarcodeField::after { content:''; position:absolute; top:0; left:-80%; width:50%; height:100%; z-index:-1; pointer-events:none;
+    background:linear-gradient(105deg, transparent 0%, rgba(255,255,255,.55) 50%, transparent 100%); transform:skewX(-20deg); }
+  button.primary:hover::after, #btnQuickScanSale:hover::after, #btnScanCatalog:hover::after, #btnScanBarcodeField:hover::after { animation:shine .8s ease; }
+  @keyframes shine { to { left:140%; } }
+  button.primary:hover { box-shadow:0 0 20px rgba(143,75,255,.6), 0 10px 22px rgba(91,61,245,.45); }
+
+  /* Onglet actif néon : barre lumineuse + fond cyan transparent */
+  nav.tabs button.active { background:linear-gradient(120deg, rgba(34,211,238,.22), rgba(91,61,245,.92) 38%, #8f4bff 70%, #ff3d8b); position:relative;
+    box-shadow:0 0 0 1px rgba(34,211,238,.6), 0 0 18px rgba(34,211,238,.55), 0 8px 22px rgba(91,61,245,.4); }
+  nav.tabs button.active::before { content:''; position:absolute; left:7px; top:22%; bottom:22%; width:3px; border-radius:3px; background:#7ffcf0; box-shadow:0 0 8px #22d3ee, 0 0 16px #22d3ee; }
+  nav.tabs button.active { padding-left:20px; }
+
+  /* Badges de stock rétro-éclairés */
+  .stk { display:inline-block; min-width:34px; text-align:center; padding:3px 11px; border-radius:999px; font-weight:800; font-size:13px; }
+  .stk.ok { color:#00634a; background:#c8fbe9; box-shadow:0 0 12px rgba(0,229,160,.65), inset 0 0 0 1px rgba(0,200,140,.5); }
+  .stk.low { color:#8a4a00; background:#ffe1b0; box-shadow:0 0 12px rgba(255,150,20,.7), inset 0 0 0 1px rgba(255,150,20,.55); animation:glowLow 2s ease-in-out infinite; }
+  .stock-zero { color:#fff; background:linear-gradient(120deg,#ff1744,#ff4d6d); box-shadow:0 0 14px rgba(255,23,68,.8); padding:3px 12px; border-radius:999px; font-weight:800; animation:glowOut 1.4s ease-in-out infinite; }
+  .badge.warn { box-shadow:0 0 10px rgba(255,150,20,.55); }
+  .badge:not(.warn):not([style]) { box-shadow:0 0 10px rgba(255,23,68,.45); }
+  @keyframes glowLow { 0%,100% { box-shadow:0 0 8px rgba(255,150,20,.5), inset 0 0 0 1px rgba(255,150,20,.5); } 50% { box-shadow:0 0 18px rgba(255,150,20,.95), inset 0 0 0 1px rgba(255,150,20,.7); } }
+  @keyframes glowOut { 0%,100% { box-shadow:0 0 8px rgba(255,23,68,.6); } 50% { box-shadow:0 0 20px rgba(255,23,68,1); } }
+  :root[data-theme="dark"] .stk.ok, :root:not([data-theme="light"]) .stk.ok { }
+  @media (prefers-color-scheme:dark) { :root:not([data-theme="light"]) .stk.ok { color:#9dffe0; background:rgba(0,229,160,.18); } :root:not([data-theme="light"]) .stk.low { color:#ffd08a; background:rgba(255,150,20,.2); } }
+  :root[data-theme="dark"] .stk.ok { color:#9dffe0; background:rgba(0,229,160,.18); } :root[data-theme="dark"] .stk.low { color:#ffd08a; background:rgba(255,150,20,.2); }
+  @media print { .stk, .stock-zero { box-shadow:none !important; animation:none !important; } }
   @keyframes flow { 0%,100% { background-position:0% 50%; } 50% { background-position:100% 50%; } }
   @keyframes pulse { 0% { box-shadow:0 0 0 0 rgba(77,255,195,.7); } 70% { box-shadow:0 0 0 9px rgba(77,255,195,0); } 100% { box-shadow:0 0 0 0 rgba(77,255,195,0); } }
   @keyframes panelIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
@@ -1879,7 +1922,7 @@
           <td class="muted">${escapeHtml(p.emplacement || '—')}</td>
           <td class="num-cell cost-col">${euros(p.prixAchat)}</td>
           <td class="num-cell">${euros(p.prixVente)}</td>
-          <td class="num-cell ${zero ? '' : (low ? 'stock-low' : 'stock-ok')}">${zero ? `<span class="stock-zero">0</span>` : p.stock}${low ? ' <span class="badge warn">bas</span>' : ''}</td>
+          <td class="num-cell ${zero ? '' : (low ? 'stock-low' : 'stock-ok')}">${zero ? `<span class="stock-zero">0</span>` : `<span class="stk ${low ? 'low' : 'ok'}">${p.stock}</span>`}${low ? ' <span class="badge warn">bas</span>' : ''}</td>
           <td class="muted">${escapeHtml(p.unite || 'unité')}</td>
           <td class="num-cell">
             <button class="icon-btn" data-edit="${p.id}" title="Modifier" style="opacity:0.6;">✎</button>
@@ -2116,7 +2159,7 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${escapeHtml(p.nom)}<div class="muted">${escapeHtml(p.ref)}</div></td>
-          <td class="num-cell">${zero ? '<span class="stock-zero">0</span>' : stock} <span class="unit-tag">${escapeHtml(p.unite || '')}</span></td>
+          <td class="num-cell">${zero ? '<span class="stock-zero">0</span>' : `<span class="stk ${low ? 'low' : 'ok'}">${stock}</span>`} <span class="unit-tag">${escapeHtml(p.unite || '')}</span></td>
           <td class="num-cell">${euros(pa)}</td>
           <td class="num-cell">${euros(pv)}</td>
           <td class="num-cell">${euros(valAchat)}</td>
