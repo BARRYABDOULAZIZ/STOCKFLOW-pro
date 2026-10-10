@@ -154,6 +154,9 @@
   @media (max-width: 720px) { .inv-line { grid-template-columns: 1fr 1fr; } .inv-line .rm-cell { grid-column: span 2; text-align: right; } }
 
   #printArea, #printInvSheet { display: none; }
+  #pi-breakdown { text-align:right; font-size:13px; margin-top:12px; }
+  #pi-breakdown div { display:flex; justify-content:flex-end; gap:24px; padding:2px 0; }
+  #pi-breakdown div span:last-child { min-width:140px; text-align:right; }
   #printArea.pi-bl .pi-table th:nth-child(5), #printArea.pi-bl .pi-table th:nth-child(6), #printArea.pi-bl .pi-table td:nth-child(5), #printArea.pi-bl .pi-table td:nth-child(6), #printArea.pi-bl .pi-total { display:none !important; }
   @media print {
     body.print-inv #printArea { display: none !important; }
@@ -863,7 +866,24 @@
         <button class="ghost" id="btnAddLine">+ Ajouter une ligne</button>
         <button class="ghost" id="btnQuickScanSale" style="color:var(--brick); border-color:var(--brick);">📷 Scan rapide article</button>
       </div>
-      <div class="inv-total-row"><span class="lbl">Total</span><span class="amt" id="invGrandTotal">0 FCFA</span></div>
+      <div id="fiscalBlock" class="field-grid" style="margin-bottom:6px;">
+        <div>
+          <label>Remise (réduction accordée)</label>
+          <div style="display:flex; gap:6px;">
+            <input id="f-remise" type="number" min="0" step="any" placeholder="0">
+            <select id="f-remise-unit" style="max-width:96px;"><option value="fcfa">FCFA</option><option value="pct">%</option></select>
+          </div>
+        </div>
+        <div>
+          <label>TVA</label>
+          <div style="display:flex; gap:6px;">
+            <select id="f-tva-mode"><option value="none">Sans TVA</option><option value="add">TVA en plus des prix</option><option value="incl">TVA déjà incluse dans les prix</option></select>
+            <input id="f-tva-taux" type="number" min="0" max="100" step="any" value="18" style="max-width:84px; display:none;" title="Taux de TVA en %">
+          </div>
+        </div>
+      </div>
+      <div id="invBreakdown" style="text-align:right; font-size:13px; margin:8px 0 4px; line-height:1.7;"></div>
+      <div class="inv-total-row"><span class="lbl" id="invTotalLbl">Total</span><span class="amt" id="invGrandTotal">0 FCFA</span></div>
       <div style="margin-top:18px; display:flex; gap:10px; justify-content:flex-end;">
         <button class="primary" id="btnFinalize">Finaliser la vente</button>
       </div>
@@ -1082,7 +1102,9 @@
 
     <div class="cluster">
       <div class="stat"><div class="num" id="rpVentes">–</div><div class="lbl">Ventes réalisées</div></div>
-      <div class="stat"><div class="num" id="rpCa">–</div><div class="lbl">Chiffre d'affaires</div></div>
+      <div class="stat"><div class="num" id="rpCa">–</div><div class="lbl">Chiffre d'affaires (hors TVA)</div></div>
+      <div class="stat"><div class="num" id="rpTva">–</div><div class="lbl">TVA collectée</div></div>
+      <div class="stat"><div class="num" id="rpRemises">–</div><div class="lbl">Remises accordées</div></div>
       <div class="stat"><div class="num" id="rpBenefice">–</div><div class="lbl">Bénéfice estimé*</div></div>
       <div class="stat"><div class="num alert" id="rpResteDu">–</div><div class="lbl">💰 Reste dû sur la période</div></div>
     </div>
@@ -1208,7 +1230,7 @@
     </div>
 
     <div class="cluster">
-      <div class="stat"><div class="num" id="cpCa">–</div><div class="lbl">Chiffre d'affaires (facturé)</div></div>
+      <div class="stat"><div class="num" id="cpCa">–</div><div class="lbl">Chiffre d'affaires (facturé, hors TVA)</div></div>
       <div class="stat"><div class="num alert" id="cpCogs">–</div><div class="lbl">Coût des marchandises vendues</div></div>
       <div class="stat"><div class="num alert" id="cpDepenses">–</div><div class="lbl">Dépenses générales</div></div>
       <div class="stat"><div class="num alert" id="cpPertes">–</div><div class="lbl">🗑️ Casse / pertes (valeur)</div></div>
@@ -1379,7 +1401,8 @@
     <thead><tr><th>Référence</th><th>Désignation</th><th class="num-cell">Quantité</th><th>Unité</th><th class="num-cell">Prix</th><th class="num-cell">Total</th></tr></thead>
     <tbody id="pi-lines"></tbody>
   </table>
-  <div class="pi-total"><span>Total</span><span id="pi-total"></span></div>
+  <div id="pi-breakdown"></div>
+  <div class="pi-total"><span id="pi-total-lbl">Total</span><span id="pi-total"></span></div>
   <div id="pi-statut" style="margin-top:10px; text-align:right; font-family:'Inter',sans-serif; font-weight:700; font-size:14px; padding:6px 14px; border-radius:6px; display:inline-block; float:right;"></div>
   <div style="clear:both;"></div>
   <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:24px; margin-top:36px;">
@@ -2336,6 +2359,19 @@
     document.getElementById('pi-lines').innerHTML = (inv.lignes || []).map(l => `
       <tr><td>${escapeHtml(l.ref || '—')}</td><td>${escapeHtml(l.nom)}</td><td class="num-cell">${escapeHtml(String(l.qte))}</td><td>${escapeHtml(l.unite || '')}</td><td class="num-cell">${euros(l.prix)}</td><td class="num-cell">${euros((Number(l.prix) || 0) * (Number(l.qte) || 0))}</td></tr>
     `).join('');
+    {
+      const rem = Number(inv.remise) || 0, tm = inv.tvaMode || 'none', tv = Number(inv.tvaMontant) || 0, tx = Number(inv.tvaTaux) || 0;
+      const rows = [];
+      if (kind !== 'bon_livraison' && (rem > 0 || tm !== 'none')) {
+        const sub = Number(inv.sousTotal) || (inv.lignes || []).reduce((s, l) => s + (Number(l.prix) || 0) * (Number(l.qte) || 0), 0);
+        rows.push(['Sous-total', euros(sub)]);
+        if (rem > 0) rows.push(['Remise', '− ' + euros(rem)]);
+        if (tm === 'add') { rows.push(['Montant HT', euros(sub - rem)]); rows.push([`TVA (${tx} %)`, '+ ' + euros(tv)]); }
+        else if (tm === 'incl') rows.push([`Dont TVA (${tx} %)`, euros(tv)]);
+      }
+      document.getElementById('pi-breakdown').innerHTML = rows.map(r => `<div><span>${escapeHtml(r[0])}</span><span>${escapeHtml(r[1])}</span></div>`).join('');
+      document.getElementById('pi-total-lbl').textContent = (kind !== 'bon_livraison' && tm !== 'none') ? 'Total TTC' : 'Total';
+    }
     document.getElementById('pi-total').textContent = euros(inv.total);
     const paye = Number(inv.montantPaye) || 0;
     const reste = Math.max(0, Number(inv.total || 0) - paye);
@@ -2430,9 +2466,41 @@
     return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
   }
 
+  // ---- Remise + TVA ----
+  const htOf = (i) => (Number(i.total) || 0) - (Number(i.tvaMontant) || 0);   // montant hors TVA d'une facture
+  function computeTotals(lines) {
+    const sub = Math.round((lines || []).reduce((s, l) => s + (Number(l.prix) || 0) * (Number(l.qte) || 0), 0));
+    const noFiscal = currentDocType() === 'bon_livraison';
+    const rv = Math.max(0, Number(document.getElementById('f-remise').value) || 0);
+    const pct = document.getElementById('f-remise-unit').value === 'pct';
+    let remise = noFiscal ? 0 : (pct ? sub * Math.min(rv, 100) / 100 : rv);
+    remise = Math.round(Math.min(remise, sub));
+    const net = sub - remise;
+    let mode = noFiscal ? 'none' : document.getElementById('f-tva-mode').value;
+    const taux = Math.max(0, Number(document.getElementById('f-tva-taux').value) || 0);
+    if (taux === 0) mode = 'none';
+    let tva = 0, total = net;
+    if (mode === 'add') { tva = Math.round(net * taux / 100); total = net + tva; }
+    else if (mode === 'incl') { tva = Math.round(net - net / (1 + taux / 100)); }
+    return { sub, remise, net, mode, taux, tva, total };
+  }
+  const fiscalExtra = (t) => (t.remise > 0 || t.mode !== 'none') ? { sousTotal: t.sub, remise: t.remise, tvaMode: t.mode, tvaTaux: t.taux, tvaMontant: t.tva } : {};
+  const fiscalFromDoc = (d) => (d.remise || (d.tvaMode && d.tvaMode !== 'none')) ? { sousTotal: d.sousTotal || null, remise: d.remise || 0, tvaMode: d.tvaMode || 'none', tvaTaux: d.tvaTaux || 0, tvaMontant: d.tvaMontant || 0 } : {};
+
   function updateGrandTotal() {
-    const total = invoiceLines.reduce((s, l) => s + (Number(l.prix) || 0) * (Number(l.qte) || 0), 0);
+    const T = computeTotals(invoiceLines);
+    const total = T.total;
     document.getElementById('invGrandTotal').textContent = euros(total);
+    document.getElementById('f-tva-taux').style.display = document.getElementById('f-tva-mode').value === 'none' ? 'none' : '';
+    document.getElementById('invTotalLbl').textContent = T.mode === 'none' ? 'Total' : 'Total TTC';
+    const bd = [];
+    if (T.remise > 0 || T.mode !== 'none') {
+      bd.push(`Sous-total : <b>${euros(T.sub)}</b>`);
+      if (T.remise > 0) bd.push(`Remise : <b style="color:var(--danger);">− ${euros(T.remise)}</b>`);
+      if (T.mode === 'add') { bd.push(`Montant HT : <b>${euros(T.net)}</b>`); bd.push(`TVA (${T.taux} %) : <b>+ ${euros(T.tva)}</b>`); }
+      if (T.mode === 'incl') bd.push(`dont TVA (${T.taux} %) : <b>${euros(T.tva)}</b>`);
+    }
+    document.getElementById('invBreakdown').innerHTML = bd.join('<br>');
 
     const payeVal = document.getElementById('f-paye').value.trim();
     const infoEl = document.getElementById('f-rendu-info');
@@ -2454,6 +2522,20 @@
       }
     }
   }
+  ['f-remise', 'f-remise-unit', 'f-tva-mode', 'f-tva-taux'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', updateGrandTotal);
+    el.addEventListener('change', () => {
+      updateGrandTotal();
+      if (id === 'f-tva-mode' || id === 'f-tva-taux') {
+        try { localStorage.setItem('sf_tva', JSON.stringify({ mode: document.getElementById('f-tva-mode').value, taux: document.getElementById('f-tva-taux').value })); } catch (e) {}
+      }
+    });
+  });
+  try {
+    const sv = JSON.parse(localStorage.getItem('sf_tva') || 'null');
+    if (sv && ['none', 'add', 'incl'].includes(sv.mode)) { document.getElementById('f-tva-mode').value = sv.mode; if (sv.taux) document.getElementById('f-tva-taux').value = sv.taux; }
+  } catch (e) {}
   document.getElementById('f-paye').addEventListener('input', updateGrandTotal);
   function updateFinalizeHint() {
     const hint = document.getElementById('finalizeHint');
@@ -2516,7 +2598,8 @@
     btn.disabled = true;
     try {
       const num = (state.invoices.reduce((m, i) => Math.max(m, Number(i.num) || 0), 0)) + 1;
-      const total = validLines.reduce((s, l) => s + (Number(l.prix) || 0) * (Number(l.qte) || 0), 0);
+      const T = computeTotals(validLines);
+      const total = T.total;
       const date = document.getElementById('f-date').value || todayStr();
       const client = document.getElementById('f-client').value.trim();
 
@@ -2538,7 +2621,7 @@
           const prod = l.matched ? state.products.find(p => p.ref === l.ref) : null;
           return { ref: l.ref || '', nom: l.nom, qte: Number(l.qte), prix: Number(l.prix) || 0, unite: l.unite || '', matched: !!prod, productId: prod ? prod.id : null };
         }),
-        total, montantPaye: 0, createdAt: Date.now(), annulee: false,
+        total, ...fiscalExtra(T), montantPaye: 0, createdAt: Date.now(), annulee: false,
         operateur: state.currentUser ? `${state.currentUser.nom} (${ROLE_LABEL[state.currentUser.role]})` : '',
       };
 
@@ -2591,6 +2674,7 @@
       invoiceLines = [freshLine()];
       document.getElementById('f-client').value = '';
       document.getElementById('f-paye').value = '';
+      document.getElementById('f-remise').value = '';
       renderInvoiceLines();
       const resteMsg = montantPaye < total ? ` — reste à payer : ${euros(total - montantPaye)}` : '';
       toast(`Facture FAC-${String(num).padStart(4, '0')} finalisée — stock mis à jour${resteMsg}.`);
@@ -2618,6 +2702,8 @@
     const isInv = t === 'facture';
     document.getElementById('ventesTitle').textContent = isInv ? 'Nouvelle vente' : (t === 'devis' ? 'Nouveau devis' : (t === 'bon_livraison' ? 'Nouveau bon de livraison' : 'Nouveau bon de commande'));
     document.getElementById('f-paye-wrap').style.display = isInv ? '' : 'none';
+    document.getElementById('fiscalBlock').style.display = t === 'bon_livraison' ? 'none' : '';
+    updateGrandTotal();
     document.getElementById('f-mode-wrap').style.display = isInv ? '' : 'none';
     document.getElementById('f-validite-wrap').style.display = t === 'devis' ? '' : 'none';
     document.getElementById('finalizeHint').style.display = isInv ? '' : 'none';
@@ -2637,7 +2723,8 @@
     btn.disabled = true;
     try {
       const num = state.documents.filter(d => d.type === type).reduce((m, d) => Math.max(m, Number(d.num) || 0), 0) + 1;
-      const total = validLines.reduce((s, l) => s + (Number(l.prix) || 0) * (Number(l.qte) || 0), 0);
+      const T = computeTotals(validLines);
+      const total = T.total;
       const client = document.getElementById('f-client').value.trim();
       const existing = client ? state.clients.find(c => (c.nom || '').trim().toLowerCase() === client.toLowerCase()) : null;
       const doc = {
@@ -2648,7 +2735,7 @@
           const prod = l.matched ? state.products.find(p => p.ref === l.ref) : null;
           return { ref: l.ref || '', nom: l.nom, qte: Number(l.qte), prix: Number(l.prix) || 0, unite: l.unite || '', matched: !!prod, productId: prod ? prod.id : null };
         }),
-        total, statut: 'en_attente',
+        total, ...fiscalExtra(T), statut: 'en_attente',
         validite: type === 'devis' ? (document.getElementById('f-validite').value || '') : '',
         operateur: state.currentUser ? `${state.currentUser.nom} (${ROLE_LABEL[state.currentUser.role]})` : '',
         createdAt: Date.now(), factureId: null, sourceId: null,
@@ -2656,6 +2743,7 @@
       await state.db.collection('documents').doc(newId('doc')).set(doc);
       invoiceLines = [freshLine()];
       document.getElementById('f-client').value = '';
+      document.getElementById('f-remise').value = '';
       renderInvoiceLines();
       if (confirm(`${DOC_LABELS[type]} ${docNumLabel(doc)} enregistré. L'imprimer maintenant ?`)) printInvoice(doc, type);
       else toast(`${DOC_LABELS[type]} ${docNumLabel(doc)} enregistré.`);
@@ -2717,7 +2805,7 @@
       if (act === 'livre') { await state.db.doc('documents/' + id).update({ statut: 'livre' }); toast(`${docNumLabel(d)} marqué comme livré.`); return; }
       if (act === 'tobl') {
         const num = state.documents.filter(x => x.type === 'bon_livraison').reduce((m, x) => Math.max(m, Number(x.num) || 0), 0) + 1;
-        const bl = { type: 'bon_livraison', num, date: todayStr(), client: d.client || '', clientId: d.clientId || null, lignes: d.lignes || [], total: d.total || 0, statut: 'en_attente', validite: '', operateur: state.currentUser ? `${state.currentUser.nom} (${ROLE_LABEL[state.currentUser.role]})` : '', createdAt: Date.now(), factureId: null, sourceId: d.id };
+        const bl = { type: 'bon_livraison', num, date: todayStr(), client: d.client || '', clientId: d.clientId || null, lignes: d.lignes || [], total: d.total || 0, ...fiscalFromDoc(d), statut: 'en_attente', validite: '', operateur: state.currentUser ? `${state.currentUser.nom} (${ROLE_LABEL[state.currentUser.role]})` : '', createdAt: Date.now(), factureId: null, sourceId: d.id };
         await state.db.collection('documents').doc(newId('doc')).set(bl);
         toast(`Bon de livraison ${docNumLabel(bl)} créé à partir de ${docNumLabel(d)}.`);
         if (confirm(`Bon de livraison ${docNumLabel(bl)} créé. L'imprimer maintenant ?`)) printInvoice(bl, 'bon_livraison');
@@ -2731,7 +2819,7 @@
       }
       if (act === 'tobc') {
         const num = state.documents.filter(x => x.type === 'bon_commande').reduce((m, x) => Math.max(m, Number(x.num) || 0), 0) + 1;
-        const bc = { type: 'bon_commande', num, date: todayStr(), client: d.client || '', clientId: d.clientId || null, lignes: d.lignes || [], total: d.total || 0, statut: 'en_attente', validite: '', operateur: state.currentUser ? `${state.currentUser.nom} (${ROLE_LABEL[state.currentUser.role]})` : '', createdAt: Date.now(), factureId: null, sourceId: d.id };
+        const bc = { type: 'bon_commande', num, date: todayStr(), client: d.client || '', clientId: d.clientId || null, lignes: d.lignes || [], total: d.total || 0, ...fiscalFromDoc(d), statut: 'en_attente', validite: '', operateur: state.currentUser ? `${state.currentUser.nom} (${ROLE_LABEL[state.currentUser.role]})` : '', createdAt: Date.now(), factureId: null, sourceId: d.id };
         await state.db.collection('documents').doc(newId('doc')).set(bc);
         await state.db.doc('documents/' + id).update({ statut: 'accepte' });
         toast(`Bon de commande ${docNumLabel(bc)} créé à partir du devis ${docNumLabel(d)}.`);
@@ -2744,6 +2832,10 @@
         if (invoiceLines.length === 0) invoiceLines = [freshLine()];
         document.getElementById('f-client').value = d.client || '';
         document.getElementById('f-paye').value = '';
+        document.getElementById('f-remise').value = d.remise ? d.remise : '';
+        document.getElementById('f-remise-unit').value = 'fcfa';
+        document.getElementById('f-tva-mode').value = (d.tvaMode && d.tvaMode !== 'none') ? d.tvaMode : 'none';
+        if (d.tvaTaux) document.getElementById('f-tva-taux').value = d.tvaTaux;
         convertingDocId = d.id;
         renderInvoiceLines();
         document.querySelector('[data-tab="ventes"]').click();
@@ -3685,7 +3777,9 @@
 
   function renderRapports() {
     const factures = facturesPeriode();
-    const ca = factures.reduce((s, i) => s + (Number(i.total) || 0), 0);
+    const ca = factures.reduce((s, i) => s + htOf(i), 0);
+    const tvaCollectee = factures.reduce((s, i) => s + (Number(i.tvaMontant) || 0), 0);
+    const remisesTotal = factures.reduce((s, i) => s + (Number(i.remise) || 0), 0);
     const resteDu = factures.reduce((s, i) => s + Math.max(0, (Number(i.total) || 0) - (Number(i.montantPaye) || 0)), 0);
 
     let benefice = 0;
@@ -3702,7 +3796,11 @@
     }));
 
     document.getElementById('rpVentes').textContent = factures.length;
+    // Bénéfice : on retire les remises et la TVA (qui n'est pas un gain pour le commerce)
+    factures.forEach(inv => { const lineSum = (inv.lignes || []).reduce((s, l) => s + (Number(l.prix) || 0) * (Number(l.qte) || 0), 0); if (inv.remise || inv.tvaMontant) benefice += htOf(inv) - lineSum; });
     document.getElementById('rpCa').textContent = euros(ca);
+    document.getElementById('rpTva').textContent = euros(tvaCollectee);
+    document.getElementById('rpRemises').textContent = euros(remisesTotal);
     document.getElementById('rpBenefice').textContent = euros(benefice);
     document.getElementById('rpResteDu').textContent = euros(resteDu);
 
@@ -3740,7 +3838,7 @@
       const au = document.getElementById('rp-au').value;
       const wb = window.XLSX.utils.book_new();
 
-      const ca = factures.reduce((s, i) => s + (Number(i.total) || 0), 0);
+      const ca = factures.reduce((s, i) => s + htOf(i), 0);
       const resteDu = factures.reduce((s, i) => s + Math.max(0, (Number(i.total) || 0) - (Number(i.montantPaye) || 0)), 0);
       const wsResume = window.XLSX.utils.json_to_sheet([{
         'Période': `${du} au ${au}`, 'Nombre de ventes': factures.length, "Chiffre d'affaires": ca, 'Reste dû': resteDu,
@@ -3982,7 +4080,7 @@
     const du = document.getElementById('cp-du').value;
     const au = document.getElementById('cp-au').value;
     const factures = state.invoices.filter(i => !i.annulee && i.date >= du && i.date <= au);
-    const ca = factures.reduce((s, i) => s + (Number(i.total) || 0), 0);
+    const ca = factures.reduce((s, i) => s + htOf(i), 0);
 
     let cogs = 0;
     factures.forEach(inv => (inv.lignes || []).forEach(l => {
@@ -4302,8 +4400,8 @@
   // Ces tables font la conversion dans les deux sens.
   const FIELD_MAPS = {
     produits: { codeBarre: 'code_barre', prixAchat: 'prix_achat', prixVente: 'prix_vente', createdAt: 'created_at' },
-    factures: { createdAt: 'created_at', clientId: 'client_id', montantPaye: 'montant_paye' },
-    documents: { createdAt: 'created_at', clientId: 'client_id', factureId: 'facture_id', sourceId: 'source_id' },
+    factures: { createdAt: 'created_at', clientId: 'client_id', montantPaye: 'montant_paye', sousTotal: 'sous_total', tvaTaux: 'tva_taux', tvaMode: 'tva_mode', tvaMontant: 'tva_montant' },
+    documents: { createdAt: 'created_at', clientId: 'client_id', factureId: 'facture_id', sourceId: 'source_id', sousTotal: 'sous_total', tvaTaux: 'tva_taux', tvaMode: 'tva_mode', tvaMontant: 'tva_montant' },
     mouvements: { productId: 'product_id', ancienStock: 'ancien_stock', nouveauStock: 'nouveau_stock', createdAt: 'created_at' },
     fournisseurs: { createdAt: 'created_at' },
     commandes_fournisseurs: { fournisseurId: 'fournisseur_id', fournisseurNom: 'fournisseur_nom', montantCommande: 'montant_commande', montantPaye: 'montant_paye', createdAt: 'created_at' },
