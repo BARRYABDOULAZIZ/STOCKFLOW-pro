@@ -497,7 +497,20 @@
   }
   @keyframes sheetUp { from { opacity:0; transform:translateY(24px) scale(.97); } to { opacity:1; transform:none; } }
   @media print { #bottomBar, #menuBackdrop { display:none !important; } }
-  </style>
+  
+  /* ===== Impression : toujours papier blanc + texte noir (même en mode sombre) ===== */
+  @media print {
+    :root, :root:not([data-theme="light"]), :root[data-theme="dark"], :root[data-theme="light"] { --ink:#000 !important; --paper:#fff !important; --paper-2:#fff !important; --line:#cfcfcf !important; --brick:#000 !important; --moss:#000 !important; --danger:#000 !important; }
+    html, body { background:#fff !important; background-image:none !important; color:#000 !important; height:auto !important; color-scheme:light !important; }
+    #printArea, #printInvSheet { background:#fff !important; color:#000 !important; }
+    #printArea h1, #printArea .pi-meta, #printArea .pi-client, #printArea .pi-total, #printArea .pi-table td, #printArea .pi-table .num-cell { color:#000 !important; opacity:1 !important; }
+    #printArea .pi-table th { color:#000 !important; opacity:1 !important; border-bottom:1px solid #000 !important; font-weight:700 !important; background:none !important; }
+    #printArea .pi-table td { background:none !important; box-shadow:none !important; }
+    #printArea .pi-table tr:hover { background:none !important; box-shadow:none !important; }
+    #printInvSheet th, #printInvSheet td { color:#000 !important; }
+    #printArea::before, #printArea::after { display:none !important; }
+  }
+</style>
 
 
 
