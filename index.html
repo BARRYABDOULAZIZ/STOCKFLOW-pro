@@ -154,6 +154,7 @@
   @media (max-width: 720px) { .inv-line { grid-template-columns: 1fr 1fr; } .inv-line .rm-cell { grid-column: span 2; text-align: right; } }
 
   #printArea, #printInvSheet { display: none; }
+  #printArea.pi-bl .pi-table th:nth-child(5), #printArea.pi-bl .pi-table th:nth-child(6), #printArea.pi-bl .pi-table td:nth-child(5), #printArea.pi-bl .pi-table td:nth-child(6), #printArea.pi-bl .pi-total { display:none !important; }
   @media print {
     body.print-inv #printArea { display: none !important; }
     body.print-inv #printInvSheet, body.print-inv #printInvSheet * { visibility: visible; }
@@ -818,6 +819,7 @@
           <option value="facture">🧾 Facture (vente)</option>
           <option value="devis">📝 Devis</option>
           <option value="bon_commande">📦 Bon de commande</option>
+          <option value="bon_livraison">🚚 Bon de livraison</option>
         </select>
       </div>
       <div class="field-grid">
@@ -871,14 +873,15 @@
   <!-- DEVIS & BONS DE COMMANDE -->
   <section class="panel" id="panel-documents">
     <div class="row-head">
-      <h2>Devis & bons de commande</h2>
+      <h2>Devis, bons de commande & bons de livraison</h2>
       <select id="docs-filter" style="max-width:230px;">
         <option value="">Tous les documents</option>
         <option value="devis">Devis seulement</option>
         <option value="bon_commande">Bons de commande seulement</option>
+        <option value="bon_livraison">Bons de livraison seulement</option>
       </select>
     </div>
-    <p class="hint-text">Ces documents ne touchent ni le stock, ni la caisse, ni les dettes. Le stock bouge seulement quand tu les transformes en facture.</p>
+    <p class="hint-text">Ces documents ne touchent ni le stock, ni la caisse, ni les dettes. Le stock bouge seulement quand tu les transformes en facture. Le bon de livraison s'imprime sans prix : il sert à faire signer la réception des marchandises.</p>
     <div class="table-wrap">
       <table>
         <thead><tr><th>N°</th><th>Date</th><th>Client</th><th class="num-cell">Total</th><th>Statut</th><th></th></tr></thead>
@@ -1370,11 +1373,11 @@
     <div id="pi-message" style="font-family:'Inter',sans-serif; font-size:13px; font-style:italic; color:#333; flex:1;"></div>
     <div id="pi-client-sign" style="display:none; text-align:center;">
       <div style="height:60px;"></div>
-      <div style="font-family:'Inter',sans-serif; font-size:11px; border-top:1px solid #000; padding-top:3px; min-width:170px;">Bon pour accord (client)</div>
+      <div style="font-family:'Inter',sans-serif; font-size:11px; border-top:1px solid #000; padding-top:3px; min-width:170px;" id="pi-client-sign-label">Bon pour accord (client)</div>
     </div>
     <div id="pi-signature-box" style="display:none; text-align:center;">
       <img id="pi-signature" alt="" style="max-height:80px; max-width:200px; display:block; margin:0 auto 4px;">
-      <div style="font-family:'Inter',sans-serif; font-size:11px; border-top:1px solid #000; padding-top:3px; min-width:150px;">Signature / cachet</div>
+      <div style="font-family:'Inter',sans-serif; font-size:11px; border-top:1px solid #000; padding-top:3px; min-width:150px;" id="pi-signature-label">Signature / cachet</div>
     </div>
   </div>
 </div>
@@ -2297,9 +2300,13 @@
 
   function printInvoice(inv, kind) {
     kind = kind || 'facture';
-    document.getElementById('pi-title').textContent = kind === 'devis' ? 'Devis' : (kind === 'bon_commande' ? 'Bon de commande' : 'Facture');
+    const isBL = kind === 'bon_livraison';
+    document.getElementById('printArea').classList.toggle('pi-bl', isBL);
+    document.getElementById('pi-client-sign-label').textContent = isBL ? 'Reçu en bon état (nom + signature du client)' : 'Bon pour accord (client)';
+    document.getElementById('pi-signature-label').textContent = isBL ? 'Le livreur / cachet' : 'Signature / cachet';
+    document.getElementById('pi-title').textContent = kind === 'devis' ? 'Devis' : (kind === 'bon_commande' ? 'Bon de commande' : (isBL ? 'Bon de livraison' : 'Facture'));
     document.getElementById('pi-client-sign').style.display = kind === 'facture' ? 'none' : '';
-    const numPrefix = kind === 'devis' ? 'DEV' : (kind === 'bon_commande' ? 'BC' : 'FAC');
+    const numPrefix = kind === 'devis' ? 'DEV' : (kind === 'bon_commande' ? 'BC' : (isBL ? 'BL' : 'FAC'));
     document.getElementById('pi-num').textContent = 'N° ' + numPrefix + '-' + String(inv.num).padStart(4, '0');
     document.getElementById('pi-date').textContent = inv.date || '';
     document.getElementById('pi-commerce-nom').textContent = (state.commerce && state.commerce.nom) || 'StockFlow Pro';
@@ -2321,7 +2328,7 @@
     const reste = Math.max(0, Number(inv.total || 0) - paye);
     const statutEl = document.getElementById('pi-statut');
     if (kind !== 'facture') {
-      statutEl.textContent = kind === 'devis' ? (inv.validite ? "Offre valable jusqu'au " + inv.validite : 'Offre sans engagement') : 'Commande à préparer / livrer';
+      statutEl.textContent = kind === 'devis' ? (inv.validite ? "Offre valable jusqu'au " + inv.validite : 'Offre sans engagement') : (isBL ? 'Marchandises livrées — merci de vérifier la quantité à la réception' : 'Commande à préparer / livrer');
       statutEl.style.background = '#e0e7ff'; statutEl.style.color = '#3730a3';
     } else if (paye <= 0) {
       statutEl.textContent = '⚠ NON PAYÉE — reste à payer : ' + euros(reste);
@@ -2333,6 +2340,7 @@
       statutEl.textContent = '✓ PAYÉE INTÉGRALEMENT';
       statutEl.style.background = '#dcfce7'; statutEl.style.color = '#166534';
     }
+    if (isBL) document.getElementById('pi-signature-box').style.display = '';
     setTimeout(() => window.print(), 350);
   }
 
@@ -2583,8 +2591,8 @@
   }
 
   // ================= Devis et bons de commande =================
-  const DOC_LABELS = { devis: 'Devis', bon_commande: 'Bon de commande' };
-  const DOC_PREFIX = { devis: 'DEV', bon_commande: 'BC' };
+  const DOC_LABELS = { devis: 'Devis', bon_commande: 'Bon de commande', bon_livraison: 'Bon de livraison' };
+  const DOC_PREFIX = { devis: 'DEV', bon_commande: 'BC', bon_livraison: 'BL' };
   let convertingDocId = null;
   const docNumLabel = (d) => `${DOC_PREFIX[d.type] || 'DOC'}-${String(d.num).padStart(4, '0')}`;
   const newId = (p) => p + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
@@ -2595,12 +2603,12 @@
   function applyDocMode() {
     const t = currentDocType();
     const isInv = t === 'facture';
-    document.getElementById('ventesTitle').textContent = isInv ? 'Nouvelle vente' : (t === 'devis' ? 'Nouveau devis' : 'Nouveau bon de commande');
+    document.getElementById('ventesTitle').textContent = isInv ? 'Nouvelle vente' : (t === 'devis' ? 'Nouveau devis' : (t === 'bon_livraison' ? 'Nouveau bon de livraison' : 'Nouveau bon de commande'));
     document.getElementById('f-paye-wrap').style.display = isInv ? '' : 'none';
     document.getElementById('f-mode-wrap').style.display = isInv ? '' : 'none';
     document.getElementById('f-validite-wrap').style.display = t === 'devis' ? '' : 'none';
     document.getElementById('finalizeHint').style.display = isInv ? '' : 'none';
-    document.getElementById('btnFinalize').textContent = isInv ? 'Finaliser la vente' : (t === 'devis' ? 'Enregistrer le devis' : 'Enregistrer le bon de commande');
+    document.getElementById('btnFinalize').textContent = isInv ? 'Finaliser la vente' : (t === 'devis' ? 'Enregistrer le devis' : (t === 'bon_livraison' ? 'Enregistrer le bon de livraison' : 'Enregistrer le bon de commande'));
     if (t === 'devis' && !document.getElementById('f-validite').value) {
       const d = new Date(); d.setDate(d.getDate() + 15);
       document.getElementById('f-validite').value = d.toISOString().slice(0, 10);
@@ -2659,11 +2667,12 @@
         const inv = state.invoices.find(i => i.id === d.factureId);
         return `<span class="badge" style="background:#2563eb; color:#fff;">Facturé${inv ? ' (FAC-' + String(inv.num).padStart(4, '0') + ')' : ''}</span>`;
       }
+      if (d.statut === 'livre') return '<span class="badge" style="background:#0891ff; color:#fff;">Livré</span>';
       return '<span class="badge">En attente</span>';
     };
     const btnStyle = 'padding:6px 10px; font-size:12px; margin:2px;';
     body.innerHTML = list.map(d => {
-      const open = d.statut === 'en_attente' || d.statut === 'accepte';
+      const open = d.statut === 'en_attente' || d.statut === 'accepte' || (d.type === 'bon_livraison' && d.statut === 'livre');
       return `<tr>
         <td>${escapeHtml(docNumLabel(d))}<div class="muted" style="font-size:11px;">${escapeHtml(DOC_LABELS[d.type] || '')}</div></td>
         <td class="muted">${escapeHtml(d.date || '')}</td>
@@ -2674,6 +2683,8 @@
           <button class="ghost" data-doc-act="print" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">Imprimer</button>
           ${d.type === 'devis' && d.statut === 'en_attente' ? `<button class="ghost" data-doc-act="accept" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">✓ Accepté</button><button class="ghost" data-doc-act="refuse" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">✗ Refusé</button>` : ''}
           ${d.type === 'devis' && open ? `<button class="ghost" data-doc-act="tobc" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">→ Bon de commande</button>` : ''}
+          ${(d.type === 'bon_commande' || d.type === 'devis') && (d.statut === 'en_attente' || d.statut === 'accepte') ? `<button class="ghost" data-doc-act="tobl" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">🚚 Bon de livraison</button>` : ''}
+          ${d.type === 'bon_livraison' && d.statut === 'en_attente' ? `<button class="ghost" data-doc-act="livre" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">✓ Livré</button>` : ''}
           ${open ? `<button class="ghost" data-doc-act="toinv" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">→ Facture</button>` : ''}
           ${isOwnerOrAdmin() ? `<button class="ghost" data-doc-act="delete" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">Supprimer</button>` : ''}
         </td>
@@ -2690,6 +2701,15 @@
       if (act === 'print') { printInvoice(d, d.type); return; }
       if (act === 'accept') { await state.db.doc('documents/' + id).update({ statut: 'accepte' }); toast(`${docNumLabel(d)} marqué comme accepté.`); return; }
       if (act === 'refuse') { await state.db.doc('documents/' + id).update({ statut: 'refuse' }); toast(`${docNumLabel(d)} marqué comme refusé.`); return; }
+      if (act === 'livre') { await state.db.doc('documents/' + id).update({ statut: 'livre' }); toast(`${docNumLabel(d)} marqué comme livré.`); return; }
+      if (act === 'tobl') {
+        const num = state.documents.filter(x => x.type === 'bon_livraison').reduce((m, x) => Math.max(m, Number(x.num) || 0), 0) + 1;
+        const bl = { type: 'bon_livraison', num, date: todayStr(), client: d.client || '', clientId: d.clientId || null, lignes: d.lignes || [], total: d.total || 0, statut: 'en_attente', validite: '', operateur: state.currentUser ? `${state.currentUser.nom} (${ROLE_LABEL[state.currentUser.role]})` : '', createdAt: Date.now(), factureId: null, sourceId: d.id };
+        await state.db.collection('documents').doc(newId('doc')).set(bl);
+        toast(`Bon de livraison ${docNumLabel(bl)} créé à partir de ${docNumLabel(d)}.`);
+        if (confirm(`Bon de livraison ${docNumLabel(bl)} créé. L'imprimer maintenant ?`)) printInvoice(bl, 'bon_livraison');
+        return;
+      }
       if (act === 'delete') {
         if (!confirm(`Supprimer définitivement ${docNumLabel(d)} ?`)) return;
         await state.db.doc('documents/' + id).delete();
