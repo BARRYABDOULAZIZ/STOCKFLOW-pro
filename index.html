@@ -6,25 +6,25 @@
 <title>StockFlow Pro</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root {
-    --ink: #17153b; --paper: #f3f5ff; --paper-2: #ffffff; --line: #e1e4f5;
-    --brick: #5b3df5; --brick-dark: #4527d6; --moss: #00a874; --gold: #f59e0b;
-    --danger: #e5304f; --danger-bg: #ffe3e8; --radius: 14px;
+  :root {
+    --ink: #1c1a17; --paper: #faf7f2; --paper-2: #f1ece3; --line: #ddd4c5;
+    --brick: #a8462f; --brick-dark: #86381f; --moss: #4b6a53; --gold: #b8863b;
+    --danger: #a8322a; --danger-bg: #f7e6e2; --radius: 3px;
     box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --ink: #eceeff; --paper: #0f1020; --paper-2: #181a33; --line: #2a2d52;
-      --brick: #9b8cff; --brick-dark: #b3a8ff; --moss: #2fe0a8; --gold: #ffc83d;
-      --danger: #ff6b86; --danger-bg: #3a1a28;
+      --ink: #efe9e0; --paper: #171512; --paper-2: #201d18; --line: #3a352c;
+      --brick: #d17454; --brick-dark: #e08a63; --moss: #7fa085; --gold: #d4a55c;
+      --danger: #e2766c; --danger-bg: #3a201d;
     }
   }
   :root[data-theme="dark"] {
-    --ink: #eceeff; --paper: #0f1020; --paper-2: #181a33; --line: #2a2d52;
-    --brick: #9b8cff; --brick-dark: #b3a8ff; --moss: #2fe0a8; --gold: #ffc83d;
-    --danger: #ff6b86; --danger-bg: #3a1a28;
+    --ink: #efe9e0; --paper: #171512; --paper-2: #201d18; --line: #3a352c;
+    --brick: #d17454; --brick-dark: #e08a63; --moss: #7fa085; --gold: #d4a55c;
+    --danger: #e2766c; --danger-bg: #3a201d;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
@@ -89,7 +89,6 @@
   .num-cell { text-align: right; font-variant-numeric: tabular-nums; }
   .muted { opacity: 0.55; font-size: 12px; }
   .stock-low { color: var(--danger); font-weight: 600; }
-  body.no-cost .cost-col { display: none !important; }
   .stock-zero { color: #fff; background: var(--danger); border-radius: 3px; padding: 1px 6px; font-weight: 600; }
   .stock-ok { color: var(--moss); font-weight: 600; }
   .unit-tag { font-size: 10.5px; opacity: 0.55; margin-left: 2px; }
@@ -153,25 +152,7 @@
 
   @media (max-width: 720px) { .inv-line { grid-template-columns: 1fr 1fr; } .inv-line .rm-cell { grid-column: span 2; text-align: right; } }
 
-  #printArea, #printInvSheet { display: none; }
-  @media print {
-    body.print-inv #printArea { display: none !important; }
-    body.print-inv #printInvSheet, body.print-inv #printInvSheet * { visibility: visible; }
-    body.print-inv #printInvSheet { display: block; position: absolute; left: 0; top: 0; width: 100%; padding: 14px; color: #000; background: #fff; font-family: 'Inter', Arial, sans-serif; }
-    #printInvSheet h1 { font-size: 20px; margin: 0 0 4px; }
-    #printInvSheet .is-meta { font-size: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-    #printInvSheet table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    #printInvSheet thead { display: table-header-group; }
-    #printInvSheet tr { page-break-inside: avoid; }
-    #printInvSheet th, #printInvSheet td { border: 1px solid #000; padding: 6px 5px; vertical-align: middle; }
-    #printInvSheet th { background: #e5e7eb; text-align: left; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    #printInvSheet td.is-count { width: 90px; height: 30px; }
-    #printInvSheet td.is-obs { width: 170px; }
-    #printInvSheet td.is-num { text-align: right; white-space: nowrap; }
-    #printInvSheet .is-cat td { background: #f3f4f6; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    #printInvSheet .is-sign { display: flex; gap: 40px; margin-top: 26px; font-size: 12px; }
-    #printInvSheet .is-sign div { flex: 1; border-top: 1px solid #000; padding-top: 4px; }
-  }
+  #printArea { display: none; }
   @media print {
     body * { visibility: hidden; }
     #printArea, #printArea * { visibility: visible; }
@@ -206,7 +187,7 @@
     <div class="card" style="max-width:400px; width:100%; margin:0;">
       <div class="row-head"><h2 id="authTitle">Connexion</h2></div>
 
-      <div id="authTabsRow" style="display:flex; gap:8px; margin-bottom:14px;">
+      <div style="display:flex; gap:8px; margin-bottom:14px;">
         <button type="button" class="tablike active" id="authTabLogin" style="flex:1;">Se connecter</button>
         <button type="button" class="tablike" id="authTabSignup" style="flex:1;">Créer mon commerce</button>
         <button type="button" class="tablike" id="authTabJoin" style="flex:1;">Rejoindre</button>
@@ -219,28 +200,6 @@
           <div><label>Mot de passe</label><input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password"></div>
         </div>
         <button class="primary" id="btnLogin" style="width:100%; margin-top:10px;">Se connecter</button>
-        <div style="text-align:center; margin-top:12px;"><a href="#" id="linkForgot" style="font-size:13px;">Mot de passe oublié ?</a></div>
-      </div>
-
-      <!-- Mot de passe oublié -->
-      <div id="authPaneForgot" style="display:none;">
-        <p class="hint-text" style="margin-top:0;">Entre l'email de ton compte : tu recevras un lien pour choisir un nouveau mot de passe.</p>
-        <div class="field-grid">
-          <div><label>Email</label><input id="forgot-email" type="email" placeholder="toi@exemple.com" autocomplete="username"></div>
-        </div>
-        <button class="primary" id="btnForgotSend" style="width:100%; margin-top:10px;">Envoyer le lien</button>
-        <p class="muted" id="forgotInfo" style="margin-top:10px; font-size:13px;"></p>
-        <div style="text-align:center; margin-top:8px;"><a href="#" id="linkForgotBack" style="font-size:13px;">← Retour à la connexion</a></div>
-      </div>
-
-      <!-- Nouveau mot de passe (après clic sur le lien reçu par email) -->
-      <div id="authPaneRecovery" style="display:none;">
-        <p class="hint-text" style="margin-top:0;">Choisis ton nouveau mot de passe (8 caractères minimum).</p>
-        <div class="field-grid">
-          <div><label>Nouveau mot de passe</label><input id="recovery-p1" type="password" placeholder="8 caractères min." autocomplete="new-password"></div>
-          <div><label>Confirme le mot de passe</label><input id="recovery-p2" type="password" placeholder="Répète le mot de passe" autocomplete="new-password"></div>
-        </div>
-        <button class="primary" id="btnRecoverySave" style="width:100%; margin-top:10px;">Enregistrer et me connecter</button>
       </div>
 
       <!-- Créer un commerce (Propriétaire) -->
@@ -285,182 +244,6 @@
     .tablike.active { background:var(--accent, #2563eb); color:#fff; border-color:transparent; }
   </style>
 
-  <style id="ui-modern">
-  /* ===== StockFlow Pro — look moderne : couleurs vives + animations ===== */
-  :root { --accent:#5b3df5; --good:#00a874; --sky:#0891ff; --sun:#f59e0b; --pink:#ff3d8b; --radius:14px;
-    --shadow:0 1px 2px rgba(60,40,160,.06), 0 8px 24px rgba(60,40,160,.09); --shadow-hi:0 4px 10px rgba(60,40,160,.10), 0 16px 36px rgba(60,40,160,.16); }
-  body { font-family:'Plus Jakarta Sans','Inter',system-ui,sans-serif; font-size:15px;
-    background:
-      radial-gradient(900px 500px at 8% -5%, rgba(91,61,245,.16), transparent 60%),
-      radial-gradient(800px 480px at 100% 0%, rgba(0,200,150,.14), transparent 60%),
-      radial-gradient(700px 500px at 60% 110%, rgba(255,61,139,.10), transparent 60%),
-      var(--paper);
-    background-attachment: fixed; }
-  h1, h2, h3, .display, nav.tabs button, .hero-card .hval, .stat .num, .kpi-card .kv, .inv-total-row .lbl, .inv-total-row .amt, .empty, header.top .tag { font-family:'Sora','Plus Jakarta Sans',sans-serif; }
-  .shell { padding-top:16px; }
-
-  /* En-tête */
-  header.top { border:none; margin:0 0 16px; padding:16px 20px; border-radius:20px; color:#fff;
-    background:linear-gradient(120deg,#4527d6 0%,#7a3df5 45%,#ff3d8b 100%); background-size:200% 200%; animation:flow 14s ease infinite;
-    box-shadow:0 12px 30px rgba(91,61,245,.35); align-items:center; }
-  header.top .mark { align-items:center; }
-  header.top h1 { font-size:22px; font-weight:800; letter-spacing:-.02em; display:flex; align-items:center; gap:10px; }
-  header.top h1::before { content:'SF'; display:inline-grid; place-items:center; width:38px; height:38px; border-radius:12px; font-size:15px; font-weight:800; color:#fff;
-    background:linear-gradient(135deg,#00d4a0,#0891ff); box-shadow:0 4px 12px rgba(0,0,0,.25); }
-  header.top .tag { color:#fff; font-style:normal; font-size:12px; font-weight:600; background:rgba(255,255,255,.18); padding:4px 10px; border-radius:20px; }
-  .sync { color:#fff; font-weight:600; background:rgba(255,255,255,.16); padding:5px 10px; border-radius:20px; }
-  .sync .dot { background:#4dffc3; box-shadow:0 0 0 0 rgba(77,255,195,.7); animation:pulse 2s infinite; }
-  .sync.off { color:#fff; background:rgba(229,48,79,.55); } .sync.off .dot { background:#ffb3c0; animation:none; }
-  header.top #userBadge { color:#fff !important; border-color:rgba(255,255,255,.45) !important; background:rgba(255,255,255,.14); font-weight:600; transition:background .2s; }
-  header.top #userBadge:hover { background:rgba(255,255,255,.28); }
-
-  /* Onglets en pastilles */
-  nav.tabs { position:sticky; top:0; z-index:30; gap:8px; padding:10px 4px; margin:0 -4px 22px; border:none; scrollbar-width:none;
-    background:color-mix(in srgb, var(--paper) 82%, transparent); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
-  nav.tabs::-webkit-scrollbar { display:none; }
-  nav.tabs button { opacity:1; margin:0; padding:10px 16px; min-height:42px; border-radius:999px; font-size:13.5px; font-weight:600; color:var(--ink);
-    background:var(--paper-2); border:1px solid var(--line); transform:none; transition:transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease; }
-  nav.tabs button:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(91,61,245,.18); border-color:var(--brick); }
-  nav.tabs button.active { color:#fff; border-color:transparent; font-weight:700; background:linear-gradient(120deg,#5b3df5,#8f4bff 60%,#ff3d8b); box-shadow:0 8px 20px rgba(91,61,245,.38); }
-
-  /* Changement d'onglet : léger fondu (réponse à ton clic) */
-  section.panel.active { animation:panelIn .38s cubic-bezier(.2,.8,.2,1); }
-
-  /* Cartes principales */
-  .hero-row { gap:16px; margin-bottom:18px; }
-  .hero-card { position:relative; overflow:hidden; border-radius:20px; padding:22px 22px; color:#fff; box-shadow:var(--shadow-hi); transition:transform .25s ease, box-shadow .25s ease; animation:rise .6s cubic-bezier(.2,.8,.2,1) both; }
-  .hero-card:nth-child(2) { animation-delay:.08s; } .hero-card:nth-child(3) { animation-delay:.16s; }
-  .hero-card:hover { transform:translateY(-4px) scale(1.01); }
-  .hero-card::after { content:''; position:absolute; right:-40px; top:-40px; width:140px; height:140px; border-radius:50%; background:rgba(255,255,255,.16); }
-  .hero-card::before { content:''; position:absolute; right:30px; bottom:-50px; width:110px; height:110px; border-radius:50%; background:rgba(255,255,255,.10); }
-  .hero-card .hlbl { opacity:.92; font-size:12.5px; font-weight:600; position:relative; z-index:1; }
-  .hero-card .hval { font-size:30px; font-weight:800; letter-spacing:-.02em; position:relative; z-index:1; }
-  .hero-card.invest { background:linear-gradient(135deg,#4527d6,#8f4bff); }
-  .hero-card.value { background:linear-gradient(135deg,#00a874,#12d6b0); }
-  .hero-card.profit { background:linear-gradient(135deg,#ff7a1a,#ff3d71); }
-
-  .cluster { gap:14px; }
-  .stat { position:relative; overflow:hidden; background:var(--paper-2); border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px 16px 22px; box-shadow:var(--shadow); transition:transform .2s ease, box-shadow .2s ease; }
-  .stat:hover { transform:translateY(-3px); box-shadow:var(--shadow-hi); }
-  .stat::before { content:''; position:absolute; left:0; top:0; bottom:0; width:6px; background:var(--brick); }
-  .stat:nth-child(2)::before { background:var(--danger); } .stat:nth-child(3)::before { background:var(--sun); }
-  .stat:nth-child(4)::before { background:var(--moss); } .stat:nth-child(5)::before { background:var(--sky); }
-  .stat .num { font-size:26px; font-weight:800; }
-  .stat .lbl { opacity:.75; font-weight:500; font-size:12px; margin-top:6px; }
-
-  .card, .kpi-card, .table-wrap { background:var(--paper-2); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); }
-  .card { padding:20px 22px; transition:box-shadow .2s ease; }
-  .kpi-card { transition:transform .2s ease, box-shadow .2s ease; } .kpi-card:hover { transform:translateY(-3px); box-shadow:var(--shadow-hi); }
-  .kpi-card .kv { font-size:20px; font-weight:800; }
-  .table-wrap { padding:8px 14px; }
-  .row-head h2 { font-size:19px; font-weight:800; letter-spacing:-.01em; }
-  .row-head h2::before { content:''; display:inline-block; width:6px; height:18px; border-radius:6px; margin-right:9px; vertical-align:-3px; background:linear-gradient(180deg,#5b3df5,#ff3d8b); }
-
-  /* Boutons */
-  button.primary { background:linear-gradient(120deg,#5b3df5,#8f4bff); color:#fff; border-radius:12px; padding:11px 18px; min-height:42px; font-weight:700; font-size:14px;
-    box-shadow:0 6px 16px rgba(91,61,245,.35); transition:transform .15s ease, box-shadow .15s ease, filter .15s ease; }
-  button.primary:hover { background:linear-gradient(120deg,#4527d6,#7a3df5); transform:translateY(-2px); box-shadow:0 10px 22px rgba(91,61,245,.45); }
-  button.primary:active { transform:translateY(0) scale(.97); box-shadow:0 3px 8px rgba(91,61,245,.35); }
-  button.primary:disabled { opacity:.5; transform:none; box-shadow:none; }
-  button.ghost { border-radius:12px; padding:9px 15px; min-height:38px; font-weight:600; background:var(--paper-2); border:1.5px solid var(--line); transition:transform .15s ease, border-color .15s ease, background .15s ease, box-shadow .15s ease; }
-  button.ghost:hover { border-color:var(--brick); color:var(--brick); transform:translateY(-1px); box-shadow:0 4px 12px rgba(91,61,245,.15); }
-  button.ghost:active { transform:scale(.96); }
-  button.ghost.active { background:linear-gradient(120deg,#00a874,#12d6b0); border-color:transparent; color:#fff; box-shadow:0 6px 14px rgba(0,168,116,.35); }
-  button.icon-btn { border-radius:10px; transition:background .15s, transform .15s; } button.icon-btn:hover { background:var(--danger-bg); transform:scale(1.15); }
-  .tablike { border-radius:12px !important; font-weight:600; padding:9px 4px !important; transition:all .18s ease; }
-  .tablike.active { background:linear-gradient(120deg,#5b3df5,#8f4bff) !important; box-shadow:0 6px 14px rgba(91,61,245,.35); }
-  .rp-preset.active, .cp-preset.active { background:linear-gradient(120deg,#5b3df5,#8f4bff) !important; }
-
-  /* Champs */
-  input, select, textarea { border-radius:12px; border:1.5px solid var(--line); padding:11px 12px; min-height:42px; font-family:inherit; font-size:14px; background:var(--paper); transition:border-color .15s ease, box-shadow .15s ease; }
-  input:focus, select:focus, textarea:focus { outline:none; border-color:var(--brick); box-shadow:0 0 0 4px rgba(91,61,245,.18); }
-  label { opacity:.8; font-weight:600; font-size:11.5px; }
-  :focus-visible { outline:3px solid rgba(91,61,245,.45); outline-offset:2px; }
-  .hint-text { opacity:.7; font-size:12px; }
-
-  /* Tableaux */
-  thead th { opacity:1; color:var(--brick); font-weight:700; font-size:11.5px; border-bottom:2px solid var(--line); padding-bottom:10px; }
-  tbody tr { transition:background .15s ease; } tbody tr:hover { background:color-mix(in srgb, var(--brick) 8%, transparent); }
-  tbody td { padding:12px 9px; border-bottom:1px solid var(--line); }
-  .table-wrap table thead { background:var(--paper-2); }
-  .stock-zero { border-radius:8px; padding:2px 9px; background:linear-gradient(120deg,#e5304f,#ff3d71); }
-  .stock-ok, .margin-pos { color:var(--moss); font-weight:700; } .stock-low, .margin-neg { font-weight:700; }
-  .badge { padding:3px 10px; font-weight:700; font-size:10.5px; }
-  .badge.warn { background:#fff1cf; color:#a35b00; }
-  .empty { opacity:.65; font-style:normal; font-weight:600; }
-  .mini-list li { padding:11px 0; } .mini-list li:hover { background:color-mix(in srgb, var(--brick) 6%, transparent); }
-  .ac-list { border-radius:14px; box-shadow:var(--shadow-hi); animation:panelIn .18s ease; } .ac-item:hover, .ac-item.hi { background:color-mix(in srgb, var(--brick) 12%, transparent); }
-  .inv-total-row { border-top:2px dashed var(--line); } .inv-total-row .amt { color:var(--brick); font-weight:800; }
-
-  /* Notification + connexion */
-  .toast { border-radius:14px; padding:13px 22px; font-weight:600; background:linear-gradient(120deg,#17153b,#2a2570); color:#fff; box-shadow:var(--shadow-hi); }
-  .toast.show { animation:bounceIn .45s cubic-bezier(.2,1.4,.4,1); }
-  #loginOverlay { background:linear-gradient(135deg,rgba(35,20,110,.78),rgba(255,61,139,.55)) !important; backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
-  #loginOverlay .card { border-radius:24px; padding:26px 24px; box-shadow:0 30px 70px rgba(0,0,0,.35); animation:rise .5s cubic-bezier(.2,.8,.2,1) both; }
-  #loginOverlay .card .row-head h2 { font-size:24px; }
-  a { color:var(--brick); font-weight:600; }
-
-  nav.tabs { border-radius:18px; }
-  @media (max-width:720px) { header.top { flex-wrap:wrap; gap:8px; } header.top h1 { white-space:nowrap; } header.top .tag { max-width:46vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } }
-  /* Mobile : zones tactiles plus grandes */
-  @media (max-width:720px) {
-    .shell { padding:12px 12px 90px; } header.top { padding:14px 14px; border-radius:18px; } header.top h1 { font-size:18px; }
-    .hero-card .hval { font-size:26px; } .card { padding:16px 14px; } nav.tabs button { padding:10px 14px; }
-  }
-
-
-  /* ===== Effets lumineux (glow, shine, néon) ===== */
-  :root { --glow:#00e5c0; --glow2:#22d3ee; }
-  .stat, .kpi-card, .card, .hero-card { transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
-  .stat:hover, .kpi-card:hover, .card:hover { transform:translateY(-4px); border-color:var(--glow);
-    box-shadow:0 0 0 1px rgba(0,229,192,.55), 0 0 22px rgba(0,229,192,.35), 0 0 46px rgba(34,211,238,.22), 0 14px 30px rgba(20,20,60,.12); }
-  .hero-card:hover { box-shadow:0 0 28px rgba(34,211,238,.55), 0 18px 40px rgba(20,20,60,.25); }
-  tbody tr:hover { box-shadow:inset 4px 0 0 var(--glow), inset 0 0 24px rgba(0,229,192,.10); }
-
-  /* Voyant de synchro : onde lumineuse */
-  .sync .dot { position:relative; width:9px; height:9px; animation:none; box-shadow:0 0 8px #4dffc3; }
-  .sync .dot::before, .sync .dot::after { content:''; position:absolute; inset:0; border-radius:50%; border:2px solid #4dffc3; opacity:0; animation:ring 2.2s ease-out infinite; }
-  .sync .dot::after { animation-delay:1.1s; }
-  .sync.off .dot::before, .sync.off .dot::after { border-color:#ffb3c0; animation-duration:1.2s; }
-  @keyframes ring { 0% { transform:scale(1); opacity:.9; } 100% { transform:scale(3.4); opacity:0; } }
-
-  /* Boutons : reflet qui glisse (Shine) */
-  button.primary, #btnQuickScanSale, #btnScanCatalog, #btnScanBarcodeField { position:relative; overflow:hidden; isolation:isolate; }
-  button.primary::after, #btnQuickScanSale::after, #btnScanCatalog::after, #btnScanBarcodeField::after { content:''; position:absolute; top:0; left:-80%; width:50%; height:100%; z-index:-1; pointer-events:none;
-    background:linear-gradient(105deg, transparent 0%, rgba(255,255,255,.55) 50%, transparent 100%); transform:skewX(-20deg); }
-  button.primary:hover::after, #btnQuickScanSale:hover::after, #btnScanCatalog:hover::after, #btnScanBarcodeField:hover::after { animation:shine .8s ease; }
-  @keyframes shine { to { left:140%; } }
-  button.primary:hover { box-shadow:0 0 20px rgba(143,75,255,.6), 0 10px 22px rgba(91,61,245,.45); }
-
-  /* Onglet actif néon : barre lumineuse + fond cyan transparent */
-  nav.tabs button.active { background:linear-gradient(120deg, rgba(34,211,238,.22), rgba(91,61,245,.92) 38%, #8f4bff 70%, #ff3d8b); position:relative;
-    box-shadow:0 0 0 1px rgba(34,211,238,.6), 0 0 18px rgba(34,211,238,.55), 0 8px 22px rgba(91,61,245,.4); }
-  nav.tabs button.active::before { content:''; position:absolute; left:7px; top:22%; bottom:22%; width:3px; border-radius:3px; background:#7ffcf0; box-shadow:0 0 8px #22d3ee, 0 0 16px #22d3ee; }
-  nav.tabs button.active { padding-left:20px; }
-
-  /* Badges de stock rétro-éclairés */
-  .stk { display:inline-block; min-width:34px; text-align:center; padding:3px 11px; border-radius:999px; font-weight:800; font-size:13px; }
-  .stk.ok { color:#00634a; background:#c8fbe9; box-shadow:0 0 12px rgba(0,229,160,.65), inset 0 0 0 1px rgba(0,200,140,.5); }
-  .stk.low { color:#8a4a00; background:#ffe1b0; box-shadow:0 0 12px rgba(255,150,20,.7), inset 0 0 0 1px rgba(255,150,20,.55); animation:glowLow 2s ease-in-out infinite; }
-  .stock-zero { color:#fff; background:linear-gradient(120deg,#ff1744,#ff4d6d); box-shadow:0 0 14px rgba(255,23,68,.8); padding:3px 12px; border-radius:999px; font-weight:800; animation:glowOut 1.4s ease-in-out infinite; }
-  .badge.warn { box-shadow:0 0 10px rgba(255,150,20,.55); }
-  .badge:not(.warn):not([style]) { box-shadow:0 0 10px rgba(255,23,68,.45); }
-  @keyframes glowLow { 0%,100% { box-shadow:0 0 8px rgba(255,150,20,.5), inset 0 0 0 1px rgba(255,150,20,.5); } 50% { box-shadow:0 0 18px rgba(255,150,20,.95), inset 0 0 0 1px rgba(255,150,20,.7); } }
-  @keyframes glowOut { 0%,100% { box-shadow:0 0 8px rgba(255,23,68,.6); } 50% { box-shadow:0 0 20px rgba(255,23,68,1); } }
-  :root[data-theme="dark"] .stk.ok, :root:not([data-theme="light"]) .stk.ok { }
-  @media (prefers-color-scheme:dark) { :root:not([data-theme="light"]) .stk.ok { color:#9dffe0; background:rgba(0,229,160,.18); } :root:not([data-theme="light"]) .stk.low { color:#ffd08a; background:rgba(255,150,20,.2); } }
-  :root[data-theme="dark"] .stk.ok { color:#9dffe0; background:rgba(0,229,160,.18); } :root[data-theme="dark"] .stk.low { color:#ffd08a; background:rgba(255,150,20,.2); }
-  @media print { .stk, .stock-zero { box-shadow:none !important; animation:none !important; } }
-  @keyframes flow { 0%,100% { background-position:0% 50%; } 50% { background-position:100% 50%; } }
-  @keyframes pulse { 0% { box-shadow:0 0 0 0 rgba(77,255,195,.7); } 70% { box-shadow:0 0 0 9px rgba(77,255,195,0); } 100% { box-shadow:0 0 0 0 rgba(77,255,195,0); } }
-  @keyframes panelIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
-  @keyframes rise { from { opacity:0; transform:translateY(22px) scale(.97); } to { opacity:1; transform:none; } }
-  @keyframes bounceIn { 0% { transform:translateX(-50%) translateY(24px) scale(.9); } 100% { transform:translateX(-50%) translateY(0) scale(1); } }
-  @media (prefers-reduced-motion:reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }
-  @media print { header.top, nav.tabs { display:none !important; } }
-  </style>
-
-
   <nav class="tabs">
     <button class="active" data-tab="dashboard">🏠 Dashboard</button>
     <button data-tab="produits">📦 Produits</button>
@@ -468,14 +251,13 @@
     <button data-tab="inventaire">📊 Inventaire</button>
     <button data-tab="ventes">🛒 Ventes</button>
     <button data-tab="factures">🧾 Factures</button>
-    <button data-tab="documents">📝 Devis & bons</button>
     <button data-tab="fournisseurs">🚚 Fournisseurs</button>
     <button data-tab="clients">👥 Clients</button>
     <button data-tab="rapports">📈 Rapports</button>
     <button data-tab="parametres">⚙️ Paramètres</button>
-    <button data-tab="caisse">🧾 Caisse</button>
     <button data-tab="comptabilite">💰 Comptabilité</button>
     <button data-tab="donnees">💾 Données</button>
+    <button data-tab="soon">…</button>
   </nav>
 
   <!-- DASHBOARD -->
@@ -556,7 +338,7 @@
       <div class="field-grid">
         <div><label>Nom du produit</label><input id="p-nom" placeholder="Ciment, fer à béton, parpaing…"></div>
         <div><label>Référence interne</label><input id="p-ref" placeholder="REF-001"></div>
-        <div><label>Code-barres</label><div style="display:flex; gap:6px;"><input id="p-barcode" placeholder="EAN / code-barres"><button class="ghost" id="btnScanBarcodeField" type="button" title="Scanner le code-barres" style="padding:8px 12px;">📷</button></div></div>
+        <div><label>Code-barres</label><input id="p-barcode" placeholder="EAN / code-barres"></div>
         <div><label>Fournisseur</label><input id="p-fournisseur" placeholder="Nom du fournisseur"></div>
         <div><label>Catégorie</label><input id="p-categorie" placeholder="Gros œuvre, plomberie, électricité…"></div>
         <div><label>Emplacement</label><input id="p-emplacement" placeholder="Rayon 3, étagère A2…"></div>
@@ -579,7 +361,7 @@
             <option value="botte"></option>
           </datalist>
         </div>
-        <div class="cost-col"><label>Prix d'achat unitaire (FCFA)</label><input id="p-prixachat" type="number" min="0" step="1" value="0"></div>
+        <div><label>Prix d'achat unitaire (FCFA)</label><input id="p-prixachat" type="number" min="0" step="1" value="0"></div>
         <div><label>Prix de vente unitaire (FCFA)</label><input id="p-prixvente" type="number" min="0" step="1" value="0"></div>
         <div><label>Seuil d'alerte (stock mini)</label><input id="p-seuil" type="number" min="0" step="any" value="5"></div>
       </div>
@@ -593,15 +375,12 @@
 
     <div class="row-head">
       <h2>Catalogue <span class="muted" id="catalogCount"></span></h2>
-      <div class="search-box" style="display:flex; gap:6px;">
-        <input id="stockSearch" placeholder="Nom, référence ou code-barres…">
-        <button class="ghost" id="btnScanCatalog" type="button" title="Scanner pour chercher" style="padding: 8px 12px;">📷</button>
-      </div>
+      <div class="search-box"><input id="stockSearch" placeholder="Nom, référence ou code-barres…"></div>
     </div>
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>Référence</th><th>Nom</th><th>Code-barres</th><th>Fournisseur</th><th>Catégorie</th><th>Emplacement</th><th class="num-cell cost-col">Achat</th><th class="num-cell">Vente</th><th class="num-cell">Stock</th><th>Unité</th><th></th></tr>
+          <tr><th>Référence</th><th>Nom</th><th>Code-barres</th><th>Fournisseur</th><th>Catégorie</th><th>Emplacement</th><th class="num-cell">Achat</th><th class="num-cell">Vente</th><th class="num-cell">Stock</th><th>Unité</th><th></th></tr>
         </thead>
         <tbody id="stockBody"></tbody>
       </table>
@@ -701,64 +480,8 @@
       <button class="ghost active" data-filter="tous">Tous les produits</button>
       <button class="ghost" data-filter="faible">Stock faible</button>
       <button class="ghost" data-filter="rupture">Rupture</button>
-      <button class="ghost" data-filter="reappro">À réapprovisionner</button>
       <select id="catFilter"><option value="">Toutes catégories</option></select>
     </div>
-
-    <div class="card" id="invSheetCard">
-      <div class="row-head"><h2>🖨 Feuille d'inventaire à imprimer</h2></div>
-      <p class="hint-text" style="margin-top:0;">Une feuille sans aucun prix, avec les colonnes : Référence, Code-barres, Produit, Quantité théorique, Quantité comptée (vide) et Observations (vide).</p>
-      <div class="field-grid">
-        <div>
-          <label>Quels produits ?</label>
-          <select id="is-scope">
-            <option value="tous">Tous les produits</option>
-            <option value="reappro">À réapprovisionner (faible + rupture)</option>
-            <option value="faible">Stock faible seulement</option>
-            <option value="rupture">Rupture seulement</option>
-          </select>
-        </div>
-        <div>
-          <label>Trier par</label>
-          <select id="is-sort">
-            <option value="categorie">Catégorie, puis nom</option>
-            <option value="emplacement">Emplacement (parcours du magasin)</option>
-            <option value="nom">Nom</option>
-          </select>
-        </div>
-      </div>
-      <div style="margin-top:12px;">
-        <label>Catégories (ne rien cocher = toutes)</label>
-        <div id="is-cats" style="display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:6px;"></div>
-      </div>
-      <label style="display:flex; align-items:center; gap:8px; margin-top:12px; font-weight:400;">
-        <input type="checkbox" id="is-blind" style="width:auto;"> Comptage à l'aveugle (masquer la quantité théorique)
-      </label>
-      <div style="margin-top:14px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-        <button class="primary" id="btnPrintInvSheet">🖨 Imprimer la feuille</button>
-        <span class="muted" id="is-count"></span>
-      </div>
-    </div>
-
-    <div class="card" id="countCard">
-      <div class="row-head"><h2>✅ Comptage dans l'appli</h2></div>
-      <p class="hint-text" style="margin-top:0;">Utilise les mêmes choix que la feuille ci-dessus (produits, catégories, tri, aveugle). Saisis les quantités comptées : l'écart s'affiche tout de suite. Rien ne change dans le stock tant que tu ne cliques pas sur « Valider les écarts ».</p>
-      <button class="primary" id="btnStartCount">▶ Démarrer le comptage</button>
-      <div id="countArea" style="display:none; margin-top:14px;">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Réf.</th><th>Produit</th><th class="num-cell count-theo">Théorique</th><th class="num-cell">Compté</th><th class="num-cell">Écart</th><th>Observation</th></tr></thead>
-            <tbody id="countBody"></tbody>
-          </table>
-        </div>
-        <div id="countSummary" class="muted" style="margin:10px 0;"></div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <button class="primary" id="btnValidateCount">✔ Valider les écarts</button>
-          <button class="ghost" id="btnCancelCount">Annuler le comptage</button>
-        </div>
-      </div>
-    </div>
-
     <div class="table-wrap">
       <table>
         <thead>
@@ -773,27 +496,12 @@
   <!-- VENTES -->
   <section class="panel" id="panel-ventes">
     <div class="card">
-      <div class="row-head">
-        <h2 id="ventesTitle">Nouvelle vente</h2>
-        <select id="f-doctype" style="max-width:230px;">
-          <option value="facture">🧾 Facture (vente)</option>
-          <option value="devis">📝 Devis</option>
-          <option value="bon_commande">📦 Bon de commande</option>
-        </select>
-      </div>
+      <div class="row-head"><h2>Nouvelle vente</h2></div>
       <div class="field-grid">
         <div><label>Client</label><input id="f-client" placeholder="Nom du client"></div>
         <div><label>Date</label><input id="f-date" type="date"></div>
-        <div id="f-paye-wrap">
-          <label>Montant payé (FCFA)</label>
-          <input id="f-paye" type="number" min="0" step="1" placeholder="Laisser vide = payé en totalité">
-          <div id="f-rendu-info" style="font-size:12.5px; font-weight:700; margin-top:5px;"></div>
-        </div>
-        <div id="f-validite-wrap" style="display:none;">
-          <label>Valable jusqu'au</label>
-          <input id="f-validite" type="date">
-        </div>
-        <div id="f-mode-wrap">
+        <div><label>Montant payé (FCFA)</label><input id="f-paye" type="number" min="0" step="1" placeholder="Laisser vide = payé en totalité"></div>
+        <div>
           <label>Mode de paiement</label>
           <select id="f-mode-paiement">
             <option value="Espèces">Espèces</option>
@@ -805,10 +513,7 @@
       </div>
       <p class="hint-text" style="margin-top:0;">Cherche une référence du catalogue, ou tape librement pour une ligne hors-catalogue.</p>
       <div class="inv-lines" id="invLines"></div>
-      <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
-        <button class="ghost" id="btnAddLine">+ Ajouter une ligne</button>
-        <button class="ghost" id="btnQuickScanSale" style="color:var(--brick); border-color:var(--brick);">📷 Scan rapide article</button>
-      </div>
+      <button class="ghost" id="btnAddLine" style="margin-bottom:16px;">+ Ajouter une ligne</button>
       <div class="inv-total-row"><span class="lbl">Total</span><span class="amt" id="invGrandTotal">0 FCFA</span></div>
       <div style="margin-top:18px; display:flex; gap:10px; justify-content:flex-end;">
         <button class="primary" id="btnFinalize">Finaliser la vente</button>
@@ -826,26 +531,6 @@
         <tbody id="histBody"></tbody>
       </table>
       <div class="empty" id="histEmpty" style="display:none;">Aucune facture émise pour l'instant.</div>
-    </div>
-  </section>
-
-  <!-- DEVIS & BONS DE COMMANDE -->
-  <section class="panel" id="panel-documents">
-    <div class="row-head">
-      <h2>Devis & bons de commande</h2>
-      <select id="docs-filter" style="max-width:230px;">
-        <option value="">Tous les documents</option>
-        <option value="devis">Devis seulement</option>
-        <option value="bon_commande">Bons de commande seulement</option>
-      </select>
-    </div>
-    <p class="hint-text">Ces documents ne touchent ni le stock, ni la caisse, ni les dettes. Le stock bouge seulement quand tu les transformes en facture.</p>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>N°</th><th>Date</th><th>Client</th><th class="num-cell">Total</th><th>Statut</th><th></th></tr></thead>
-        <tbody id="docsBody"></tbody>
-      </table>
-      <div class="empty" id="docsEmpty" style="display:none;">Aucun devis ni bon de commande pour l'instant. Crée-en un dans l'onglet Ventes, en choisissant le type de document en haut.</div>
     </div>
   </section>
 
@@ -1084,60 +769,6 @@
   </section>
 
   <!-- COMPTABILITÉ -->
-  <section class="panel" id="panel-caisse">
-    <div class="card">
-      <div class="row-head"><h2>🧾 Caisse — encaissements</h2></div>
-      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
-        <button class="ghost cs-preset active" data-preset="jour">Aujourd'hui</button>
-        <button class="ghost cs-preset" data-preset="7j">7 derniers jours</button>
-        <button class="ghost cs-preset" data-preset="mois">Ce mois-ci</button>
-      </div>
-      <div class="field-grid">
-        <div><label>Du</label><input id="cs-du" type="date"></div>
-        <div><label>Au</label><input id="cs-au" type="date"></div>
-      </div>
-    </div>
-
-    <div class="cluster">
-      <div class="stat"><div class="num" id="csEsp">–</div><div class="lbl">💵 Espèces</div></div>
-      <div class="stat"><div class="num" id="csMobile">–</div><div class="lbl">📱 Mobile Money</div></div>
-      <div class="stat"><div class="num" id="csVirement">–</div><div class="lbl">🏦 Virement</div></div>
-      <div class="stat"><div class="num" id="csCheque">–</div><div class="lbl">📄 Chèque</div></div>
-      <div class="stat"><div class="num" id="csTotal">–</div><div class="lbl">Total encaissé</div></div>
-    </div>
-    <p class="hint-text" id="csHint"></p>
-
-    <div class="card">
-      <div class="row-head"><h2>Par vendeur</h2></div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Vendeur</th><th class="num-cell">Espèces</th><th class="num-cell">Autres modes</th><th class="num-cell">Total</th></tr></thead>
-          <tbody id="csVendeurs"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="row-head">
-        <h2>Détail des paiements</h2>
-        <select id="cs-mode-filter" style="max-width:220px;">
-          <option value="">Tous les modes</option>
-          <option value="Espèces">Espèces seulement</option>
-          <option value="Mobile Money">Mobile Money seulement</option>
-          <option value="Virement">Virement seulement</option>
-          <option value="Chèque">Chèque seulement</option>
-        </select>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Date</th><th>Facture</th><th>Client</th><th>Mode</th><th class="num-cell">Montant</th><th>Encaissé par</th></tr></thead>
-          <tbody id="csPaiements"></tbody>
-        </table>
-      </div>
-      <div class="empty" id="csEmpty" style="display:none;">Aucun paiement sur cette période.</div>
-    </div>
-  </section>
-
   <section class="panel" id="panel-comptabilite">
     <div class="card">
       <div class="row-head"><h2>💰 Période</h2></div>
@@ -1214,29 +845,6 @@
         <div><label>Email</label><input id="cm-email" type="email" placeholder="Email"></div>
         <div><label>Numéro fiscal</label><input id="cm-fiscal" placeholder="Optionnel"></div>
       </div>
-
-      <div class="field-grid" style="margin-top:14px;">
-        <div>
-          <label>Logo (affiché sur les factures)</label>
-          <input id="cm-logo-file" type="file" accept="image/*">
-          <div style="margin-top:8px; display:flex; align-items:center; gap:10px;">
-            <img id="cm-logo-preview" alt="Logo" style="display:none; max-height:64px; max-width:140px; border:1px solid var(--line); border-radius:6px; background:#fff; padding:4px;">
-            <button class="ghost" id="btnRemoveLogo" type="button" style="display:none;">Retirer</button>
-          </div>
-        </div>
-        <div>
-          <label>Signature ou cachet (affiché sur les factures)</label>
-          <input id="cm-signature-file" type="file" accept="image/*">
-          <div style="margin-top:8px; display:flex; align-items:center; gap:10px;">
-            <img id="cm-signature-preview" alt="Signature" style="display:none; max-height:64px; max-width:160px; border:1px solid var(--line); border-radius:6px; background:#fff; padding:4px;">
-            <button class="ghost" id="btnRemoveSignature" type="button" style="display:none;">Retirer</button>
-          </div>
-        </div>
-      </div>
-      <div style="margin:14px 0;">
-        <label>Message de remerciement (en bas des factures)</label>
-        <input id="cm-message" maxlength="140" placeholder="Merci pour votre confiance, à bientôt !">
-      </div>
       <button class="primary" id="btnSaveCommerce">Enregistrer</button>
       <p class="muted" id="commerceStatus" style="margin-top:10px;"></p>
     </div>
@@ -1277,43 +885,24 @@
         <button class="ghost" id="btnRestoreBackup">♻️ Restaurer les données</button>
       </div>
     </div>
-
-    <div class="card" style="margin-top:20px;">
-      <div class="row-head">
-        <h2>📋 Journal des actions</h2>
-        <button class="ghost" id="btnRefreshAudit">🔄 Actualiser</button>
-      </div>
-      <p class="hint-text">Opérations sensibles : annulations de factures, pertes de stock, suppressions de produits, tentatives refusées. Visible uniquement par le propriétaire et l'admin, impossible à modifier.</p>
-      <div style="overflow-x:auto; margin-top:12px;">
-        <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
-          <thead>
-            <tr style="text-align:left; border-bottom:2px solid var(--line);">
-              <th style="padding:8px;">Date / heure</th>
-              <th style="padding:8px;">Utilisateur</th>
-              <th style="padding:8px;">Action</th>
-              <th style="padding:8px;">Détails</th>
-            </tr>
-          </thead>
-          <tbody id="auditLogsTbody">
-            <tr><td colspan="4" style="padding:12px; text-align:center;" class="muted">Aucune action enregistrée.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
   </section>
 
-
+  <!-- SOON -->
+  <section class="panel" id="panel-soon">
+    <div class="soon-card">
+      <div class="display">Rapports · Comptabilité · Paramètres</div>
+      <p style="margin:0;">Ces modules arrivent dans une prochaine étape — dis-le quand tu veux qu'on s'y attaque.</p>
+    </div>
+  </section>
 
 </div>
 
 <div class="toast" id="toast"></div>
 
-<div id="printInvSheet"></div>
 <div id="printArea">
   <div class="pi-head">
     <div>
-      <img id="pi-logo" alt="" style="display:none; max-height:70px; max-width:170px; margin-bottom:8px;">
-      <h1 id="pi-title">Facture</h1>
+      <h1>Facture</h1>
       <div style="font-family:'Inter',sans-serif; font-size:15px; font-weight:800; margin-top:4px; color:#1d4ed8;" id="pi-commerce-nom">StockFlow Pro</div>
       <div style="font-family:'Inter',sans-serif; font-size:11px; color:#555;" id="pi-commerce-adresse"></div>
     </div>
@@ -1327,58 +916,13 @@
   <div class="pi-total"><span>Total</span><span id="pi-total"></span></div>
   <div id="pi-statut" style="margin-top:10px; text-align:right; font-family:'Inter',sans-serif; font-weight:700; font-size:14px; padding:6px 14px; border-radius:6px; display:inline-block; float:right;"></div>
   <div style="clear:both;"></div>
-  <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:24px; margin-top:36px;">
-    <div id="pi-message" style="font-family:'Inter',sans-serif; font-size:13px; font-style:italic; color:#333; flex:1;"></div>
-    <div id="pi-client-sign" style="display:none; text-align:center;">
-      <div style="height:60px;"></div>
-      <div style="font-family:'Inter',sans-serif; font-size:11px; border-top:1px solid #000; padding-top:3px; min-width:170px;">Bon pour accord (client)</div>
-    </div>
-    <div id="pi-signature-box" style="display:none; text-align:center;">
-      <img id="pi-signature" alt="" style="max-height:80px; max-width:200px; display:block; margin:0 auto 4px;">
-      <div style="font-family:'Inter',sans-serif; font-size:11px; border-top:1px solid #000; padding-top:3px; min-width:150px;">Signature / cachet</div>
-    </div>
-  </div>
 </div>
 
-<!-- Fenêtre de scan caméra universelle -->
-<div id="globalScanModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999; align-items:center; justify-content:center; padding:20px;">
-  <div class="card" style="max-width:400px; width:100%; margin:0; background:var(--paper);">
-    <div class="row-head">
-      <h2 id="globalScanTitle">Scan caméra</h2>
-      <button class="ghost" id="btnCloseGlobalScan">✕ Fermer</button>
-    </div>
-    <p class="hint-text" style="margin-top:0;">Pointe la caméra vers le code-barres.</p>
-    <div style="max-width:100%; border-radius:var(--radius); overflow:hidden; border:1px solid var(--line); background:#000;">
-      <video id="globalScanVideo" style="width:100%; display:block;" playsinline muted></video>
-    </div>
-    <p class="muted" id="globalScanStatus" style="margin-top:10px; text-align:center;"></p>
-  </div>
-</div>
 <script>
 (function () {
   "use strict";
 
-  const state = { db: null, downloads: null, products: [], invoices: [], movements: [], fournisseurs: [], commandes: [], clients: [], paiements: [], depenses: [], documents: [], currentUser: null };
-  state.recoveryInProgress = /type=recovery/.test(window.location.hash) || /[?&]type=recovery/.test(window.location.search);
-  // Lien reçu par email invalide, expiré ou déjà utilisé : on l'explique au lieu d'afficher une simple page de connexion
-  (function () {
-    const raw = (window.location.hash || '').replace(/^#/, '') || (window.location.search || '').replace(/^\?/, '');
-    const params = new URLSearchParams(raw);
-    const errCode = params.get('error_code'), errDesc = params.get('error_description');
-    if (errCode || (params.get('error') && errDesc)) {
-      const msg = (errCode === 'otp_expired')
-        ? "Ce lien a expiré ou a déjà été utilisé. Clique sur « Mot de passe oublié ? », puis ouvre le DERNIER email reçu, une seule fois."
-        : "Lien invalide : " + (errDesc || errCode).replace(/\+/g, ' ');
-      state.urlAuthError = msg;
-      try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
-      setTimeout(() => { try { showAuthError(msg); } catch (e) {} }, 800);
-    } else if (state.recoveryInProgress) {
-      // Le lien est censé ouvrir la page « Nouveau mot de passe » : si elle n'apparaît pas, on prévient
-      setTimeout(() => {
-        if (!state.recoveryFormShown) { try { showAuthError("Le lien n'a pas pu être validé. Refais « Mot de passe oublié ? » et ouvre le dernier email reçu, dans le même navigateur."); } catch (e) {} }
-      }, 4000);
-    }
-  })();
+  const state = { db: null, downloads: null, products: [], invoices: [], movements: [], fournisseurs: [], commandes: [], clients: [], paiements: [], depenses: [], currentUser: null };
   const euros = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR') + ' FCFA';
   const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -1399,9 +943,9 @@
   // ================= Utilisateur / rôle / commerce =================
   const ROLE_LABEL = { proprietaire: 'Propriétaire', admin: 'Admin', caissier: 'Caissier', employe: 'Employé' };
   const ROLE_TABS = {
-    proprietaire: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'parametres', 'comptabilite', 'donnees', 'caisse', 'documents'],
-    admin: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'parametres', 'comptabilite', 'donnees', 'caisse', 'documents'],
-    caissier: ['dashboard', 'ventes', 'factures', 'clients', 'documents'],
+    proprietaire: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'parametres', 'comptabilite', 'donnees', 'soon'],
+    admin: ['dashboard', 'produits', 'scanner', 'inventaire', 'ventes', 'factures', 'fournisseurs', 'clients', 'rapports', 'parametres', 'comptabilite', 'donnees', 'soon'],
+    caissier: ['dashboard', 'ventes', 'factures', 'clients'],
     employe: ['dashboard', 'scanner', 'produits'],
   };
 
@@ -1419,7 +963,6 @@
     }
 
     // Le caissier ne voit pas les totaux financiers globaux de l'entreprise (investi, valeur potentielle, bénéfice, marges)
-    document.body.classList.toggle('no-cost', !(role === 'proprietaire' || role === 'admin'));
     const hideFinancials = role === 'caissier';
     const heroRow = document.getElementById('dashboardHeroRow');
     const statsBlock = document.getElementById('dashboardStatsBlock');
@@ -1439,78 +982,9 @@
     setIfIdle('cm-telephone', state.commerce.telephone);
     setIfIdle('cm-email', state.commerce.email);
     setIfIdle('cm-fiscal', state.commerce.numeroFiscal);
-    setIfIdle('cm-message', state.commerce.messageFacture);
-    renderCommerceImages();
     const codeEl = document.getElementById('inviteCodeDisplay');
     if (codeEl) codeEl.textContent = state.commerce.inviteCode || '------';
   }
-
-  // ----- Logo et signature (images réduites, stockées en base) -----
-  const pendingImages = {};   // undefined = inchangé, '' = retiré, 'data:image…' = nouvelle image
-  const IMAGE_KINDS = {
-    logo: { stateKey: 'logoUrl', col: 'logo_url', file: 'cm-logo-file', img: 'cm-logo-preview', rm: 'btnRemoveLogo', maxW: 320, maxH: 160 },
-    signature: { stateKey: 'signatureUrl', col: 'signature_url', file: 'cm-signature-file', img: 'cm-signature-preview', rm: 'btnRemoveSignature', maxW: 400, maxH: 200 },
-  };
-  const isImageData = (v) => typeof v === 'string' && /^data:image\/(png|jpeg|jpg|webp|gif);base64,/.test(v);
-
-  function fileToSmallDataUrl(file, maxW, maxH) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onerror = () => reject(new Error('Lecture du fichier impossible'));
-      reader.onload = () => {
-        const img = new Image();
-        img.onerror = () => reject(new Error('Image illisible'));
-        img.onload = () => {
-          const ratio = Math.min(maxW / img.width, maxH / img.height, 1);
-          const w = Math.max(1, Math.round(img.width * ratio)), h = Math.max(1, Math.round(img.height * ratio));
-          const canvas = document.createElement('canvas');
-          canvas.width = w; canvas.height = h;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, w, h);
-          let out = canvas.toDataURL('image/png');
-          if (out.length > 120000) { // photo lourde : version JPEG sur fond blanc
-            ctx.globalCompositeOperation = 'destination-over';
-            ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
-            out = canvas.toDataURL('image/jpeg', 0.85);
-          }
-          resolve(out);
-        };
-        img.src = reader.result;
-      };
-      reader.readAsDataURL(file);
-    });
-  }
-
-  function renderCommerceImages() {
-    Object.entries(IMAGE_KINDS).forEach(([kind, k]) => {
-      const imgEl = document.getElementById(k.img), rmEl = document.getElementById(k.rm);
-      if (!imgEl) return;
-      const src = pendingImages[kind] !== undefined ? pendingImages[kind] : ((state.commerce && state.commerce[k.stateKey]) || '');
-      if (isImageData(src)) { imgEl.src = src; imgEl.style.display = ''; rmEl.style.display = ''; }
-      else { imgEl.removeAttribute('src'); imgEl.style.display = 'none'; rmEl.style.display = 'none'; }
-    });
-  }
-
-  Object.entries(IMAGE_KINDS).forEach(([kind, k]) => {
-    document.getElementById(k.file).addEventListener('change', async (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-      const statusEl = document.getElementById('commerceStatus');
-      try {
-        pendingImages[kind] = await fileToSmallDataUrl(file, k.maxW, k.maxH);
-        renderCommerceImages();
-        statusEl.textContent = 'Image prête — clique sur Enregistrer pour la valider.';
-      } catch (err) {
-        statusEl.textContent = "Impossible de lire cette image : " + err.message;
-      }
-      e.target.value = '';
-    });
-    document.getElementById(k.rm).addEventListener('click', () => {
-      pendingImages[kind] = '';
-      renderCommerceImages();
-      document.getElementById('commerceStatus').textContent = 'Image retirée — clique sur Enregistrer pour valider.';
-    });
-  });
 
   document.getElementById('btnSaveCommerce').addEventListener('click', async () => {
     if (!supabaseClient || !state.currentUser) return;
@@ -1522,22 +996,10 @@
       email: document.getElementById('cm-email').value.trim(),
       numero_fiscal: document.getElementById('cm-fiscal').value.trim(),
     };
-    // Logo, signature et message : envoyés seulement s'ils ont changé
-    const extra = {};
-    Object.entries(IMAGE_KINDS).forEach(([kind, k]) => {
-      if (pendingImages[kind] !== undefined) extra[k.col] = pendingImages[kind] || null;
-    });
-    const msg = document.getElementById('cm-message').value.trim();
-    if (msg !== ((state.commerce && state.commerce.messageFacture) || '')) extra.message_facture = msg || null;
-    Object.assign(payload, extra);
     try {
       const { error } = await supabaseClient.from('commerces').update(payload).eq('id', state.currentUser.commerceId);
       if (error) throw error;
       state.commerce = { ...state.commerce, nom: payload.nom, adresse: payload.adresse, telephone: payload.telephone, email: payload.email, numeroFiscal: payload.numero_fiscal };
-      if ('logo_url' in extra) state.commerce.logoUrl = extra.logo_url;
-      if ('signature_url' in extra) state.commerce.signatureUrl = extra.signature_url;
-      if ('message_facture' in extra) state.commerce.messageFacture = extra.message_facture;
-      Object.keys(pendingImages).forEach(k => delete pendingImages[k]);
       updateCommerceForm();
       statusEl.textContent = '✅ Informations enregistrées.';
       toast('Commerce mis à jour.');
@@ -1560,72 +1022,7 @@
       document.getElementById(paneId).style.display = key === name ? '' : 'none';
       document.getElementById('authTab' + key[0].toUpperCase() + key.slice(1)).classList.toggle('active', key === name);
     });
-    document.getElementById('authPaneForgot').style.display = 'none';
-    document.getElementById('authPaneRecovery').style.display = 'none';
-    document.getElementById('authTabsRow').style.display = 'flex';
-    document.getElementById('authTitle').textContent = 'Connexion';
   }
-
-  // ---- Mot de passe oublié ----
-  function showOnlyAuthPane(paneId, title) {
-    Object.values(authTabs).forEach(id => { document.getElementById(id).style.display = 'none'; });
-    document.getElementById('authPaneForgot').style.display = paneId === 'authPaneForgot' ? '' : 'none';
-    document.getElementById('authPaneRecovery').style.display = paneId === 'authPaneRecovery' ? '' : 'none';
-    document.getElementById('authTabsRow').style.display = 'none';
-    document.getElementById('authTitle').textContent = title;
-  }
-  document.getElementById('linkForgot').addEventListener('click', (e) => {
-    e.preventDefault();
-    clearAuthError();
-    document.getElementById('forgot-email').value = document.getElementById('login-email').value.trim();
-    document.getElementById('forgotInfo').textContent = '';
-    showOnlyAuthPane('authPaneForgot', 'Mot de passe oublié');
-  });
-  document.getElementById('linkForgotBack').addEventListener('click', (e) => { e.preventDefault(); clearAuthError(); showAuthTab('login'); });
-  document.getElementById('btnForgotSend').addEventListener('click', async () => {
-    if (!supabaseClient) { showAuthError('Connexion indisponible.'); return; }
-    clearAuthError();
-    const email = document.getElementById('forgot-email').value.trim();
-    const info = document.getElementById('forgotInfo');
-    if (!email) { showAuthError('Entre ton email.'); return; }
-    const btn = document.getElementById('btnForgotSend');
-    btn.disabled = true;
-    try {
-      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
-      if (error) {
-        if (error.status === 429 || /rate limit/i.test(error.message || '')) showAuthError('Trop de demandes. Réessaie dans quelques minutes.');
-        else showAuthError("Impossible d'envoyer l'email pour le moment. Demande à ton propriétaire de réinitialiser ton mot de passe.");
-        return;
-      }
-      info.textContent = "Si cet email correspond à un compte, un lien vient d'être envoyé. Pense à vérifier les courriers indésirables (spam).";
-    } finally { btn.disabled = false; }
-  });
-
-  // ---- Nouveau mot de passe, après le lien reçu par email ----
-  function showRecoveryForm() {
-    state.recoveryFormShown = true;
-    document.getElementById('loginOverlay').style.display = 'flex';
-    document.getElementById('recovery-p1').value = '';
-    document.getElementById('recovery-p2').value = '';
-    clearAuthError();
-    showOnlyAuthPane('authPaneRecovery', 'Nouveau mot de passe');
-  }
-  document.getElementById('btnRecoverySave').addEventListener('click', async () => {
-    if (!supabaseClient) { showAuthError('Connexion indisponible.'); return; }
-    clearAuthError();
-    const p1 = document.getElementById('recovery-p1').value;
-    const p2 = document.getElementById('recovery-p2').value;
-    if (p1.length < 8) { showAuthError('Le mot de passe doit faire au moins 8 caractères.'); return; }
-    if (p1 !== p2) { showAuthError('Les deux mots de passe ne sont pas identiques.'); return; }
-    const { error } = await supabaseClient.auth.updateUser({ password: p1 });
-    if (error) { showAuthError(error.message || 'Impossible de changer le mot de passe.'); return; }
-    state.recoveryInProgress = false;
-    try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
-    showAuthTab('login');
-    const { data } = await supabaseClient.auth.getSession();
-    if (data && data.session) loadProfileAndCommerce(data.session.user);
-    toast('Mot de passe modifié.');
-  });
   function clearAuthError() {
     document.getElementById('loginError').style.display = 'none';
   }
@@ -1656,13 +1053,11 @@
     const password = document.getElementById('signup-password').value;
     if (!commerceNom || !nom || !email || !password) { showAuthError('Remplis tous les champs.'); return; }
     if (password.length < 8) { showAuthError('Le mot de passe doit faire au moins 8 caractères.'); return; }
-    state.signupInProgress = true;
     const { data, error } = await supabaseClient.auth.signUp({ email, password });
-    if (error) { state.signupInProgress = false; showAuthError(error.message); return; }
-    if (!data.session) { state.signupInProgress = false; showAuthError('Compte créé. Vérifie ta boîte mail pour confirmer, puis reviens te connecter.'); showAuthTab('login'); return; }
+    if (error) { showAuthError(error.message); return; }
+    if (!data.session) { showAuthError('Compte créé. Vérifie ta boîte mail pour confirmer, puis reviens te connecter.'); showAuthTab('login'); return; }
     const { error: rpcErr } = await supabaseClient.rpc('create_commerce_and_owner', { p_commerce_nom: commerceNom, p_user_nom: nom });
-    if (rpcErr) { await abortSignup("Compte créé mais erreur lors de la création du commerce : " + rpcErr.message); return; }
-    await finishSignup(data.session.user);
+    if (rpcErr) { showAuthError("Compte créé mais erreur lors de la création du commerce : " + rpcErr.message); return; }
   });
 
   document.getElementById('btnJoin').addEventListener('click', async () => {
@@ -1674,13 +1069,11 @@
     const password = document.getElementById('join-password').value;
     if (!code || !nom || !email || !password) { showAuthError('Remplis tous les champs.'); return; }
     if (password.length < 8) { showAuthError('Le mot de passe doit faire au moins 8 caractères.'); return; }
-    state.signupInProgress = true;
     const { data, error } = await supabaseClient.auth.signUp({ email, password });
-    if (error) { state.signupInProgress = false; showAuthError(error.message); return; }
-    if (!data.session) { state.signupInProgress = false; showAuthError('Compte créé. Vérifie ta boîte mail pour confirmer, puis reviens te connecter.'); showAuthTab('login'); return; }
+    if (error) { showAuthError(error.message); return; }
+    if (!data.session) { showAuthError('Compte créé. Vérifie ta boîte mail pour confirmer, puis reviens te connecter.'); showAuthTab('login'); return; }
     const { error: rpcErr } = await supabaseClient.rpc('join_commerce', { p_invite_code: code, p_user_nom: nom, p_role: role });
-    if (rpcErr) { await abortSignup(rpcErr.message.includes('invalide') ? 'Code invitation invalide.' : rpcErr.message); return; }
-    await finishSignup(data.session.user);
+    if (rpcErr) { showAuthError(rpcErr.message.includes('invalide') ? 'Code invitation invalide.' : rpcErr.message); return; }
   });
 
   document.getElementById('userBadge').addEventListener('click', async () => {
@@ -1688,41 +1081,15 @@
     await supabaseClient.auth.signOut();
   });
 
-  // Fin d'inscription : le profil existe maintenant, on peut le charger (l'écouteur d'auth l'ignorait pendant l'inscription)
-  async function finishSignup(user) {
-    state.signupInProgress = false;
-    await loadProfileAndCommerce(user);
-  }
-  async function abortSignup(message) {
-    state.signupInProgress = false;
-    await supabaseClient.auth.signOut();
-    showAuthError(message);
-  }
-
   async function loadProfileAndCommerce(user) {
     try {
-      // Réessaie quelques fois si le serveur répond « JWT issued at future » (petit décalage d'horloge temporaire juste après la connexion)
-      let profile = null, pErr = null;
-      for (let attempt = 0; attempt < 4; attempt++) {
-        const r = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
-        profile = r.data; pErr = r.error;
-        const clockIssue = pErr && (pErr.code === 'PGRST303' || /issued at future/i.test(pErr.message || ''));
-        if (!clockIssue) break;
-        await new Promise(res => setTimeout(res, 1500));
-      }
+      const { data: profile, error: pErr } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
       if (pErr || !profile) {
         showAuthError("Profil introuvable — détail technique : " + (pErr ? (pErr.message + (pErr.code ? ' [' + pErr.code + ']' : '')) : 'aucune ligne trouvée pour cet utilisateur'));
         await supabaseClient.auth.signOut();
         return;
       }
-      let commerce = null, cErr = null;
-      for (let attempt = 0; attempt < 4; attempt++) {
-        const r = await supabaseClient.from('commerces').select('*').eq('id', profile.commerce_id).single();
-        commerce = r.data; cErr = r.error;
-        const clockIssue = cErr && (cErr.code === 'PGRST303' || /issued at future/i.test(cErr.message || ''));
-        if (!clockIssue) break;
-        await new Promise(res => setTimeout(res, 1500));
-      }
+      const { data: commerce, error: cErr } = await supabaseClient.from('commerces').select('*').eq('id', profile.commerce_id).single();
       if (cErr || !commerce) {
         showAuthError("Commerce introuvable — détail technique : " + (cErr ? (cErr.message + (cErr.code ? ' [' + cErr.code + ']' : '')) : 'aucune ligne trouvée'));
         await supabaseClient.auth.signOut();
@@ -1748,7 +1115,6 @@
   }
 
   function handleSignedOut() {
-    stopAllPolling();
     CURRENT_COMMERCE_ID = null;
     state.currentUser = null;
     state.commerce = null;
@@ -1762,15 +1128,8 @@
   function initAuth() {
     if (!supabaseClient) { showAuthError('Connexion indisponible.'); document.getElementById('loginOverlay').style.display = 'flex'; return; }
     supabaseClient.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') { state.recoveryInProgress = true; showRecoveryForm(); return; }
-      if (session && session.user) {
-        if (state.recoveryInProgress) { showRecoveryForm(); return; } // lien « mot de passe oublié » : on choisit d'abord un nouveau mot de passe
-        if (state.signupInProgress) return;               // inscription en cours : le profil n'existe pas encore
-        if (event === 'TOKEN_REFRESHED' && state.currentUser) return; // simple renouvellement de jeton
-        loadProfileAndCommerce(session.user);
-      } else {
-        handleSignedOut();
-      }
+      if (session && session.user) loadProfileAndCommerce(session.user);
+      else handleSignedOut();
     });
   }
 
@@ -1786,12 +1145,8 @@
       if (btn.dataset.tab === 'scanner') { renderMovements(); focusUsbInput(); }
       if (btn.dataset.tab === 'rapports') renderRapports();
       if (btn.dataset.tab === 'parametres') loadTeam();
-      if (btn.dataset.tab === 'donnees') loadAuditLogs();
       if (btn.dataset.tab === 'comptabilite') renderComptabilite();
-      if (btn.dataset.tab === 'caisse') renderCaisse();
-      if (btn.dataset.tab === 'documents') renderDocuments();
-      if (btn.dataset.tab !== 'scanner') stopCameraScan();
-      closeGlobalScanner();
+      else { stopCameraScan(); }
       if (btn.dataset.tab === 'fournisseurs') renderFournisseurs();
     });
   });
@@ -1878,10 +1233,7 @@
       lowEmpty.style.display = 'none';
       lowBox.innerHTML = low.map(p => {
         const tag = Number(p.stock) <= 0 ? 'Rupture' : 'Réappro nécessaire';
-        const fs = state.fournisseurs.find(f => (f.nom || '').trim().toLowerCase() === (p.fournisseur || '').trim().toLowerCase());
-        const waUrl = fs && fs.telephone ? getWhatsAppLink(fs.telephone, p.nom, p.ref) : null;
-        const waBtn = waUrl ? `<a href="${waUrl}" target="_blank" rel="noopener noreferrer" style="text-decoration:none; margin-left:8px; font-size:13px;" title="Commander sur WhatsApp">💬</a>` : '';
-        return `<li><span>${escapeHtml(p.nom)}${waBtn}</span><span class="r">${p.stock} ${escapeHtml(p.unite || 'unité')} · ${tag}</span></li>`;
+        return `<li><span>${escapeHtml(p.nom)}</span><span class="r">${p.stock} ${escapeHtml(p.unite || 'unité')} · ${tag}</span></li>`;
       }).join('');
     }
   }
@@ -1920,9 +1272,9 @@
           <td class="muted">${escapeHtml(p.fournisseur || '—')}</td>
           <td class="muted">${escapeHtml(p.categorie || '—')}</td>
           <td class="muted">${escapeHtml(p.emplacement || '—')}</td>
-          <td class="num-cell cost-col">${euros(p.prixAchat)}</td>
+          <td class="num-cell">${euros(p.prixAchat)}</td>
           <td class="num-cell">${euros(p.prixVente)}</td>
-          <td class="num-cell ${zero ? '' : (low ? 'stock-low' : 'stock-ok')}">${zero ? `<span class="stock-zero">0</span>` : `<span class="stk ${low ? 'low' : 'ok'}">${p.stock}</span>`}${low ? ' <span class="badge warn">bas</span>' : ''}</td>
+          <td class="num-cell ${zero ? '' : (low ? 'stock-low' : 'stock-ok')}">${zero ? `<span class="stock-zero">0</span>` : p.stock}${low ? ' <span class="badge warn">bas</span>' : ''}</td>
           <td class="muted">${escapeHtml(p.unite || 'unité')}</td>
           <td class="num-cell">
             <button class="icon-btn" data-edit="${p.id}" title="Modifier" style="opacity:0.6;">✎</button>
@@ -1974,155 +1326,6 @@
   });
   document.getElementById('catFilter').addEventListener('change', e => { invCategorie = e.target.value; renderInventaire(); });
 
-  // ----- Feuille d'inventaire imprimable (sans prix) -----
-  const NO_CAT = '__sans_categorie__';
-  function renderInvSheetCats() {
-    const box = document.getElementById('is-cats');
-    if (!box) return;
-    const checked = new Set(Array.from(box.querySelectorAll('input:checked')).map(i => i.value));
-    const cats = Array.from(new Set(state.products.map(p => p.categorie).filter(Boolean))).sort((a, b) => a.localeCompare(b));
-    if (state.products.some(p => !p.categorie)) cats.push(NO_CAT);
-    box.innerHTML = cats.map(c => `<label style="display:flex; align-items:center; gap:6px; font-weight:400; margin:0;"><input type="checkbox" style="width:auto;" value="${escapeHtml(c)}" ${checked.has(c) ? 'checked' : ''}> ${c === NO_CAT ? '(Sans catégorie)' : escapeHtml(c)}</label>`).join('') || '<span class="muted">Aucune catégorie.</span>';
-    updateInvSheetCount();
-  }
-  function invSheetList() {
-    const scope = document.getElementById('is-scope').value;
-    const sort = document.getElementById('is-sort').value;
-    const cats = new Set(Array.from(document.querySelectorAll('#is-cats input:checked')).map(i => i.value));
-    let list = state.products.slice();
-    if (scope === 'faible') list = list.filter(p => Number(p.stock) > 0 && Number(p.stock) <= Number(p.seuil));
-    else if (scope === 'rupture') list = list.filter(p => Number(p.stock) <= 0);
-    else if (scope === 'reappro') list = list.filter(p => Number(p.stock) <= Number(p.seuil));
-    if (cats.size) list = list.filter(p => cats.has(p.categorie || NO_CAT));
-    const cmp = (a, b) => (a || '').localeCompare(b || '', 'fr', { numeric: true });
-    list.sort((a, b) => {
-      if (sort === 'emplacement') return cmp(a.emplacement, b.emplacement) || cmp(a.nom, b.nom);
-      if (sort === 'categorie') return cmp(a.categorie, b.categorie) || cmp(a.nom, b.nom);
-      return cmp(a.nom, b.nom);
-    });
-    return list;
-  }
-  function updateInvSheetCount() {
-    const el = document.getElementById('is-count');
-    if (el) el.textContent = invSheetList().length + ' produit(s) sur la feuille';
-  }
-  ['is-scope', 'is-sort'].forEach(id => document.getElementById(id).addEventListener('change', updateInvSheetCount));
-  document.getElementById('is-cats').addEventListener('change', updateInvSheetCount);
-
-  function printInventorySheet() {
-    const list = invSheetList();
-    if (list.length === 0) { toast('Aucun produit à imprimer avec ces choix.'); return; }
-    const blind = document.getElementById('is-blind').checked;
-    const sort = document.getElementById('is-sort').value;
-    const scopeSel = document.getElementById('is-scope');
-    const scopeLabel = scopeSel.options[scopeSel.selectedIndex].text;
-    const cats = Array.from(document.querySelectorAll('#is-cats input:checked')).map(i => i.value === NO_CAT ? 'Sans catégorie' : i.value);
-    const commerceNom = (state.commerce && state.commerce.nom) || 'StockFlow Pro';
-    const cols = blind ? 6 : 7;
-    let rows = '', lastCat = null;
-    list.forEach(p => {
-      if (sort === 'categorie' && (p.categorie || '') !== lastCat) {
-        lastCat = p.categorie || '';
-        rows += `<tr class="is-cat"><td colspan="${cols}">${escapeHtml(lastCat || 'Sans catégorie')}</td></tr>`;
-      }
-      rows += `<tr>
-        <td>${escapeHtml(p.ref || '')}</td>
-        <td>${escapeHtml(p.codeBarre || '')}</td>
-        <td>${escapeHtml(p.nom || '')}${p.emplacement ? `<div style="font-size:10.5px; color:#444;">${escapeHtml(p.emplacement)}</div>` : ''}</td>
-        <td>${escapeHtml(p.unite || '')}</td>
-        ${blind ? '' : `<td class="is-num">${escapeHtml(String(Number(p.stock) || 0))}</td>`}
-        <td class="is-count"></td>
-        <td class="is-obs"></td>
-      </tr>`;
-    });
-    document.getElementById('printInvSheet').innerHTML = `
-      <h1>Feuille d'inventaire — ${escapeHtml(commerceNom)}</h1>
-      <div class="is-meta">
-        <span>Date : ${escapeHtml(todayStr())}</span>
-        <span>${escapeHtml(scopeLabel)}${cats.length ? ' · ' + escapeHtml(cats.join(', ')) : ''}</span>
-        <span>${list.length} produit(s)${blind ? ' · comptage à l\'aveugle' : ''}</span>
-      </div>
-      <table>
-        <thead><tr><th>Référence</th><th>Code-barres</th><th>Produit</th><th>Unité</th>${blind ? '' : '<th>Qté théorique</th>'}<th>Qté comptée</th><th>Observations</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <div class="is-sign"><div>Compté par :</div><div>Vérifié par :</div><div>Date / heure :</div></div>`;
-    document.body.classList.add('print-inv');
-    const cleanup = () => { document.body.classList.remove('print-inv'); window.removeEventListener('afterprint', cleanup); };
-    window.addEventListener('afterprint', cleanup);
-    setTimeout(() => window.print(), 250);
-  }
-  document.getElementById('btnPrintInvSheet').addEventListener('click', printInventorySheet);
-
-  // ================= Comptage d'inventaire (saisie + écarts + correction du stock) =================
-  let countRows = [];
-  function startCount() {
-    countRows = invSheetList().map(p => ({ id: p.id, ref: p.ref, nom: p.nom, unite: p.unite || 'unité', theo: Number(p.stock) || 0, counted: '', obs: '' }));
-    if (!countRows.length) { toast('Aucun produit à compter avec ces choix.'); return; }
-    const blind = document.getElementById('is-blind').checked;
-    document.getElementById('countArea').style.display = 'block';
-    document.getElementById('countBody').innerHTML = countRows.map((r, i) => `
-      <tr data-i="${i}">
-        <td>${escapeHtml(r.ref || '')}</td>
-        <td>${escapeHtml(r.nom)}</td>
-        <td class="num-cell count-theo" style="${blind ? 'display:none;' : ''}">${r.theo} ${escapeHtml(r.unite)}</td>
-        <td class="num-cell"><input type="number" min="0" step="any" class="count-in" style="width:90px;"></td>
-        <td class="num-cell count-diff">${blind ? '—' : ''}</td>
-        <td><input type="text" class="count-obs" placeholder="Observation" style="min-width:140px;"></td>
-      </tr>`).join('');
-    document.querySelectorAll('.count-theo').forEach(el => { if (blind) el.style.display = 'none'; });
-    updateCountSummary();
-  }
-  function updateCountSummary() {
-    const blind = document.getElementById('is-blind').checked;
-    let done = 0, diffs = 0;
-    document.querySelectorAll('#countBody tr').forEach(tr => {
-      const r = countRows[Number(tr.dataset.i)];
-      const v = tr.querySelector('.count-in').value;
-      r.counted = v; r.obs = tr.querySelector('.count-obs').value.trim();
-      const cell = tr.querySelector('.count-diff');
-      if (v === '') { cell.textContent = blind ? '—' : ''; return; }
-      done++;
-      const d = Number(v) - r.theo;
-      if (d !== 0) diffs++;
-      if (!blind) { cell.textContent = (d > 0 ? '+' : '') + d; cell.style.color = d === 0 ? '' : (d > 0 ? '#16a34a' : '#dc2626'); cell.style.fontWeight = '700'; }
-    });
-    document.getElementById('countSummary').textContent = `${done} produit(s) compté(s) sur ${countRows.length}` + (blind ? ' — les écarts seront visibles à la validation.' : ` — ${diffs} écart(s).`);
-  }
-  async function validateCount() {
-    updateCountSummary();
-    const changes = countRows.filter(r => r.counted !== '' && Number(r.counted) >= 0).map(r => {
-      const prod = state.products.find(p => p.id === r.id);
-      const current = prod ? Number(prod.stock) || 0 : r.theo;
-      return { ...r, current, delta: Number(r.counted) - current };
-    }).filter(r => r.delta !== 0);
-    const counted = countRows.filter(r => r.counted !== '').length;
-    if (!counted) { toast('Saisis au moins une quantité comptée.'); return; }
-    if (!changes.length) { toast('Aucun écart : le stock est déjà exact. ✅'); finishCount(); return; }
-    const lines = changes.slice(0, 15).map(c => `• ${c.nom} : ${c.current} → ${c.counted} (${c.delta > 0 ? '+' : ''}${c.delta})`).join('\n');
-    if (!confirm(`${changes.length} correction(s) de stock vont être appliquées :\n\n${lines}${changes.length > 15 ? '\n… et ' + (changes.length - 15) + ' autre(s)' : ''}\n\nConfirmer ?`)) return;
-    const btn = document.getElementById('btnValidateCount');
-    btn.disabled = true;
-    let ok = 0, fail = 0;
-    try {
-      for (const c of changes) {
-        try {
-          const nouveau = await adjustStock(c.id, c.delta);
-          await logMovement({ productId: c.id, ref: c.ref, nom: c.nom, quantite: Math.abs(c.delta), ancienStock: c.current, nouveauStock: nouveau, unite: c.unite, source: 'inventaire', note: c.obs || 'Comptage d\'inventaire' });
-          ok++;
-        } catch (e) { console.error(e); fail++; }
-      }
-      logAction('INVENTAIRE', `Comptage validé : ${ok} correction(s) de stock sur ${counted} produit(s) compté(s)${fail ? ', ' + fail + ' échec(s)' : ''}.`);
-      toast(`Inventaire validé : ${ok} correction(s)` + (fail ? `, ${fail} échec(s)` : '') + '.');
-      finishCount();
-    } finally { btn.disabled = false; }
-  }
-  function finishCount() { countRows = []; document.getElementById('countArea').style.display = 'none'; document.getElementById('countBody').innerHTML = ''; }
-  document.getElementById('btnStartCount').addEventListener('click', startCount);
-  document.getElementById('btnCancelCount').addEventListener('click', () => { if (confirm('Annuler le comptage en cours ? Rien ne sera modifié.')) finishCount(); });
-  document.getElementById('btnValidateCount').addEventListener('click', validateCount);
-  document.getElementById('countBody').addEventListener('input', updateCountSummary);
-
   function renderInventaire() {
     const catSel = document.getElementById('catFilter');
     const cats = Array.from(new Set(state.products.map(p => p.categorie).filter(Boolean))).sort();
@@ -2130,12 +1333,10 @@
     catSel.innerHTML = '<option value="">Toutes catégories</option>' + cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
     catSel.value = cats.includes(currentVal) ? currentVal : '';
     invCategorie = catSel.value;
-    renderInvSheetCats();
 
     let list = state.products.slice();
     if (invFilter === 'faible') list = list.filter(p => Number(p.stock) > 0 && Number(p.stock) <= Number(p.seuil));
     if (invFilter === 'rupture') list = list.filter(p => Number(p.stock) <= 0);
-    if (invFilter === 'reappro') list = list.filter(p => Number(p.stock) <= Number(p.seuil));
     if (invCategorie) list = list.filter(p => p.categorie === invCategorie);
     list.sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
 
@@ -2159,7 +1360,7 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${escapeHtml(p.nom)}<div class="muted">${escapeHtml(p.ref)}</div></td>
-          <td class="num-cell">${zero ? '<span class="stock-zero">0</span>' : `<span class="stk ${low ? 'low' : 'ok'}">${stock}</span>`} <span class="unit-tag">${escapeHtml(p.unite || '')}</span></td>
+          <td class="num-cell">${zero ? '<span class="stock-zero">0</span>' : stock} <span class="unit-tag">${escapeHtml(p.unite || '')}</span></td>
           <td class="num-cell">${euros(pa)}</td>
           <td class="num-cell">${euros(pv)}</td>
           <td class="num-cell">${euros(valAchat)}</td>
@@ -2204,7 +1405,7 @@
           <td>${statutHtml}</td>
           <td class="num-cell" style="white-space:nowrap;">
             <button class="ghost" data-print="${inv.id}" style="padding:6px 12px; font-size:12px;">Imprimer</button>
-            ${(annulee || !(state.currentUser && (state.currentUser.role === 'proprietaire' || state.currentUser.role === 'admin'))) ? '' : `<button class="ghost" data-cancel="${inv.id}" style="padding:6px 12px; font-size:12px; margin-left:6px;">Annuler</button>`}
+            ${annulee ? '' : `<button class="ghost" data-cancel="${inv.id}" style="padding:6px 12px; font-size:12px; margin-left:6px;">Annuler</button>`}
           </td>
         `;
         body.appendChild(tr);
@@ -2221,70 +1422,42 @@
   async function cancelInvoice(invId) {
     const inv = state.invoices.find(i => i.id === invId);
     if (!inv || inv.annulee) return;
-    const numLabel = 'FAC-' + String(inv.num).padStart(4, '0');
-    const role = state.currentUser && state.currentUser.role;
-
-    // 1. Réservé au propriétaire et à l'admin (vérifié aussi côté base)
-    if (role !== 'proprietaire' && role !== 'admin') {
-      toast("🔒 Annulation réservée au propriétaire ou à l'admin.");
-      logAction('TENTATIVE_ANNULATION', `Tentative d'annulation refusée de la facture ${numLabel}`);
-      return;
-    }
-    // 2. Motif obligatoire
-    const reason = prompt(`Motif de l'annulation de la facture ${numLabel} (obligatoire) :`);
-    if (!reason || !reason.trim()) { toast('Annulation abandonnée : un motif est requis.'); return; }
-    // 3. Confirmation finale
-    if (!confirm(`Annuler définitivement la facture ${numLabel} (${euros(inv.total)}) ? Les quantités seront remises en stock.`)) return;
-    if (!supabaseClient) { toast('Connexion non disponible.'); return; }
+    if (!confirm(`Annuler la facture FAC-${String(inv.num).padStart(4, '0')} ? Les quantités seront remises en stock.`)) return;
+    if (!state.db) { toast('Connexion non disponible.'); return; }
 
     try {
-      // Annulation + remise en stock + journal, en une seule opération côté base
-      const { data, error } = await supabaseClient.rpc('cancel_invoice', { p_invoice_id: inv.id, p_reason: reason.trim() });
-      if (error) throw new Error(error.message);
-      // Historique des mouvements de stock (la base renvoie les nouveaux stocks)
-      for (const r of (data || [])) {
-        const prod = state.products.find(p => p.id === r.productId);
-        if (!prod) continue;
-        try {
-          await logMovement({ productId: r.productId, ref: prod.ref, nom: prod.nom, quantite: r.qte, ancienStock: r.nouveauStock - r.qte, nouveauStock: r.nouveauStock, unite: prod.unite || 'unité', source: 'annulation', note: numLabel });
-        } catch (e3) { console.error(e3); }
+      // Regrouper par produit avant de restaurer, au cas où plusieurs lignes visent le même article.
+      const restocks = {};
+      (inv.lignes || []).forEach(l => {
+        if (l.matched && l.productId) restocks[l.productId] = (restocks[l.productId] || 0) + Number(l.qte || 0);
+      });
+      for (const [productId, qte] of Object.entries(restocks)) {
+        const prod = state.products.find(p => p.id === productId);
+        if (!prod) continue; // le produit a peut-être été supprimé depuis
+        await state.db.doc('produits/' + productId).update({ stock: Number(prod.stock) + qte });
       }
-      toast(`Facture ${numLabel} annulée — stock restauré.`);
+      await state.db.doc('factures/' + inv.id).update({ annulee: true });
+      toast(`Facture FAC-${String(inv.num).padStart(4, '0')} annulée — stock restauré.`);
     } catch (err) {
       console.error(err);
-      toast("Erreur lors de l'annulation : " + (err.message || ''));
+      toast("Erreur lors de l'annulation.");
     }
   }
 
-  function printInvoice(inv, kind) {
-    kind = kind || 'facture';
-    document.getElementById('pi-title').textContent = kind === 'devis' ? 'Devis' : (kind === 'bon_commande' ? 'Bon de commande' : 'Facture');
-    document.getElementById('pi-client-sign').style.display = kind === 'facture' ? 'none' : '';
-    const numPrefix = kind === 'devis' ? 'DEV' : (kind === 'bon_commande' ? 'BC' : 'FAC');
-    document.getElementById('pi-num').textContent = 'N° ' + numPrefix + '-' + String(inv.num).padStart(4, '0');
+  function printInvoice(inv) {
+    document.getElementById('pi-num').textContent = 'N° FAC-' + String(inv.num).padStart(4, '0');
     document.getElementById('pi-date').textContent = inv.date || '';
     document.getElementById('pi-commerce-nom').textContent = (state.commerce && state.commerce.nom) || 'StockFlow Pro';
     document.getElementById('pi-commerce-adresse').textContent = state.commerce ? [state.commerce.adresse, state.commerce.telephone].filter(Boolean).join(' · ') : '';
     document.getElementById('pi-client').textContent = inv.client || '—';
-    // Logo, message de remerciement et signature (réglés dans Données > Mon commerce)
-    const logoEl = document.getElementById('pi-logo');
-    const logoSrc = state.commerce && state.commerce.logoUrl;
-    if (isImageData(logoSrc)) { logoEl.src = logoSrc; logoEl.style.display = ''; } else { logoEl.removeAttribute('src'); logoEl.style.display = 'none'; }
-    const sigEl = document.getElementById('pi-signature');
-    const sigSrc = state.commerce && state.commerce.signatureUrl;
-    if (isImageData(sigSrc)) { sigEl.src = sigSrc; document.getElementById('pi-signature-box').style.display = ''; } else { sigEl.removeAttribute('src'); document.getElementById('pi-signature-box').style.display = 'none'; }
-    document.getElementById('pi-message').textContent = (state.commerce && state.commerce.messageFacture) || 'Merci pour votre confiance, à bientôt !';
     document.getElementById('pi-lines').innerHTML = (inv.lignes || []).map(l => `
-      <tr><td>${escapeHtml(l.ref || '—')}</td><td>${escapeHtml(l.nom)}</td><td class="num-cell">${escapeHtml(String(l.qte))}</td><td>${escapeHtml(l.unite || '')}</td><td class="num-cell">${euros(l.prix)}</td><td class="num-cell">${euros((Number(l.prix) || 0) * (Number(l.qte) || 0))}</td></tr>
+      <tr><td>${escapeHtml(l.ref || '—')}</td><td>${escapeHtml(l.nom)}</td><td class="num-cell">${l.qte}</td><td>${escapeHtml(l.unite || '')}</td><td class="num-cell">${euros(l.prix)}</td><td class="num-cell">${euros((Number(l.prix) || 0) * (Number(l.qte) || 0))}</td></tr>
     `).join('');
     document.getElementById('pi-total').textContent = euros(inv.total);
     const paye = Number(inv.montantPaye) || 0;
     const reste = Math.max(0, Number(inv.total || 0) - paye);
     const statutEl = document.getElementById('pi-statut');
-    if (kind !== 'facture') {
-      statutEl.textContent = kind === 'devis' ? (inv.validite ? "Offre valable jusqu'au " + inv.validite : 'Offre sans engagement') : 'Commande à préparer / livrer';
-      statutEl.style.background = '#e0e7ff'; statutEl.style.color = '#3730a3';
-    } else if (paye <= 0) {
+    if (paye <= 0) {
       statutEl.textContent = '⚠ NON PAYÉE — reste à payer : ' + euros(reste);
       statutEl.style.background = '#fee2e2'; statutEl.style.color = '#991b1b';
     } else if (reste > 0) {
@@ -2294,7 +1467,7 @@
       statutEl.textContent = '✓ PAYÉE INTÉGRALEMENT';
       statutEl.style.background = '#dcfce7'; statutEl.style.color = '#166534';
     }
-    setTimeout(() => window.print(), 350);
+    setTimeout(() => window.print(), 80);
   }
 
   // ================= Ventes (invoice builder) =================
@@ -2351,50 +1524,10 @@
     if (row) { const line = invoiceLines[idx]; row.querySelector('.ltotal-box').textContent = euros((Number(line.prix) || 0) * (Number(line.qte) || 0)); }
     updateGrandTotal(); updateFinalizeHint();
   }
-  // WhatsApp exige le format international (ex : 221771234567). Numéro local (9 chiffres ou moins) => on ajoute l'indicatif du Sénégal.
-  const DEFAULT_COUNTRY_CODE = '221';
-  function toWhatsAppNumber(raw) {
-    let d = String(raw || '').replace(/[^0-9]/g, '');
-    if (!d) return '';
-    if (d.startsWith('00')) return d.slice(2);
-    if (String(raw).trim().startsWith('+')) return d;
-    if (d.length <= 9) return DEFAULT_COUNTRY_CODE + d;
-    return d;
-  }
-
-  function getWhatsAppLink(telephone, produitNom, ref) {
-    if (!telephone) return null;
-    const cleanPhone = toWhatsAppNumber(telephone);
-    if (!cleanPhone) return null;
-    const msg = `Bonjour, je souhaite passer une commande pour le produit "${produitNom}"${ref ? ' (Réf: ' + ref + ')' : ''}. Merci de m'indiquer la disponibilité et le délai de livraison.`;
-    return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
-  }
-
   function updateGrandTotal() {
     const total = invoiceLines.reduce((s, l) => s + (Number(l.prix) || 0) * (Number(l.qte) || 0), 0);
     document.getElementById('invGrandTotal').textContent = euros(total);
-
-    const payeVal = document.getElementById('f-paye').value.trim();
-    const infoEl = document.getElementById('f-rendu-info');
-    if (infoEl) {
-      if (payeVal !== '' && total > 0) {
-        const paye = Number(payeVal) || 0;
-        if (paye > total) {
-          infoEl.textContent = `💵 Monnaie à rendre : ${euros(paye - total)}`;
-          infoEl.style.color = 'var(--moss)';
-        } else if (paye < total) {
-          infoEl.textContent = `⚠ Reste dû : ${euros(total - paye)}`;
-          infoEl.style.color = 'var(--danger)';
-        } else {
-          infoEl.textContent = `✓ Compte exact`;
-          infoEl.style.color = 'var(--moss)';
-        }
-      } else {
-        infoEl.textContent = '';
-      }
-    }
   }
-  document.getElementById('f-paye').addEventListener('input', updateGrandTotal);
   function updateFinalizeHint() {
     const hint = document.getElementById('finalizeHint');
     const shortages = invoiceLines.filter(l => l.matched).map(l => {
@@ -2434,16 +1567,7 @@
   }
 
   document.getElementById('btnAddLine').addEventListener('click', () => { invoiceLines.push(freshLine()); renderInvoiceLines(); });
-  document.getElementById('btnFinalize').addEventListener('click', () => { if (currentDocType() === 'facture') finalizeInvoice(); else saveDocument(); });
-  document.getElementById('f-doctype').addEventListener('change', () => { convertingDocId = null; applyDocMode(); });
-
-  // Modifie le stock de façon atomique côté base (fonction SQL adjust_stock) :
-  // delta négatif = vente, delta positif = remise en stock. Évite les écrasements si deux personnes vendent en même temps.
-  async function adjustStock(productId, delta) {
-    const { data, error } = await supabaseClient.rpc('adjust_stock', { p_product_id: productId, p_delta: delta });
-    if (error) throw new Error(error.message);
-    return Number(data);
-  }
+  document.getElementById('btnFinalize').addEventListener('click', finalizeInvoice);
 
   async function finalizeInvoice() {
     const validLines = invoiceLines.filter(l => l.nom && Number(l.qte) > 0);
@@ -2488,6 +1612,13 @@
       let montantPaye = payeRaw === '' ? total : Math.max(0, Math.min(total, Number(payeRaw) || 0));
       invDoc.montantPaye = montantPaye;
       const invId = 'fac-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+      await state.db.collection('factures').doc(invId).set(invDoc);
+
+      // Trace ce premier paiement dans l'historique du client, comme un paiement enregistré depuis sa fiche.
+      if (montantPaye > 0 && clientId) {
+        const payId = 'pa-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+        await state.db.doc('paiements/' + payId).set({ factureId: invId, clientId, montant: montantPaye, mode, date, operateur: state.currentUser ? state.currentUser.nom : '', createdAt: Date.now() });
+      }
 
       // Regrouper les quantités par produit avant de déduire, pour éviter d'écraser
       // la déduction si le même article apparaît sur plusieurs lignes de la facture.
@@ -2496,38 +1627,12 @@
         if (!l.matched || !l.productId) continue;
         deductions[l.productId] = (deductions[l.productId] || 0) + Number(l.qte);
       }
-
-      // 1) Le stock d'abord (atomique côté base : refuse si le stock est insuffisant)
-      const deducted = [];
-      try {
-        for (const [productId, qteTotale] of Object.entries(deductions)) {
-          await adjustStock(productId, -qteTotale);
-          deducted.push([productId, qteTotale]);
-        }
-        // 2) Puis la facture et son premier paiement
-        await state.db.collection('factures').doc(invId).set(invDoc);
-
-        // Note le paiement (mode, vendeur) : sert à l'historique du client ET au suivi de la caisse.
-        if (montantPaye > 0) {
-          const payId = 'pa-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
-          try {
-            await state.db.doc('paiements/' + payId).set({ factureId: invId, clientId: clientId || null, montant: montantPaye, mode, date, operateur: state.currentUser ? state.currentUser.nom : '', createdAt: Date.now() });
-          } catch (payErr) {
-            if (clientId) throw payErr;
-            console.error(payErr);
-            toast("Vente enregistrée, mais le paiement n'a pas pu être noté dans la caisse.");
-          }
-        }
-      } catch (saleErr) {
-        // En cas d'échec en cours de route, on remet le stock déjà déduit
-        for (const [productId, qte] of deducted) { try { await adjustStock(productId, qte); } catch (e2) { console.error(e2); } }
-        throw saleErr;
+      for (const [productId, qteTotale] of Object.entries(deductions)) {
+        const prod = state.products.find(p => p.id === productId);
+        if (!prod) continue;
+        await state.db.doc('produits/' + productId).update({ stock: Number(prod.stock) - qteTotale });
       }
 
-      if (convertingDocId) {
-        try { await state.db.doc('documents/' + convertingDocId).update({ statut: 'facture', factureId: invId }); } catch (e5) { console.error(e5); }
-        convertingDocId = null;
-      }
       invoiceLines = [freshLine()];
       document.getElementById('f-client').value = '';
       document.getElementById('f-paye').value = '';
@@ -2540,146 +1645,6 @@
       toast('Erreur : ' + detail);
     } finally {
       btn.disabled = false;
-    }
-  }
-
-  // ================= Devis et bons de commande =================
-  const DOC_LABELS = { devis: 'Devis', bon_commande: 'Bon de commande' };
-  const DOC_PREFIX = { devis: 'DEV', bon_commande: 'BC' };
-  let convertingDocId = null;
-  const docNumLabel = (d) => `${DOC_PREFIX[d.type] || 'DOC'}-${String(d.num).padStart(4, '0')}`;
-  const newId = (p) => p + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
-  const isOwnerOrAdmin = () => !!(state.currentUser && (state.currentUser.role === 'proprietaire' || state.currentUser.role === 'admin'));
-
-  function currentDocType() { return document.getElementById('f-doctype').value; }
-
-  function applyDocMode() {
-    const t = currentDocType();
-    const isInv = t === 'facture';
-    document.getElementById('ventesTitle').textContent = isInv ? 'Nouvelle vente' : (t === 'devis' ? 'Nouveau devis' : 'Nouveau bon de commande');
-    document.getElementById('f-paye-wrap').style.display = isInv ? '' : 'none';
-    document.getElementById('f-mode-wrap').style.display = isInv ? '' : 'none';
-    document.getElementById('f-validite-wrap').style.display = t === 'devis' ? '' : 'none';
-    document.getElementById('finalizeHint').style.display = isInv ? '' : 'none';
-    document.getElementById('btnFinalize').textContent = isInv ? 'Finaliser la vente' : (t === 'devis' ? 'Enregistrer le devis' : 'Enregistrer le bon de commande');
-    if (t === 'devis' && !document.getElementById('f-validite').value) {
-      const d = new Date(); d.setDate(d.getDate() + 15);
-      document.getElementById('f-validite').value = d.toISOString().slice(0, 10);
-    }
-  }
-
-  async function saveDocument() {
-    const type = currentDocType();
-    const validLines = invoiceLines.filter(l => l.nom && Number(l.qte) > 0);
-    if (validLines.length === 0) { toast('Ajoute au moins une ligne valide (désignation + quantité).'); return; }
-    if (!state.db) { toast('Connexion non disponible — réessaie dans un instant.'); return; }
-    const btn = document.getElementById('btnFinalize');
-    btn.disabled = true;
-    try {
-      const num = state.documents.filter(d => d.type === type).reduce((m, d) => Math.max(m, Number(d.num) || 0), 0) + 1;
-      const total = validLines.reduce((s, l) => s + (Number(l.prix) || 0) * (Number(l.qte) || 0), 0);
-      const client = document.getElementById('f-client').value.trim();
-      const existing = client ? state.clients.find(c => (c.nom || '').trim().toLowerCase() === client.toLowerCase()) : null;
-      const doc = {
-        type, num,
-        date: document.getElementById('f-date').value || todayStr(),
-        client, clientId: existing ? existing.id : null,
-        lignes: validLines.map(l => {
-          const prod = l.matched ? state.products.find(p => p.ref === l.ref) : null;
-          return { ref: l.ref || '', nom: l.nom, qte: Number(l.qte), prix: Number(l.prix) || 0, unite: l.unite || '', matched: !!prod, productId: prod ? prod.id : null };
-        }),
-        total, statut: 'en_attente',
-        validite: type === 'devis' ? (document.getElementById('f-validite').value || '') : '',
-        operateur: state.currentUser ? `${state.currentUser.nom} (${ROLE_LABEL[state.currentUser.role]})` : '',
-        createdAt: Date.now(), factureId: null, sourceId: null,
-      };
-      await state.db.collection('documents').doc(newId('doc')).set(doc);
-      invoiceLines = [freshLine()];
-      document.getElementById('f-client').value = '';
-      renderInvoiceLines();
-      if (confirm(`${DOC_LABELS[type]} ${docNumLabel(doc)} enregistré. L'imprimer maintenant ?`)) printInvoice(doc, type);
-      else toast(`${DOC_LABELS[type]} ${docNumLabel(doc)} enregistré.`);
-    } catch (err) {
-      console.error(err);
-      toast('Erreur : ' + ((err && err.message) ? err.message : String(err)));
-    } finally {
-      btn.disabled = false;
-    }
-  }
-
-  function renderDocuments() {
-    const body = document.getElementById('docsBody');
-    if (!body || !document.getElementById('panel-documents').classList.contains('active')) return;
-    const filter = document.getElementById('docs-filter').value;
-    const list = state.documents.filter(d => !filter || d.type === filter).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-    document.getElementById('docsEmpty').style.display = list.length ? 'none' : 'block';
-    const statutBadge = (d) => {
-      if (d.statut === 'accepte') return '<span class="badge" style="background:#16a34a; color:#fff;">Accepté</span>';
-      if (d.statut === 'refuse') return '<span class="badge" style="background:var(--danger); color:#fff;">Refusé</span>';
-      if (d.statut === 'facture') {
-        const inv = state.invoices.find(i => i.id === d.factureId);
-        return `<span class="badge" style="background:#2563eb; color:#fff;">Facturé${inv ? ' (FAC-' + String(inv.num).padStart(4, '0') + ')' : ''}</span>`;
-      }
-      return '<span class="badge">En attente</span>';
-    };
-    const btnStyle = 'padding:6px 10px; font-size:12px; margin:2px;';
-    body.innerHTML = list.map(d => {
-      const open = d.statut === 'en_attente' || d.statut === 'accepte';
-      return `<tr>
-        <td>${escapeHtml(docNumLabel(d))}<div class="muted" style="font-size:11px;">${escapeHtml(DOC_LABELS[d.type] || '')}</div></td>
-        <td class="muted">${escapeHtml(d.date || '')}</td>
-        <td>${escapeHtml(d.client || '—')}</td>
-        <td class="num-cell">${euros(d.total)}</td>
-        <td>${statutBadge(d)}</td>
-        <td class="num-cell" style="white-space:nowrap;">
-          <button class="ghost" data-doc-act="print" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">Imprimer</button>
-          ${d.type === 'devis' && d.statut === 'en_attente' ? `<button class="ghost" data-doc-act="accept" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">✓ Accepté</button><button class="ghost" data-doc-act="refuse" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">✗ Refusé</button>` : ''}
-          ${d.type === 'devis' && open ? `<button class="ghost" data-doc-act="tobc" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">→ Bon de commande</button>` : ''}
-          ${open ? `<button class="ghost" data-doc-act="toinv" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">→ Facture</button>` : ''}
-          ${isOwnerOrAdmin() ? `<button class="ghost" data-doc-act="delete" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">Supprimer</button>` : ''}
-        </td>
-      </tr>`;
-    }).join('');
-    body.querySelectorAll('[data-doc-act]').forEach(b => b.addEventListener('click', () => docAction(b.dataset.docAct, b.dataset.docId)));
-  }
-  document.getElementById('docs-filter').addEventListener('change', renderDocuments);
-
-  async function docAction(act, id) {
-    const d = state.documents.find(x => x.id === id);
-    if (!d || !state.db) return;
-    try {
-      if (act === 'print') { printInvoice(d, d.type); return; }
-      if (act === 'accept') { await state.db.doc('documents/' + id).update({ statut: 'accepte' }); toast(`${docNumLabel(d)} marqué comme accepté.`); return; }
-      if (act === 'refuse') { await state.db.doc('documents/' + id).update({ statut: 'refuse' }); toast(`${docNumLabel(d)} marqué comme refusé.`); return; }
-      if (act === 'delete') {
-        if (!confirm(`Supprimer définitivement ${docNumLabel(d)} ?`)) return;
-        await state.db.doc('documents/' + id).delete();
-        logAction('SUPPRESSION_DOCUMENT', `${DOC_LABELS[d.type]} ${docNumLabel(d)} supprimé (${euros(d.total)})`);
-        return;
-      }
-      if (act === 'tobc') {
-        const num = state.documents.filter(x => x.type === 'bon_commande').reduce((m, x) => Math.max(m, Number(x.num) || 0), 0) + 1;
-        const bc = { type: 'bon_commande', num, date: todayStr(), client: d.client || '', clientId: d.clientId || null, lignes: d.lignes || [], total: d.total || 0, statut: 'en_attente', validite: '', operateur: state.currentUser ? `${state.currentUser.nom} (${ROLE_LABEL[state.currentUser.role]})` : '', createdAt: Date.now(), factureId: null, sourceId: d.id };
-        await state.db.collection('documents').doc(newId('doc')).set(bc);
-        await state.db.doc('documents/' + id).update({ statut: 'accepte' });
-        toast(`Bon de commande ${docNumLabel(bc)} créé à partir du devis ${docNumLabel(d)}.`);
-        return;
-      }
-      if (act === 'toinv') {
-        document.getElementById('f-doctype').value = 'facture';
-        applyDocMode();
-        invoiceLines = (d.lignes || []).map(l => ({ ref: l.ref || '', nom: l.nom, qte: l.qte, prix: l.prix, unite: l.unite || '', matched: !!l.matched }));
-        if (invoiceLines.length === 0) invoiceLines = [freshLine()];
-        document.getElementById('f-client').value = d.client || '';
-        document.getElementById('f-paye').value = '';
-        convertingDocId = d.id;
-        renderInvoiceLines();
-        document.querySelector('[data-tab="ventes"]').click();
-        toast(`${docNumLabel(d)} chargé dans Ventes : vérifie, puis clique sur « Finaliser la vente ».`);
-      }
-    } catch (err) {
-      console.error(err);
-      toast('Erreur : ' + ((err && err.message) ? err.message : String(err)));
     }
   }
 
@@ -2741,26 +1706,17 @@
   async function startCameraScan() {
     const statusEl = document.getElementById('cameraStatus');
     statusEl.textContent = 'Chargement du lecteur de codes-barres…';
-
     try {
       await loadZxing();
     } catch (e) {
-      statusEl.textContent = "Impossible de charger le lecteur de codes-barres — vérifie ta connexion (ou désactive ton bloqueur de publicités).";
+      statusEl.textContent = "Impossible de charger le lecteur de codes-barres — vérifie ta connexion.";
       return;
     }
-
     try {
-      // 1. Force le navigateur à demander l'autorisation de la caméra (préfère la caméra arrière sur téléphone)
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-      stream.getTracks().forEach(track => track.stop()); // flux temporaire, on le ferme
-      await new Promise(res => setTimeout(res, 300));    // laisse la caméra se libérer
-
-      // 2. Lecteur de codes-barres, une fois l'autorisation accordée
       if (!zxingReader) zxingReader = new window.ZXing.BrowserMultiFormatReader();
-      // Liste des caméras avec la fonction standard du navigateur (la version statique de la bibliothèque n'existe pas dans @zxing/library)
-      videoDevices = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+      videoDevices = await window.ZXing.BrowserCodeReader.listVideoInputDevices();
       if (videoDevices.length === 0) { statusEl.textContent = 'Aucune caméra détectée sur cet appareil.'; return; }
-      const back = videoDevices.find(d => /back|rear|environment|arrière/i.test(d.label));
+      const back = videoDevices.find(d => /back|rear|environment/i.test(d.label));
       currentVideoDeviceId = (back || videoDevices[videoDevices.length - 1]).deviceId;
 
       document.getElementById('btnStartCamera').style.display = 'none';
@@ -2776,112 +1732,10 @@
         }
       });
     } catch (e) {
-      console.error('Erreur caméra :', e);
-      let msg;
-      if (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) msg = "Caméra bloquée : autorise-la pour ce site (icône à gauche de l'adresse), puis recharge la page.";
-      else if (e && (e.name === 'NotFoundError' || e.name === 'OverconstrainedError')) msg = 'Aucune caméra trouvée sur cet appareil.';
-      else if (e && (e.name === 'NotReadableError' || e.name === 'AbortError')) msg = 'Caméra déjà utilisée par une autre application : ferme-la puis réessaie.';
-      else msg = 'Caméra indisponible.';
-      statusEl.textContent = msg + ' (' + ((e && e.name) || '') + (e && e.message ? ' : ' + e.message : '') + ')';
+      console.error(e);
+      statusEl.textContent = "Accès à la caméra refusé ou indisponible.";
     }
   }
-
-  // ================= SCANNER CAMÉRA UNIVERSEL (recherche produits, champ code-barres, ventes) =================
-  let globalZxingReader = null;
-  let currentScanCallback = null;
-
-  async function openGlobalScanner(title, onScanSuccess) {
-    const modal = document.getElementById('globalScanModal');
-    const statusEl = document.getElementById('globalScanStatus');
-    document.getElementById('globalScanTitle').textContent = title || 'Scan caméra';
-    modal.style.display = 'flex';
-    statusEl.textContent = 'Initialisation de la caméra…';
-    currentScanCallback = onScanSuccess;
-
-    try { await loadZxing(); }
-    catch (e) { statusEl.textContent = "Impossible de charger le lecteur de codes-barres — vérifie ta connexion."; return; }
-
-    try {
-      // Demande l'autorisation (caméra arrière si possible, sinon n'importe laquelle)
-      let stream = null;
-      try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }); }
-      catch (e) { stream = await navigator.mediaDevices.getUserMedia({ video: true }); }
-      if (stream) stream.getTracks().forEach(t => t.stop());
-      await new Promise(res => setTimeout(res, 300));
-
-      if (!globalZxingReader) globalZxingReader = new window.ZXing.BrowserMultiFormatReader();
-      // enumerateDevices (standard) : la version statique de ZXing n'existe pas dans @zxing/library
-      const devices = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
-      if (!devices.length) { statusEl.textContent = 'Aucune caméra détectée sur cet appareil.'; return; }
-      const backDev = devices.find(d => /back|rear|environment|arrière/i.test(d.label)) || devices[devices.length - 1];
-      statusEl.textContent = 'Pointe vers le code-barres…';
-
-      globalZxingReader.decodeFromVideoDevice(backDev.deviceId, 'globalScanVideo', (result) => {
-        if (result) {
-          const code = result.getText();
-          const cb = currentScanCallback;
-          closeGlobalScanner();
-          if (typeof cb === 'function') cb(code);
-        }
-      });
-    } catch (err) {
-      console.error('Erreur caméra :', err);
-      let msg;
-      if (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError')) msg = "Caméra bloquée : autorise-la pour ce site, puis réessaie.";
-      else if (err && (err.name === 'NotFoundError' || err.name === 'OverconstrainedError')) msg = 'Aucune caméra trouvée sur cet appareil.';
-      else if (err && (err.name === 'NotReadableError' || err.name === 'AbortError')) msg = 'Caméra déjà utilisée par une autre application : ferme-la puis réessaie.';
-      else msg = 'Caméra indisponible.';
-      statusEl.textContent = msg + ' (' + ((err && err.name) || '') + ')';
-    }
-  }
-
-  function closeGlobalScanner() {
-    if (globalZxingReader) { try { globalZxingReader.reset(); } catch (e) {} }
-    const modal = document.getElementById('globalScanModal');
-    if (modal) modal.style.display = 'none';
-    currentScanCallback = null;
-  }
-
-  document.getElementById('btnCloseGlobalScan').addEventListener('click', closeGlobalScanner);
-
-  // 1. Recherche dans la liste des produits
-  document.getElementById('btnScanCatalog').addEventListener('click', () => {
-    openGlobalScanner('Chercher un produit', (code) => {
-      const input = document.getElementById('stockSearch');
-      input.value = code;
-      input.dispatchEvent(new Event('input')); // déclenche le filtre de la liste
-      toast(`Recherche pour : ${code}`);
-    });
-  });
-
-  // 2. Champ code-barres du formulaire produit
-  document.getElementById('btnScanBarcodeField').addEventListener('click', () => {
-    openGlobalScanner('Scanner le code-barres', (code) => {
-      document.getElementById('p-barcode').value = code;
-      toast(`Code-barres renseigné : ${code}`);
-    });
-  });
-
-  // 3. Scan rapide en caisse (onglet Ventes)
-  document.getElementById('btnQuickScanSale').addEventListener('click', () => {
-    openGlobalScanner('Ajouter un article à la vente', (code) => {
-      const c = code.trim();
-      const prod = state.products.find(p => (p.codeBarre || '').trim() === c || (p.ref || '').toLowerCase() === c.toLowerCase());
-      if (!prod) { toast(`⚠ Aucun produit trouvé pour le code : ${code}`); return; }
-      // Déjà sur une ligne ? On ajoute 1 à la quantité au lieu de créer un doublon
-      const existing = invoiceLines.find(l => l.matched && l.ref === prod.ref);
-      if (existing) {
-        existing.qte = (Number(existing.qte) || 0) + 1;
-      } else {
-        let line = invoiceLines.find(l => !l.nom && !l.ref);
-        if (!line) { line = freshLine(); invoiceLines.push(line); }
-        line.ref = prod.ref; line.nom = prod.nom; line.qte = 1;
-        line.prix = prod.prixVente; line.unite = prod.unite || ''; line.matched = true;
-      }
-      renderInvoiceLines();
-      toast(`✓ ${prod.nom} ajouté à la vente`);
-    });
-  });
 
   function stopCameraScan() {
     if (zxingReader) { try { zxingReader.reset(); } catch (e) {} }
@@ -3008,7 +1862,6 @@
       await logMovement({ productId, ref: prod.ref, nom: prod.nom, quantite: qte, ancienStock, nouveauStock, unite: prod.unite, source: 'perte', raison, note });
       document.getElementById('ps-qte').value = '1';
       document.getElementById('ps-note').value = '';
-      logAction('PERTE_STOCK', `${qte} ${prod.unite || ''} de "${prod.nom}" (${raison})${note ? ' — ' + note : ''}`);
       toast(`Perte enregistrée : ${qte} ${prod.unite || ''} de "${prod.nom}" (${raison}).`);
     } catch (err) {
       console.error(err);
@@ -3023,10 +1876,10 @@
     const list = (state.movements || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 12);
     if (list.length === 0) { box.innerHTML = ''; empty.style.display = 'block'; return; }
     empty.style.display = 'none';
-    const srcLabel = { 'scan-usb': 'scan USB/BT', 'scan-camera': 'scan caméra', 'manuel': 'saisie manuelle', 'perte': 'casse / perte', 'annulation': 'annulation facture', 'inventaire': 'inventaire' };
+    const srcLabel = { 'scan-usb': 'scan USB/BT', 'scan-camera': 'scan caméra', 'manuel': 'saisie manuelle', 'perte': 'casse / perte' };
     box.innerHTML = list.map(m => {
       const isPerte = m.source === 'perte';
-      const sign = isPerte ? '−' : (m.source === 'inventaire' && Number(m.nouveauStock) < Number(m.ancienStock) ? '−' : '+');
+      const sign = isPerte ? '−' : '+';
       const raisonTxt = isPerte && m.raison ? ` · ${escapeHtml(m.raison)}` : '';
       return `<li><span>${escapeHtml(m.nom)} — ${sign}${m.quantite} ${escapeHtml(m.unite || '')} <span class="r">(${srcLabel[m.source] || m.source || ''}${raisonTxt}${m.operateur ? ' · ' + escapeHtml(m.operateur) : ''})</span></span><span class="r">${m.ancienStock} → ${m.nouveauStock}</span></li>`;
     }).join('');
@@ -3077,8 +1930,7 @@
     document.getElementById('btnAddProduct').textContent = 'Enregistrer les modifications';
     document.getElementById('btnCancelEdit').style.display = 'inline-block';
 
-    const formCard = document.getElementById('p-ref').closest('.card') || document.querySelector('.card');
-    formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.querySelector('.card').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function resetProductForm() {
@@ -3152,40 +2004,11 @@
     }
   });
 
-  // ================= Journal des actions (audit) =================
-  // Enregistre une action sensible. Le journal est stocké en base, lisible seulement par propriétaire/admin, non modifiable.
-  function logAction(type, details) {
-    if (!supabaseClient || !state.currentUser) return;
-    supabaseClient.from('audit_logs')
-      .insert({ user_nom: state.currentUser.nom || state.currentUser.email || '', type, details })
-      .then(({ error }) => { if (error) console.error('Journal :', error.message); });
-  }
-
-  async function loadAuditLogs() {
-    const tbody = document.getElementById('auditLogsTbody');
-    if (!tbody || !supabaseClient) return;
-    const { data, error } = await supabaseClient.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100);
-    if (error) { tbody.innerHTML = '<tr><td colspan="4" style="padding:12px; text-align:center;" class="muted">Journal indisponible.</td></tr>'; return; }
-    if (!data.length) { tbody.innerHTML = '<tr><td colspan="4" style="padding:12px; text-align:center;" class="muted">Aucune action enregistrée.</td></tr>'; return; }
-    const colors = { ANNULATION_FACTURE: '#dc2626', TENTATIVE_ANNULATION: '#b91c1c', PERTE_STOCK: '#d97706', SUPPRESSION_PRODUIT: '#d97706', SUPPRESSION_DOCUMENT: '#d97706', REINITIALISATION_MDP: '#2563eb', INVENTAIRE: '#7c3aed' };
-    const labels = { ANNULATION_FACTURE: 'Annulation facture', TENTATIVE_ANNULATION: 'Tentative refusée', PERTE_STOCK: 'Perte / casse', SUPPRESSION_PRODUIT: 'Produit supprimé', SUPPRESSION_DOCUMENT: 'Document supprimé', REINITIALISATION_MDP: 'Mot de passe réinitialisé', INVENTAIRE: 'Inventaire validé' };
-    tbody.innerHTML = data.map(l => `
-      <tr style="border-bottom:1px solid var(--line);">
-        <td style="padding:8px; white-space:nowrap;">${escapeHtml(new Date(l.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }))}</td>
-        <td style="padding:8px;"><strong>${escapeHtml(l.user_nom || '')}</strong> <small class="muted">(${escapeHtml(l.role || '')})</small></td>
-        <td style="padding:8px;"><span style="background:${colors[l.type] || '#4b5563'}; color:#fff; padding:2px 6px; border-radius:4px; font-size:0.75rem; font-weight:bold; white-space:nowrap;">${escapeHtml(labels[l.type] || l.type)}</span></td>
-        <td style="padding:8px;">${escapeHtml(l.details || '')}</td>
-      </tr>`).join('');
-  }
-  document.getElementById('btnRefreshAudit').addEventListener('click', loadAuditLogs);
-
   async function deleteProduct(id) {
     if (!state.db) return;
     if (!confirm('Supprimer ce produit du catalogue ?')) return;
-    const delProd = state.products.find(p => p.id === id);
     try {
       await state.db.doc('produits/' + id).delete();
-      logAction('SUPPRESSION_PRODUIT', `Produit supprimé : ${delProd ? delProd.nom + ' (' + (delProd.ref || '') + ')' : id}`);
       if (editingId === id) resetProductForm();
       toast('Produit supprimé.');
     } catch (err) { console.error(err); toast('Erreur lors de la suppression.'); }
@@ -3321,12 +2144,7 @@
     if (!f) { document.getElementById('fsDetailCard').style.display = 'none'; return; }
 
     document.getElementById('fsd-nom').textContent = f.nom;
-    const phone = f.telephone || '';
-    const cleanPhone = toWhatsAppNumber(phone);
-    const globalWaUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent('Bonjour ' + f.nom + ', je souhaite passer une commande.')}` : null;
-    document.getElementById('fsd-tel').innerHTML = phone
-      ? `${escapeHtml(phone)} ${globalWaUrl ? `<a href="${globalWaUrl}" target="_blank" rel="noopener noreferrer" style="margin-left:6px; text-decoration:none; font-weight:600; color:var(--moss);">💬 WhatsApp</a>` : ''}`
-      : '—';
+    document.getElementById('fsd-tel').textContent = f.telephone || '—';
     document.getElementById('fsd-email').textContent = f.email || '—';
     document.getElementById('fsd-adresse').textContent = f.adresse || '—';
 
@@ -3734,10 +2552,7 @@
                <option value="caissier" ${m.role === 'caissier' ? 'selected' : ''}>Caissier</option>
                <option value="employe" ${m.role === 'employe' ? 'selected' : ''}>Employé</option>
              </select>`;
-        const myRole = state.currentUser.role;
-        const canReset = !isSelf && !isProprio && (myRole === 'proprietaire' || (myRole === 'admin' && (m.role === 'caissier' || m.role === 'employe')));
-        const resetBtn = canReset ? `<button class="icon-btn" data-reset-member="${m.id}" data-reset-name="${escapeHtml(m.nom || '')}" title="Définir un nouveau mot de passe" style="margin-right:6px;">🔑</button>` : '';
-        const actionCell = (isProprio || isSelf) ? (isSelf ? '<span class="muted">(toi)</span>' : '') : `${resetBtn}<button class="icon-btn" data-remove-member="${m.id}" title="Retirer l'accès">✕</button>`;
+        const actionCell = (isProprio || isSelf) ? (isSelf ? '<span class="muted">(toi)</span>' : '') : `<button class="icon-btn" data-remove-member="${m.id}" title="Retirer l'accès">✕</button>`;
         return `<tr><td>${escapeHtml(m.nom || '—')}</td><td>${roleCell}</td><td class="num-cell">${actionCell}</td></tr>`;
       }).join('');
 
@@ -3751,22 +2566,6 @@
           } catch (err) {
             toast('Erreur : ' + (err.message || err));
             loadTeam();
-          }
-        });
-      });
-      body.querySelectorAll('[data-reset-member]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const nom = btn.dataset.resetName || 'cette personne';
-          const pwd = prompt(`Nouveau mot de passe pour ${nom} (8 caractères minimum) :`);
-          if (pwd === null) return;
-          if (pwd.length < 8) { toast('Mot de passe trop court : 8 caractères minimum.'); return; }
-          if (!confirm(`Changer le mot de passe de ${nom} ? Cette personne sera déconnectée de ses appareils.`)) return;
-          try {
-            const { error: rErr } = await supabaseClient.rpc('reset_team_password', { p_user_id: btn.dataset.resetMember, p_new_password: pwd });
-            if (rErr) throw rErr;
-            toast(`Mot de passe de ${nom} modifié. Donne-le lui en main propre.`);
-          } catch (err) {
-            toast('Erreur : ' + (err.message || err));
           }
         });
       });
@@ -3788,99 +2587,6 @@
     }
   }
   document.getElementById('btnRefreshTeam').addEventListener('click', loadTeam);
-
-  // ================= Caisse (encaissements par mode de paiement) =================
-  const CAISSE_MODES = ['Espèces', 'Mobile Money', 'Virement', 'Chèque'];
-
-  function applyCaissePreset(preset) {
-    const today = new Date();
-    const iso = (d) => d.toISOString().slice(0, 10);
-    let du = todayStr(), au = todayStr();
-    if (preset === '7j') { const d = new Date(today); d.setDate(d.getDate() - 6); du = iso(d); }
-    else if (preset === 'mois') { du = iso(new Date(today.getFullYear(), today.getMonth(), 1)); }
-    document.getElementById('cs-du').value = du;
-    document.getElementById('cs-au').value = au;
-    document.querySelectorAll('.cs-preset').forEach(b => b.classList.toggle('active', b.dataset.preset === preset));
-    renderCaisse();
-  }
-  document.querySelectorAll('.cs-preset').forEach(b => b.addEventListener('click', () => applyCaissePreset(b.dataset.preset)));
-  ['cs-du', 'cs-au'].forEach(id => document.getElementById(id).addEventListener('change', () => {
-    document.querySelectorAll('.cs-preset').forEach(b => b.classList.remove('active'));
-    renderCaisse();
-  }));
-  document.getElementById('cs-mode-filter').addEventListener('change', renderCaisse);
-
-  // Paiements de la période, sans ceux des factures annulées
-  function caissePaiements() {
-    const du = document.getElementById('cs-du').value || '2000-01-01';
-    const au = document.getElementById('cs-au').value || todayStr();
-    const byId = {};
-    state.invoices.forEach(i => { byId[i.id] = i; });
-    return (state.paiements || []).filter(p => {
-      const inv = byId[p.factureId];
-      if (inv && inv.annulee) return false;
-      return p.date >= du && p.date <= au;
-    });
-  }
-
-  function renderCaisse() {
-    if (!document.getElementById('cs-du') || !document.getElementById('cs-du').value) return;
-    if (!document.getElementById('panel-caisse').classList.contains('active')) return;
-    const list = caissePaiements();
-
-    const totals = { 'Espèces': 0, 'Mobile Money': 0, 'Virement': 0, 'Chèque': 0 };
-    let autre = 0, total = 0;
-    const vendeurs = {};
-    list.forEach(p => {
-      const a = Number(p.montant) || 0;
-      total += a;
-      if (p.mode in totals) totals[p.mode] += a; else autre += a;
-      const v = p.operateur || '—';
-      if (!vendeurs[v]) vendeurs[v] = { esp: 0, autres: 0 };
-      if (p.mode === 'Espèces') vendeurs[v].esp += a; else vendeurs[v].autres += a;
-    });
-
-    document.getElementById('csEsp').textContent = euros(totals['Espèces']);
-    document.getElementById('csMobile').textContent = euros(totals['Mobile Money']);
-    document.getElementById('csVirement').textContent = euros(totals['Virement']);
-    document.getElementById('csCheque').textContent = euros(totals['Chèque']);
-    document.getElementById('csTotal').textContent = euros(total);
-
-    const du = document.getElementById('cs-du').value || '2000-01-01';
-    const au = document.getElementById('cs-au').value || todayStr();
-    const depenses = (state.depenses || []).filter(d => d.date >= du && d.date <= au).reduce((s, d) => s + (Number(d.montant) || 0), 0);
-    document.getElementById('csHint').textContent =
-      `Espèces encaissées : ${euros(totals['Espèces'])} − dépenses de la période : ${euros(depenses)} = ${euros(totals['Espèces'] - depenses)} d'espèces attendues en caisse (estimation, si les dépenses ont été payées en espèces).` +
-      (autre ? ` Autres modes non classés : ${euros(autre)}.` : '') +
-      ` Les ventes faites avant la mise en place de la caisse n'apparaissent pas ici.`;
-
-    document.getElementById('csVendeurs').innerHTML = Object.entries(vendeurs)
-      .sort((a, b) => (b[1].esp + b[1].autres) - (a[1].esp + a[1].autres))
-      .map(([nom, v]) => `<tr><td>${escapeHtml(nom)}</td><td class="num-cell">${euros(v.esp)}</td><td class="num-cell">${euros(v.autres)}</td><td class="num-cell">${euros(v.esp + v.autres)}</td></tr>`)
-      .join('') || '<tr><td colspan="4" class="muted">Aucun paiement.</td></tr>';
-
-    const modeFilter = document.getElementById('cs-mode-filter').value;
-    const invById = {};
-    state.invoices.forEach(i => { invById[i.id] = i; });
-    const rows = list
-      .filter(p => !modeFilter || p.mode === modeFilter)
-      .slice()
-      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-    document.getElementById('csEmpty').style.display = rows.length ? 'none' : 'block';
-    document.getElementById('csPaiements').innerHTML = rows.map(p => {
-      const inv = invById[p.factureId];
-      const cl = state.clients.find(c => c.id === p.clientId);
-      const clientNom = cl ? cl.nom : ((inv && inv.client) || 'Client de passage');
-      return `<tr>
-        <td>${escapeHtml(p.date || '')}</td>
-        <td>${inv ? 'FAC-' + String(inv.num).padStart(4, '0') : '—'}</td>
-        <td>${escapeHtml(clientNom)}</td>
-        <td>${escapeHtml(p.mode || '—')}</td>
-        <td class="num-cell">${euros(p.montant)}</td>
-        <td>${escapeHtml(p.operateur || '—')}</td>
-      </tr>`;
-    }).join('');
-  }
 
   // ================= Comptabilité =================
   function applyCpPreset(preset) {
@@ -4014,9 +2720,6 @@
       mouvements: state.movements,
       fournisseurs: state.fournisseurs,
       commandes_fournisseurs: state.commandes,
-      clients: state.clients,
-      paiements: state.paiements,
-      depenses: state.depenses,
     };
   }
 
@@ -4073,19 +2776,6 @@
       })));
       window.XLSX.utils.book_append_sheet(wb, wsMouv, 'Mouvements');
 
-      const clientNom = (id) => { const c = state.clients.find(x => x.id === id); return c ? c.nom : ''; };
-      const wsClients = window.XLSX.utils.json_to_sheet(state.clients.map(c => ({ Nom: c.nom, Téléphone: c.telephone || '', Adresse: c.adresse || '' })));
-      window.XLSX.utils.book_append_sheet(wb, wsClients, 'Clients');
-
-      const wsPaiements = window.XLSX.utils.json_to_sheet(state.paiements.map(p => {
-        const inv = state.invoices.find(i => i.id === p.factureId);
-        return { Date: p.date, Client: clientNom(p.clientId), Facture: inv ? 'FAC-' + String(inv.num).padStart(4, '0') : '', Montant: p.montant, Mode: p.mode || '', Opérateur: p.operateur || '' };
-      }));
-      window.XLSX.utils.book_append_sheet(wb, wsPaiements, 'Paiements');
-
-      const wsDepenses = window.XLSX.utils.json_to_sheet(state.depenses.map(d => ({ Date: d.date, Catégorie: d.categorie || '', Montant: d.montant, Note: d.note || '', Opérateur: d.operateur || '' })));
-      window.XLSX.utils.book_append_sheet(wb, wsDepenses, 'Dépenses');
-
       const arrayBuf = window.XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
       const blob = new Blob([arrayBuf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const ok = await saveFile(`stockflow-pro-${todayStr()}.xlsx`, blob);
@@ -4132,16 +2822,13 @@
     const mouvements = Array.isArray(data.mouvements) ? data.mouvements : [];
     const fournisseurs = Array.isArray(data.fournisseurs) ? data.fournisseurs : [];
     const commandes = Array.isArray(data.commandes_fournisseurs) ? data.commandes_fournisseurs : [];
-    const clients = Array.isArray(data.clients) ? data.clients : [];
-    const paiements = Array.isArray(data.paiements) ? data.paiements : [];
-    const depenses = Array.isArray(data.depenses) ? data.depenses : [];
-    if (produits.length === 0 && factures.length === 0 && mouvements.length === 0 && fournisseurs.length === 0 && commandes.length === 0 && clients.length === 0 && paiements.length === 0 && depenses.length === 0) {
+    if (produits.length === 0 && factures.length === 0 && mouvements.length === 0 && fournisseurs.length === 0 && commandes.length === 0) {
       statusEl.textContent = "Ce fichier ne contient aucune donnée reconnue.";
       statusEl.style.color = 'var(--danger)';
       return;
     }
-    const total = produits.length + factures.length + mouvements.length + fournisseurs.length + commandes.length + clients.length + paiements.length + depenses.length;
-    if (!confirm(`Importer ${produits.length} produit(s), ${factures.length} facture(s), ${mouvements.length} mouvement(s), ${fournisseurs.length} fournisseur(s), ${commandes.length} commande(s), ${clients.length} client(s), ${paiements.length} paiement(s) et ${depenses.length} dépense(s) ? Les éléments ayant le même identifiant seront remplacés.`)) return;
+    const total = produits.length + factures.length + mouvements.length + fournisseurs.length + commandes.length;
+    if (!confirm(`Importer ${produits.length} produit(s), ${factures.length} facture(s), ${mouvements.length} mouvement(s), ${fournisseurs.length} fournisseur(s) et ${commandes.length} commande(s) ? Les éléments ayant le même identifiant seront remplacés.`)) return;
     if (!state.db) { statusEl.textContent = 'Connexion non disponible.'; return; }
 
     statusEl.style.color = '';
@@ -4153,9 +2840,6 @@
       for (const m of mouvements) { const { id, ...rest } = m; if (id) { await state.db.doc('mouvements/' + id).set(rest); done++; statusEl.textContent = `Import en cours… ${done} / ${total}`; } }
       for (const s of fournisseurs) { const { id, ...rest } = s; if (id) { await state.db.doc('fournisseurs/' + id).set(rest); done++; statusEl.textContent = `Import en cours… ${done} / ${total}`; } }
       for (const c of commandes) { const { id, ...rest } = c; if (id) { await state.db.doc('commandes_fournisseurs/' + id).set(rest); done++; statusEl.textContent = `Import en cours… ${done} / ${total}`; } }
-      for (const c of clients) { const { id, ...rest } = c; if (id) { await state.db.doc('clients/' + id).set(rest); done++; statusEl.textContent = `Import en cours… ${done} / ${total}`; } }
-      for (const c of paiements) { const { id, ...rest } = c; if (id) { await state.db.doc('paiements/' + id).set(rest); done++; statusEl.textContent = `Import en cours… ${done} / ${total}`; } }
-      for (const c of depenses) { const { id, ...rest } = c; if (id) { await state.db.doc('depenses/' + id).set(rest); done++; statusEl.textContent = `Import en cours… ${done} / ${total}`; } }
       statusEl.textContent = `Import terminé : ${done} élément(s) importé(s).`;
       toast('Import terminé.');
     } catch (err) {
@@ -4221,9 +2905,7 @@
   try { supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch (e) { console.error(e); }
 
   // Table où chaque ligne appartient à UN commerce précis (isolation multi-tenant)
-  const activePolls = new Set();
-  function stopAllPolling() { [...activePolls].forEach(stop => stop()); }
-  const TENANT_TABLES = new Set(['produits', 'factures', 'mouvements', 'fournisseurs', 'commandes_fournisseurs', 'clients', 'paiements', 'depenses', 'documents']);
+  const TENANT_TABLES = new Set(['produits', 'factures', 'mouvements', 'fournisseurs', 'commandes_fournisseurs', 'clients', 'paiements', 'depenses']);
   let CURRENT_COMMERCE_ID = null;
 
   // Les tables Postgres utilisent des noms en snake_case ; l'app utilise du camelCase.
@@ -4231,11 +2913,10 @@
   const FIELD_MAPS = {
     produits: { codeBarre: 'code_barre', prixAchat: 'prix_achat', prixVente: 'prix_vente', createdAt: 'created_at' },
     factures: { createdAt: 'created_at', clientId: 'client_id', montantPaye: 'montant_paye' },
-    documents: { createdAt: 'created_at', clientId: 'client_id', factureId: 'facture_id', sourceId: 'source_id' },
     mouvements: { productId: 'product_id', ancienStock: 'ancien_stock', nouveauStock: 'nouveau_stock', createdAt: 'created_at' },
     fournisseurs: { createdAt: 'created_at' },
     commandes_fournisseurs: { fournisseurId: 'fournisseur_id', fournisseurNom: 'fournisseur_nom', montantCommande: 'montant_commande', montantPaye: 'montant_paye', createdAt: 'created_at' },
-    commerces: { logoUrl: 'logo_url', signatureUrl: 'signature_url', messageFacture: 'message_facture', numeroFiscal: 'numero_fiscal', inviteCode: 'invite_code', createdAt: 'created_at' },
+    commerces: { logoUrl: 'logo_url', numeroFiscal: 'numero_fiscal', inviteCode: 'invite_code', createdAt: 'created_at' },
     clients: { createdAt: 'created_at' },
     paiements: { factureId: 'facture_id', clientId: 'client_id', createdAt: 'created_at' },
     depenses: { createdAt: 'created_at' },
@@ -4260,45 +2941,27 @@
   // mais parle en vrai à la base Postgres de Supabase — en filtrant automatiquement
   // par commerce_id pour que chaque commerce ne voie jamais les données d'un autre.
   function createSupabaseDb(client) {
-    // Le prix d'achat vit dans une table à part (produits_couts), lisible et modifiable uniquement par propriétaire et admin.
-    function canSeeCosts() {
-      return !!(state.currentUser && (state.currentUser.role === 'proprietaire' || state.currentUser.role === 'admin'));
-    }
-    async function saveCost(productId, prixAchat) {
-      if (!canSeeCosts()) return;
-      const { error } = await client.from('produits_couts').upsert({ id: String(productId), commerce_id: CURRENT_COMMERCE_ID, prix_achat: Number(prixAchat) || 0 }, { onConflict: 'id' });
-      if (error) throw error;
-    }
     function docRef(table, id) {
       const tenant = TENANT_TABLES.has(table);
       return {
         async set(data) {
-          let cost;
-          if (table === 'produits') { const { prixAchat, ...rest } = data; cost = prixAchat; data = rest; }
           const row = toDbRow(table, { ...data, id });
           if (tenant) row.commerce_id = CURRENT_COMMERCE_ID;
           const { error } = await client.from(table).upsert(row, { onConflict: 'id' });
           if (error) throw error;
-          if (table === 'produits' && cost !== undefined) await saveCost(id, cost);
         },
         async update(data) {
-          let cost;
-          if (table === 'produits') { const { prixAchat, ...rest } = data; cost = prixAchat; data = rest; }
           const row = toDbRow(table, data);
-          if (Object.keys(row).length > 0) {
-            let q = client.from(table).update(row).eq('id', id);
-            if (tenant) q = q.eq('commerce_id', CURRENT_COMMERCE_ID);
-            const { error } = await q;
-            if (error) throw error;
-          }
-          if (table === 'produits' && cost !== undefined) await saveCost(id, cost);
+          let q = client.from(table).update(row).eq('id', id);
+          if (tenant) q = q.eq('commerce_id', CURRENT_COMMERCE_ID);
+          const { error } = await q;
+          if (error) throw error;
         },
         async delete() {
           let q = client.from(table).delete().eq('id', id);
           if (tenant) q = q.eq('commerce_id', CURRENT_COMMERCE_ID);
           const { error } = await q;
           if (error) throw error;
-          if (table === 'produits' && canSeeCosts()) { try { await client.from('produits_couts').delete().eq('id', String(id)); } catch (e) { console.error(e); } }
         },
       };
     }
@@ -4310,33 +2973,11 @@
           let stopped = false;
           async function fetchAll() {
             if (tenant && !CURRENT_COMMERCE_ID) { onNext({ docs: [] }); return; }
-            // Supabase renvoie 1000 lignes maximum par requête : on charge par tranches jusqu'à tout avoir.
-            const PAGE = 1000;
-            let data = [], error = null;
-            for (let from = 0; ; from += PAGE) {
-              let q = client.from(table).select('*');
-              if (tenant) q = q.eq('commerce_id', CURRENT_COMMERCE_ID);
-              const res = await q.order('id', { ascending: true }).range(from, from + PAGE - 1);
-              if (res.error) { error = res.error; break; }
-              data = data.concat(res.data);
-              if (res.data.length < PAGE) break;
-            }
+            let q = client.from(table).select('*');
+            if (tenant) q = q.eq('commerce_id', CURRENT_COMMERCE_ID);
+            const { data, error } = await q;
             if (stopped) return;
             if (error) { if (onError) onError(error); return; }
-            if (table === 'produits') {
-              // Ajoute le prix d'achat (depuis produits_couts) pour propriétaire/admin ; 0 pour les autres rôles.
-              const costMap = {};
-              if (canSeeCosts()) {
-                for (let from = 0; ; from += PAGE) {
-                  const cr = await client.from('produits_couts').select('id, prix_achat').eq('commerce_id', CURRENT_COMMERCE_ID).order('id', { ascending: true }).range(from, from + PAGE - 1);
-                  if (cr.error) { if (onError) onError(cr.error); return; }
-                  cr.data.forEach(c => { costMap[c.id] = c.prix_achat; });
-                  if (cr.data.length < PAGE) break;
-                }
-                if (stopped) return;
-              }
-              data = data.map(r => ({ ...r, prix_achat: costMap[String(r.id)] ?? 0 }));
-            }
             const docs = data.map(row => {
               const obj = fromDbRow(table, row);
               return { id: obj.id, data: () => obj };
@@ -4344,10 +2985,8 @@
             onNext({ docs });
           }
           fetchAll();
-          const interval = setInterval(() => { if (!document.hidden) fetchAll(); }, 5000); // toutes les 5s, sauf onglet caché
-          const stop = () => { stopped = true; clearInterval(interval); activePolls.delete(stop); };
-          activePolls.add(stop);
-          return stop;
+          const interval = setInterval(fetchAll, 5000); // rafraîchit toutes les 5s
+          return () => { stopped = true; clearInterval(interval); };
         },
       };
     }
@@ -4367,7 +3006,7 @@
       (err) => { console.error(err); setSync(false, 'connexion perdue'); }
     );
     db.collection('factures').onSnapshot(
-      (snap) => { state.invoices = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderHistory(); renderDashboard(); renderClients(); if (selectedClientId) renderClientDetail(); renderRapports(); renderComptabilite(); renderCaisse(); scheduleAutoBackup(); },
+      (snap) => { state.invoices = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderHistory(); renderDashboard(); renderClients(); if (selectedClientId) renderClientDetail(); renderRapports(); renderComptabilite(); scheduleAutoBackup(); },
       (err) => console.error(err)
     );
     db.collection('mouvements').onSnapshot(
@@ -4387,15 +3026,11 @@
       (err) => console.error(err)
     );
     db.collection('paiements').onSnapshot(
-      (snap) => { state.paiements = snap.docs.map(d => ({ id: d.id, ...d.data() })); if (selectedClientId) renderClientDetail(); renderCaisse(); scheduleAutoBackup(); },
+      (snap) => { state.paiements = snap.docs.map(d => ({ id: d.id, ...d.data() })); if (selectedClientId) renderClientDetail(); scheduleAutoBackup(); },
       (err) => console.error(err)
     );
     db.collection('depenses').onSnapshot(
       (snap) => { state.depenses = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderComptabilite(); scheduleAutoBackup(); },
-      (err) => console.error(err)
-    );
-    db.collection('documents').onSnapshot(
-      (snap) => { state.documents = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderDocuments(); },
       (err) => console.error(err)
     );
   }
@@ -4405,7 +3040,6 @@
     document.getElementById('dp-date').value = todayStr();
     applyRpPreset('today');
     applyCpPreset('mois');
-    applyCaissePreset('jour');
 
     let db = null;
     try { db = createSupabaseDb(supabaseClient); } catch (e) { console.error(e); db = null; }
