@@ -839,7 +839,7 @@
         </select>
       </div>
       <div class="field-grid">
-        <div><label>Client</label><input id="f-client" placeholder="Nom du client"></div>
+        <div style="position:relative;"><label>Client</label><input id="f-client" placeholder="Nom du client (ou choisis dans la liste)" autocomplete="off"><div id="clientSuggest" class="client-suggest" style="display:none;"></div></div>
         <div><label>Date</label><input id="f-date" type="date"></div>
         <div id="f-paye-wrap">
           <label>Montant payé (FCFA)</label>
@@ -1642,6 +1642,51 @@
     if (state.commerce) state.commerce.inviteCode = code;
     toast('Nouveau code créé !');
   });
+
+  // ---- Liste déroulante des clients dans le formulaire de facture ----
+  (function () {
+    const input = document.getElementById('f-client');
+    const box = document.getElementById('clientSuggest');
+    if (!input || !box) return;
+    const esc = (t) => String(t || '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+    let activeIdx = -1;
+    function render() {
+      const q = input.value.trim().toLowerCase();
+      const list = (state.clients || []).filter(c => c.nom && (!q || c.nom.toLowerCase().includes(q)))
+        .sort((a, b) => a.nom.localeCompare(b.nom));
+      if (!(state.clients || []).length) { box.style.display = 'none'; return; }
+      box.innerHTML = list.length
+        ? list.map((c, i) => `<div class="cs-item" data-nom="${esc(c.nom)}"><span class="cs-name">${esc(c.nom)}</span><span class="cs-tel">${esc(c.telephone || '')}</span></div>`).join('')
+        : '<div class="cs-empty">Aucun client trouvé — le nom tapé sera enregistré comme nouveau client.</div>';
+      activeIdx = -1;
+      box.style.display = '';
+    }
+    function pick(nom) {
+      input.value = nom;
+      box.style.display = 'none';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    input.addEventListener('focus', render);
+    input.addEventListener('click', render);
+    input.addEventListener('input', render);
+    input.addEventListener('keydown', (e) => {
+      const items = [...box.querySelectorAll('.cs-item')];
+      if (box.style.display === 'none' || !items.length) return;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIdx = (activeIdx + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+        items.forEach((el, i) => el.classList.toggle('active', i === activeIdx));
+        items[activeIdx].scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter' && activeIdx >= 0) {
+        e.preventDefault(); pick(items[activeIdx].dataset.nom);
+      } else if (e.key === 'Escape') { box.style.display = 'none'; }
+    });
+    box.addEventListener('mousedown', (e) => {
+      const it = e.target.closest('.cs-item');
+      if (it) { e.preventDefault(); pick(it.dataset.nom); }
+    });
+    document.addEventListener('mousedown', (e) => { if (e.target !== input && !box.contains(e.target)) box.style.display = 'none'; });
+  })();
 
   // ---- Onglets Connexion / Créer / Rejoindre ----
   const authTabs = { login: 'authPaneLogin', signup: 'authPaneSignup', join: 'authPaneJoin' };
@@ -4657,5 +4702,14 @@
   sync();
 })();
 </script>
+<style id="client-suggest-css">
+.client-suggest{position:absolute;left:0;right:0;top:100%;z-index:60;max-height:240px;overflow-y:auto;margin-top:4px;background:var(--panel,#fff);border:1px solid var(--border,#d1d5db);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.35);}
+.client-suggest .cs-item{padding:10px 14px;cursor:pointer;display:flex;justify-content:space-between;gap:10px;align-items:center;border-bottom:1px solid rgba(128,128,128,.15);}
+.client-suggest .cs-item:last-child{border-bottom:0;}
+.client-suggest .cs-item:hover,.client-suggest .cs-item.active{background:rgba(99,102,241,.22);}
+.client-suggest .cs-name{font-weight:600;}
+.client-suggest .cs-tel{font-size:12px;opacity:.7;}
+.client-suggest .cs-empty{padding:10px 14px;opacity:.7;font-size:13px;}
+</style>
 </body>
 </html>
