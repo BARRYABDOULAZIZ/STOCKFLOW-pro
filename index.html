@@ -263,7 +263,7 @@
       <div id="authPaneJoin" style="display:none;">
         <p class="hint-text" style="margin-top:0;">Ton Propriétaire ou Admin te donne un code d'invitation (onglet Données).</p>
         <div class="field-grid">
-          <div><label>Code d'invitation</label><input id="join-code" placeholder="ex : a1b2c3d4" style="text-transform:lowercase;"></div>
+          <div><label>Code d'invitation</label><input id="join-code" placeholder="ex : 3f9a1c7e5b2d4a60" style="text-transform:lowercase;"></div>
           <div><label>Ton nom</label><input id="join-nom" placeholder="Ton prénom"></div>
           <div>
             <label>Rôle</label>
@@ -1321,10 +1321,12 @@
     <div class="card" id="inviteCard" style="display:none;">
       <div class="row-head"><h2>🔑 Inviter ton équipe</h2></div>
       <p class="hint-text" style="margin-top:0;">Donne ce code à tes Caissiers/Employés — ils l'utilisent dans l'onglet "Rejoindre" à la connexion, avec leur propre email et mot de passe.</p>
-      <div style="display:flex; align-items:center; gap:10px;">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
         <code id="inviteCodeDisplay" style="font-size:18px; font-weight:700; padding:8px 14px; background:var(--panel-2, #f3f4f6); border-radius:8px;">------</code>
         <button class="ghost" id="btnCopyInvite">Copier</button>
+        <button class="ghost" id="btnRegenInvite">🔄 Renouveler le code</button>
       </div>
+      <p class="hint-text" style="margin-bottom:0;">Renouvelle le code si tu penses qu'il a été partagé par erreur. L'ancien code cesse de fonctionner ; les membres déjà dans l'équipe ne sont pas touchés.</p>
     </div>
 
     <div class="card">
@@ -1629,6 +1631,16 @@
     const code = document.getElementById('inviteCodeDisplay').textContent;
     if (!code || code === '------') return;
     navigator.clipboard?.writeText(code).then(() => toast('Code copié !')).catch(() => {});
+  });
+
+  document.getElementById('btnRegenInvite').addEventListener('click', async () => {
+    if (!confirm("Renouveler le code d'invitation ?\n\nL'ancien code ne marchera plus. Les personnes déjà dans l'équipe ne sont pas affectées.")) return;
+    const { data, error } = await supabaseClient.rpc('regenerate_invite_code');
+    if (error) { toast('Erreur : ' + error.message); return; }
+    const code = Array.isArray(data) ? data[0] : data;
+    document.getElementById('inviteCodeDisplay').textContent = code;
+    if (state.commerce) state.commerce.inviteCode = code;
+    toast('Nouveau code créé !');
   });
 
   // ---- Onglets Connexion / Créer / Rejoindre ----
