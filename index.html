@@ -904,7 +904,9 @@
       </div>
       <div id="invBreakdown" style="text-align:right; font-size:13px; margin:8px 0 4px; line-height:1.7;"></div>
       <div class="inv-total-row"><span class="lbl" id="invTotalLbl">Total</span><span class="amt" id="invGrandTotal">0 FCFA</span></div>
-      <div style="margin-top:18px; display:flex; gap:10px; justify-content:flex-end;">
+      <div style="margin-top:18px; display:flex; gap:12px; justify-content:flex-end; align-items:center; flex-wrap:wrap;">
+        <label class="tk-opt"><input type="checkbox" id="tkAuto"> 🧾 Imprimer le ticket après la vente</label>
+        <select id="tkWidth" title="Largeur du papier du ticket"><option value="80">Ticket 80 mm</option><option value="58">Ticket 58 mm</option></select>
         <button class="primary" id="btnFinalize">Finaliser la vente</button>
       </div>
       <p class="muted" id="finalizeHint" style="margin-top:10px;"></p>
@@ -1408,6 +1410,7 @@
 <div class="toast" id="toast"></div>
 
 <div id="printInvSheet"></div>
+<div id="printTicket"></div>
 <div id="printArea">
   <div class="pi-head">
     <div>
@@ -2486,6 +2489,7 @@
           <td>${statutHtml}</td>
           <td class="num-cell" style="white-space:nowrap;">
             <button class="ghost" data-print="${inv.id}" style="padding:6px 12px; font-size:12px;">Imprimer</button>
+            <button class="ghost" data-ticket="${inv.id}" style="padding:6px 12px; font-size:12px; margin-left:6px;">🧾 Ticket</button>
             ${(annulee || !(state.currentUser && (state.currentUser.role === 'proprietaire' || state.currentUser.role === 'admin'))) ? '' : `<button class="ghost" data-cancel="${inv.id}" style="padding:6px 12px; font-size:12px; margin-left:6px;">Annuler</button>`}
           </td>
         `;
@@ -2493,6 +2497,9 @@
       });
       body.querySelectorAll('[data-print]').forEach(b => {
         b.addEventListener('click', () => { const inv = state.invoices.find(i => i.id === b.dataset.print); if (inv) printInvoice(inv); });
+      });
+      body.querySelectorAll('[data-ticket]').forEach(b => {
+        b.addEventListener('click', () => { const inv = state.invoices.find(i => i.id === b.dataset.ticket); if (inv) printTicket(inv); });
       });
       body.querySelectorAll('[data-cancel]').forEach(b => {
         b.addEventListener('click', () => cancelInvoice(b.dataset.cancel));
@@ -2536,6 +2543,67 @@
       console.error(err);
       toast("Erreur lors de l'annulation : " + (err.message || ''));
     }
+  }
+
+  // ================= Ticket de caisse (imprimante thermique 58 / 80 mm) =================
+  (function () {
+    const auto = document.getElementById('tkAuto'), wsel = document.getElementById('tkWidth');
+    try { if (auto) auto.checked = localStorage.getItem('sf_ticket_auto') === '1'; if (wsel && localStorage.getItem('sf_ticket_w')) wsel.value = localStorage.getItem('sf_ticket_w'); } catch (e) {}
+    if (auto) auto.addEventListener('change', () => { try { localStorage.setItem('sf_ticket_auto', auto.checked ? '1' : '0'); } catch (e) {} });
+    if (wsel) wsel.addEventListener('change', () => { try { localStorage.setItem('sf_ticket_w', wsel.value); } catch (e) {} });
+  })();
+
+  function printTicket(inv) {
+    const w = (document.getElementById('tkWidth') && document.getElementById('tkWidth').value === '58') ? 58 : 80;
+    const c = state.commerce || {};
+    const num = 'FAC-' + String(inv.num).padStart(4, '0');
+    const dt = inv.createdAt ? new Date(inv.createdAt) : new Date();
+    const dateTxt = (inv.date ? inv.date.split('-').reverse().join('/') : dt.toLocaleDateString('fr-FR')) + ' ' + dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const num0 = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR');
+    const lignes = (inv.lignes || []).map(l => {
+      const q = Number(l.qte) || 0, pr = Number(l.prix) || 0;
+      return `<div class="tk-item"><div class="tk-name">${escapeHtml(l.nom)}</div><div class="tk-row"><span>${escapeHtml(String(q))}${l.unite ? ' ' + escapeHtml(l.unite) : ''} × ${num0(pr)}</span><span>${num0(q * pr)}</span></div></div>`;
+    }).join('');
+    const rem = Number(inv.remise) || 0, tm = inv.tvaMode || 'none', tv = Number(inv.tvaMontant) || 0, tx = Number(inv.tvaTaux) || 0;
+    const sub = Number(inv.sousTotal) || (inv.lignes || []).reduce((t, l) => t + (Number(l.prix) || 0) * (Number(l.qte) || 0), 0);
+    const extra = [];
+    if (rem > 0 || tm !== 'none') {
+      extra.push(['Sous-total', num0(sub)]);
+      if (rem > 0) extra.push(['Remise', '- ' + num0(rem)]);
+      if (tm === 'add') { extra.push(['Montant HT', num0(sub - rem)]); extra.push([`TVA ${tx}%`, '+ ' + num0(tv)]); }
+      else if (tm === 'incl') extra.push([`dont TVA ${tx}%`, num0(tv)]);
+    }
+    const paye = Number(inv.montantPaye) || 0, total = Number(inv.total) || 0, reste = Math.max(0, total - paye);
+    const logo = isImageData(c.logoUrl) ? `<img class="tk-logo" src="${c.logoUrl}" alt="">` : '';
+    const nbArt = (inv.lignes || []).reduce((t, l) => t + (Number(l.qte) || 0), 0);
+    document.getElementById('printTicket').innerHTML = `
+      <div class="tk-center">${logo}<div class="tk-shop">${escapeHtml(c.nom || 'StockFlow Pro')}</div>
+        ${c.adresse ? `<div>${escapeHtml(c.adresse)}</div>` : ''}${c.telephone ? `<div>Tél : ${escapeHtml(c.telephone)}</div>` : ''}${c.numeroFiscal ? `<div>N° fiscal : ${escapeHtml(c.numeroFiscal)}</div>` : ''}</div>
+      <div class="tk-sep"></div>
+      <div class="tk-row"><span>Ticket ${num}</span><span>${escapeHtml(dateTxt)}</span></div>
+      ${inv.operateur ? `<div>Vendeur : ${escapeHtml(String(inv.operateur).replace(/\s*\(.*\)$/, ''))}</div>` : ''}
+      ${inv.client ? `<div>Client : ${escapeHtml(inv.client)}</div>` : ''}
+      <div class="tk-sep"></div>
+      ${lignes}
+      <div class="tk-sep"></div>
+      ${extra.map(r => `<div class="tk-row"><span>${escapeHtml(r[0])}</span><span>${escapeHtml(r[1])}</span></div>`).join('')}
+      <div class="tk-row tk-total"><span>TOTAL</span><span>${num0(total)} FCFA</span></div>
+      <div class="tk-row"><span>Payé</span><span>${num0(paye)}</span></div>
+      ${reste > 0 ? `<div class="tk-row tk-reste"><span>RESTE À PAYER</span><span>${num0(reste)}</span></div>` : ''}
+      <div class="tk-small">${nbArt} article(s)</div>
+      <div class="tk-sep"></div>
+      <div class="tk-center tk-thanks">${escapeHtml(c.messageFacture || 'Merci pour votre confiance, à bientôt !')}</div>
+      <div class="tk-center tk-small">Ticket non valable comme facture fiscale</div>
+      <div class="tk-cut">.</div>`;
+    const pt = document.getElementById('printTicket');
+    pt.className = 'tk-w' + w;
+    const page = document.createElement('style'); page.id = 'ticket-page';
+    page.textContent = `@page { size: ${w}mm auto; margin: 0; }`;
+    document.head.appendChild(page);
+    document.body.classList.add('print-ticket');
+    const cleanup = () => { document.body.classList.remove('print-ticket'); const x = document.getElementById('ticket-page'); if (x) x.remove(); window.removeEventListener('afterprint', cleanup); };
+    window.addEventListener('afterprint', cleanup);
+    setTimeout(() => window.print(), 350);
   }
 
   function printInvoice(inv, kind) {
@@ -2882,6 +2950,7 @@
       renderInvoiceLines();
       const resteMsg = montantPaye < total ? ` — reste à payer : ${euros(total - montantPaye)}` : '';
       toast(`Facture FAC-${String(num).padStart(4, '0')} finalisée — stock mis à jour${resteMsg}.`);
+      if (document.getElementById('tkAuto') && document.getElementById('tkAuto').checked) printTicket(invDoc);
     } catch (err) {
       console.error(err);
       const detail = (err && err.message) ? err.message : String(err);
@@ -4907,6 +4976,33 @@
   nav.tabs { scrollbar-width:thin; scrollbar-color:var(--brick) transparent; overscroll-behavior:contain; }
   nav.tabs::-webkit-scrollbar { display:block; width:6px; }
   nav.tabs::-webkit-scrollbar-thumb { background:var(--brick); border-radius:6px; }
+}
+</style>
+<style id="ticket-css">
+#printTicket{display:none;}
+.tk-opt{display:inline-flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;color:var(--ink);}
+.tk-opt input{width:18px;height:18px;accent-color:var(--brick);}
+@media print {
+  body.print-ticket #printArea, body.print-ticket #printInvSheet { display:none !important; }
+  body.print-ticket * { visibility:hidden; }
+  body.print-ticket #printTicket, body.print-ticket #printTicket * { visibility:visible; }
+  body.print-ticket #printTicket { display:block !important; position:absolute; left:0; top:0; background:#fff !important; color:#000 !important;
+    font-family:'Courier New',Courier,monospace; font-size:12px; line-height:1.35; padding:3mm 3mm 6mm; box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  body.print-ticket #printTicket.tk-w80 { width:80mm; }
+  body.print-ticket #printTicket.tk-w58 { width:58mm; font-size:11px; padding:2mm 2mm 6mm; }
+  #printTicket *{ color:#000 !important; background:none !important; }
+  #printTicket .tk-center{text-align:center;}
+  #printTicket .tk-logo{max-width:40mm;max-height:18mm;display:block;margin:0 auto 2mm;}
+  #printTicket .tk-shop{font-size:1.25em;font-weight:800;text-transform:uppercase;}
+  #printTicket .tk-sep{border-top:1px dashed #000;margin:2mm 0;}
+  #printTicket .tk-row{display:flex;justify-content:space-between;gap:6px;}
+  #printTicket .tk-item{margin-bottom:1.5mm;}
+  #printTicket .tk-name{font-weight:700;word-break:break-word;}
+  #printTicket .tk-total{font-size:1.3em;font-weight:800;margin-top:1mm;}
+  #printTicket .tk-reste{font-weight:800;}
+  #printTicket .tk-small{font-size:.85em;margin-top:1mm;}
+  #printTicket .tk-thanks{font-weight:700;}
+  #printTicket .tk-cut{color:#fff !important;height:6mm;}
 }
 </style>
 </body>
