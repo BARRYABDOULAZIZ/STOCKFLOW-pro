@@ -904,12 +904,12 @@
       </div>
       <div id="invBreakdown" style="text-align:right; font-size:13px; margin:8px 0 4px; line-height:1.7;"></div>
       <div class="inv-total-row"><span class="lbl" id="invTotalLbl">Total</span><span class="amt" id="invGrandTotal">0 FCFA</span></div>
+      <p class="muted" id="finalizeHint" style="margin-top:14px;"></p>
       <div style="margin-top:18px; display:flex; gap:12px; justify-content:flex-end; align-items:center; flex-wrap:wrap;">
         <label class="tk-opt"><input type="checkbox" id="tkAuto"> 🧾 Imprimer le ticket après la vente</label>
         <select id="tkWidth" title="Largeur du papier du ticket"><option value="80">Ticket 80 mm</option><option value="58">Ticket 58 mm</option></select>
         <button class="primary" id="btnFinalize">Finaliser la vente</button>
       </div>
-      <p class="muted" id="finalizeHint" style="margin-top:10px;"></p>
     </div>
   </section>
 
@@ -1489,9 +1489,11 @@
   function toast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
+    const isWarn = /hors catalogue|inchangé|insuffisant|erreur|⚠|impossible|refus/i.test(msg || '');
+    t.classList.toggle('warn', isWarn);
     t.classList.add('show');
     clearTimeout(toast._h);
-    const duration = msg && msg.length > 60 ? 8000 : 2800;
+    const duration = (msg && msg.length > 60) || isWarn ? 9000 : 2800;
     toast._h = setTimeout(() => t.classList.remove('show'), duration);
   }
   function setSync(ok, label) {
@@ -2818,8 +2820,9 @@
       return null;
     }).filter(Boolean);
     const customLines = invoiceLines.filter(l => !l.matched && l.nom && l.nom.trim()).length;
-    if (shortages.length) { hint.textContent = '⚠ Stock insuffisant — ' + shortages.join(', '); hint.style.color = 'var(--danger)'; }
-    else if (customLines) { hint.textContent = `⚠ ${customLines} ligne(s) hors catalogue (produit non enregistré dans ton stock) — le stock ne sera PAS déduit pour ces lignes.`; hint.style.color = 'var(--gold)'; }
+    hint.classList.remove('fh-warn');
+    if (shortages.length) { hint.textContent = '⚠ Stock insuffisant — ' + shortages.join(', '); hint.style.color = ''; hint.classList.add('fh-warn'); }
+    else if (customLines) { hint.textContent = `⚠ ${customLines} ligne(s) hors catalogue (produit non enregistré dans ton stock) — le stock ne sera PAS déduit pour ces lignes.`; hint.style.color = ''; hint.classList.add('fh-warn'); }
     else { hint.textContent = 'La finalisation déduit automatiquement les quantités du stock pour les articles du catalogue.'; hint.style.color = ''; }
   }
   function closeAllAutocomplete() { document.querySelectorAll('.ac-list').forEach(el => el.style.display = 'none'); }
@@ -5006,6 +5009,13 @@
   #printTicket .tk-thanks{font-weight:700;}
   #printTicket .tk-cut{color:#fff !important;height:6mm;}
 }
+</style>
+<style id="alert-visibility">
+.toast { top:calc(14px + env(safe-area-inset-top, 0px)) !important; bottom:auto !important; white-space:normal !important; text-align:center; max-width:min(92vw, 580px) !important; font-size:15px !important; z-index:300 !important; transform:translateX(-50%) translateY(-24px) !important; }
+.toast.show { transform:translateX(-50%) translateY(0) !important; }
+.toast.warn { background:#dc2626 !important; color:#fff !important; font-weight:800 !important; font-size:16.5px !important; border:2px solid #fff; box-shadow:0 0 0 4px rgba(220,38,38,.35), 0 16px 44px rgba(220,38,38,.55) !important; }
+#finalizeHint.fh-warn { display:block; padding:12px 14px; border-radius:12px; background:rgba(220,38,38,.14); border:2px solid #dc2626; color:var(--danger) !important; font-weight:800; font-size:15.5px; opacity:1; animation:fhPulse 1.6s ease-in-out infinite; }
+@keyframes fhPulse { 0%,100% { box-shadow:0 0 0 0 rgba(220,38,38,.45); } 50% { box-shadow:0 0 0 7px rgba(220,38,38,0); } }
 </style>
 </body>
 </html>
