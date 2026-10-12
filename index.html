@@ -552,6 +552,11 @@
       </div>
     </div>
 
+    <div class="card ai-card" id="aiCard">
+      <div class="row-head"><h2>🧠 Conseils intelligents du jour</h2><span class="muted" id="aiSub"></span></div>
+      <div id="aiInsights"></div>
+    </div>
+
     <div class="cluster">
       <div class="stat"><div class="num" id="dbProduits">–</div><div class="lbl">📦 Produits en stock</div></div>
       <div class="stat"><div class="num alert" id="dbRupture">–</div><div class="lbl">⚠ Produits en rupture</div></div>
@@ -1206,6 +1211,38 @@
     </div>
     <p class="hint-text" id="csHint"></p>
 
+    <div class="card" id="clotureCard">
+      <div class="row-head"><h2>🔒 Clôture de caisse — aujourd'hui</h2><span class="muted" id="clDate"></span></div>
+      <div class="cl-grid">
+        <div>
+          <h3 class="cl-h">1. Ce que l'appli attend dans le tiroir</h3>
+          <div class="cl-line"><span>💵 Espèces encaissées aujourd'hui</span><b id="clEsp">0</b></div>
+          <div class="cl-line"><span>➖ Dépenses payées en espèces</span><input id="clDep" type="number" min="0" step="any" placeholder="0"></div>
+          <div class="cl-line"><span>➕ Fond de caisse du matin</span><input id="clFond" type="number" min="0" step="any" placeholder="0"></div>
+          <div class="cl-line cl-big"><span>Espèces attendues</span><b id="clAttendu">0</b></div>
+          <div class="cl-line cl-muted"><span>📱🏦📄 Autres modes (à vérifier sur le téléphone / la banque)</span><b id="clAutres">0</b></div>
+          <div class="cl-line cl-muted"><span>🧾 Nombre de ventes encaissées</span><b id="clNb">0</b></div>
+        </div>
+        <div>
+          <h3 class="cl-h">2. Ce que tu comptes réellement</h3>
+          <div id="clDenoms"></div>
+          <div class="cl-line cl-big"><span>Total compté</span><b id="clCompte">0</b></div>
+        </div>
+      </div>
+      <div class="cl-verdict" id="clVerdict" data-state="idle">
+        <div class="cl-vt" id="clVerdictTitle">Compte les billets et les pièces pour voir l'écart.</div>
+        <div class="cl-ecart" id="clEcart"></div>
+        <div class="cl-vh" id="clVerdictHint"></div>
+      </div>
+      <div class="cl-actions">
+        <button class="primary" id="clPrint" type="button">🖨 Imprimer le rapport</button>
+        <button class="ghost" id="clSave" type="button">💾 Enregistrer la clôture</button>
+        <button class="ghost" id="clReset" type="button">Remettre le comptage à zéro</button>
+      </div>
+      <div id="clHistory"></div>
+      <p class="hint-text" style="margin-bottom:0;">Les clôtures enregistrées sont gardées <b>sur cet appareil</b> (pas dans la base). Pour un historique partagé, imprime le rapport ou fais une capture.</p>
+    </div>
+
     <div class="card">
       <div class="row-head"><h2>Par vendeur</h2></div>
       <div class="table-wrap">
@@ -1683,6 +1720,240 @@
     window.addEventListener('resize', reveal);
     setTimeout(reveal, 400);
   })();
+
+  // ================= Animation des chiffres (compteur) =================
+  (function () {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const IDS = ['heroInvesti','heroValeur','heroBenefice','dbProduits','dbRupture','dbReappro','dbVentesJour','dbVentesMois','statTotalValue','statCount','statAlert','statCategories','csEsp','csMobile','csVirement','csCheque','csTotal','clDetteTotale','clEsp','clAttendu','clAutres','clNb','clCompte','clEcart'];
+    const RX = /^([^\d-]*)(-?\d[\d\s  ]*)(.*)$/;
+    const fmt = (n) => Math.round(n).toLocaleString('fr-FR');
+    IDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      let busy = false, raf = 0, shown = null;
+      const write = (txt) => { busy = true; el.textContent = txt; obs.takeRecords(); busy = false; };
+      const obs = new MutationObserver(() => {
+        if (busy) return;
+        const m = RX.exec(el.textContent || '');
+        if (!m) { shown = null; return; }
+        const target = parseInt(m[2].replace(/[^\d-]/g, ''), 10);
+        if (isNaN(target)) return;
+        const pre = m[1], post = m[3], final = el.textContent;
+        if (shown === target) return;
+        const from = shown === null ? 0 : shown, t0 = performance.now(), dur = 650;
+        cancelAnimationFrame(raf);
+        const step = (t) => {
+          const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+          if (k < 1) { write(pre + fmt(from + (target - from) * e) + post); raf = requestAnimationFrame(step); }
+          else { write(final); }
+        };
+        shown = target;
+        raf = requestAnimationFrame(step);
+      });
+      obs.observe(el, { childList: true, characterData: true, subtree: true });
+    });
+  })();
+
+  // ================= Conseils intelligents (tableau de bord) =================
+  function renderInsights() {
+    const box = document.getElementById('aiInsights');
+    if (!box) return;
+    const role = state.currentUser && state.currentUser.role;
+    const boss = role === 'proprietaire' || role === 'admin';
+    const inv = (state.invoices || []).filter(i => !i.annulee);
+    const prods = state.products || [];
+    const today = todayStr();
+    const dayMs = 86400000;
+    const ago = (d) => Math.round((Date.now() - new Date((d || today) + 'T12:00:00').getTime()) / dayMs);
+    const refToId = {}; prods.forEach(p => { if (p.ref) refToId[p.ref] = p.id; });
+    let maxAgo = 0; const qty30 = {}, lastSold = {};
+    inv.forEach(i => {
+      const a = ago(i.date); if (a > maxAgo) maxAgo = a;
+      (i.lignes || []).forEach(l => {
+        const key = l.productId || refToId[l.ref]; if (!key) return;
+        const q = Number(l.qte) || 0;
+        if (a <= 30) qty30[key] = (qty30[key] || 0) + q;
+        if (lastSold[key] === undefined || a < lastSold[key]) lastSold[key] = a;
+      });
+    });
+    const win = Math.min(30, Math.max(7, maxAgo));
+    const items = [];
+    const nm = (p) => escapeHtml(p.nom || p.ref || '—');
+    if (maxAgo >= 6) {
+      prods.filter(p => Number(p.stock) > 0 && (qty30[p.id] || 0) > 0).map(p => ({ p, rate: qty30[p.id] / win })).map(o => ({ ...o, days: Number(o.p.stock) / o.rate }))
+        .filter(o => o.days <= 7).sort((a, b) => a.days - b.days).slice(0, 3).forEach(o => {
+          const d = Math.max(1, Math.round(o.days));
+          items.push({ sev: d <= 2 ? 'danger' : 'warn', ic: '⏳', tab: 'produits', t: `${nm(o.p)} : il reste environ ${d} jour${d > 1 ? 's' : ''} de stock`, d: `Au rythme actuel (~${(Math.round(o.rate * 10) / 10).toLocaleString('fr-FR')} ${escapeHtml(o.p.unite || 'unité')} par jour). Pense à commander.` });
+        });
+      prods.filter(p => Number(p.stock) <= 0 && (qty30[p.id] || 0) > 0).sort((a, b) => qty30[b.id] - qty30[a.id]).slice(0, 2).forEach(p => {
+        items.push({ sev: 'danger', ic: '🚫', tab: 'produits', t: `${nm(p)} est en rupture`, d: `Il s'est vendu ${Math.round(qty30[p.id])} fois ces 30 derniers jours : tu perds des ventes.` });
+      });
+    }
+    const reste = inv.map(i => ({ i, r: Math.max(0, (Number(i.total) || 0) - (Number(i.montantPaye) || 0)) })).filter(o => o.r > 0);
+    if (reste.length) {
+      const sum = reste.reduce((t, o) => t + o.r, 0), old = reste.filter(o => ago(o.i.date) > 7).length;
+      items.push({ sev: old ? 'warn' : 'info', ic: '💰', tab: 'clients', t: `${reste.length} facture${reste.length > 1 ? 's' : ''} impayée${reste.length > 1 ? 's' : ''} : ${euros(sum)} à encaisser`, d: old ? `Dont ${old} depuis plus de 7 jours : relance tes clients.` : 'Aucune n\'est en retard de plus de 7 jours.' });
+    }
+    if (boss) {
+      const perte = prods.filter(p => Number(p.prixAchat) > 0 && Number(p.prixVente) > 0 && Number(p.prixVente) < Number(p.prixAchat));
+      if (perte.length) items.push({ sev: 'danger', ic: '💸', tab: 'produits', t: `${perte.length} produit${perte.length > 1 ? 's' : ''} vendu${perte.length > 1 ? 's' : ''} à perte`, d: `Prix de vente inférieur au prix d'achat, par exemple : ${nm(perte[0])}.` });
+      if (maxAgo >= 60) {
+        const dorm = prods.filter(p => Number(p.stock) > 0 && Number(p.prixAchat) > 0 && (lastSold[p.id] === undefined || lastSold[p.id] > 60));
+        if (dorm.length) items.push({ sev: 'info', ic: '🧊', tab: 'produits', t: `${dorm.length} produit${dorm.length > 1 ? 's' : ''} sans vente depuis 60 jours`, d: `${euros(dorm.reduce((t, p) => t + Number(p.prixAchat) * Number(p.stock), 0))} d'argent immobilisé. Pense à une promotion.` });
+      }
+      const byDay = {}; inv.forEach(i => { byDay[i.date] = (byDay[i.date] || 0) + (Number(i.total) || 0); });
+      const prev = Object.entries(byDay).filter(([d]) => d < today && ago(d) <= 8).map(([, v]) => v);
+      const jour = byDay[today] || 0, hr = new Date().getHours();
+      if (prev.length >= 3 && jour > 0 && hr >= 15) {
+        const avg = prev.reduce((a, b) => a + b, 0) / prev.length, pct = Math.round((jour / avg - 1) * 100);
+        if (pct >= 20) items.push({ sev: 'good', ic: '🚀', tab: 'rapports', t: `Belle journée : +${pct} % par rapport à ta moyenne`, d: `${euros(jour)} aujourd'hui contre ${euros(avg)} en moyenne ces derniers jours.` });
+        else if (pct <= -30) items.push({ sev: 'info', ic: '📉', tab: 'rapports', t: `Journée calme : ${pct} % par rapport à ta moyenne`, d: `${euros(jour)} aujourd'hui contre ${euros(avg)} en moyenne.` });
+      }
+      let lastClose = ''; try { lastClose = localStorage.getItem('sf_last_close') || ''; } catch (e) {}
+      if (new Date().getHours() >= 18 && (byDay[today] || 0) > 0 && lastClose !== today) items.push({ sev: 'warn', ic: '🔒', tab: 'caisse', t: 'Pense à clôturer la caisse', d: 'Compte le tiroir et compare avec ce que l\'appli attend.' });
+    }
+    document.getElementById('aiSub').textContent = items.length ? `${items.length} point${items.length > 1 ? 's' : ''} à regarder` : '';
+    if (!items.length) items.push({ sev: 'good', ic: '✅', tab: '', t: 'Tout est en ordre', d: prods.length ? 'Rien d\'urgent à signaler pour le moment.' : 'Ajoute tes produits et fais tes premières ventes : les conseils apparaîtront ici.' });
+    const sig = JSON.stringify(items.map(i => i.t));
+    if (box._sig === sig) return;
+    box._sig = sig;
+    box.innerHTML = items.map((i, k) => `<div class="ai-item sev-${i.sev}" ${i.tab ? `data-tab-go="${i.tab}"` : ''} style="--d:${k * 80}ms"><span class="ai-ic">${i.ic}</span><div class="ai-tx"><b>${i.t}</b><span>${i.d}</span></div>${i.tab ? '<span class="ai-arrow">›</span>' : ''}</div>`).join('');
+  }
+  document.getElementById('aiInsights').addEventListener('click', (e) => {
+    const it = e.target.closest('[data-tab-go]'); if (!it) return;
+    const b = document.querySelector(`nav.tabs button[data-tab="${it.dataset.tabGo}"]`); if (b) b.click();
+  });
+
+  // ================= Clôture de caisse =================
+  const CL_DENOMS = [['b10000', 'Billet 10 000', 10000], ['b5000', 'Billet 5 000', 5000], ['b2000', 'Billet 2 000', 2000], ['b1000', 'Billet 1 000', 1000], ['b500', 'Billet 500', 500],
+    ['p500', 'Pièce 500', 500], ['p250', 'Pièce 250', 250], ['p200', 'Pièce 200', 200], ['p100', 'Pièce 100', 100], ['p50', 'Pièce 50', 50], ['p25', 'Pièce 25', 25], ['p10', 'Pièce 10', 10], ['p5', 'Pièce 5', 5]];
+  const clKey = () => 'sf_cl_counts_' + todayStr();
+  const clLoad = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+  const clStore = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  let clBuilt = false, clLastState = '';
+  function clBuild() {
+    const counts = clLoad(clKey(), {});
+    document.getElementById('clDenoms').innerHTML = CL_DENOMS.map(([k, lab]) => `<div class="cl-den" data-row="${k}"><span>${lab}</span><input type="number" min="0" step="1" inputmode="numeric" data-k="${k}" placeholder="0" value="${counts[k] || ''}"><span class="cl-sub" id="cls-${k}">0</span></div>`).join('');
+    document.getElementById('clFond').value = clLoad('sf_cl_fond', '') || '';
+    clBuilt = true;
+  }
+  function clToday() {
+    const byId = {}; (state.invoices || []).forEach(i => { byId[i.id] = i; });
+    const pays = (state.paiements || []).filter(p => { const inv = byId[p.factureId]; return !(inv && inv.annulee) && p.date === todayStr(); });
+    const esp = pays.filter(p => p.mode === 'Espèces'), autres = pays.filter(p => p.mode !== 'Espèces');
+    const sum = (a) => a.reduce((t, p) => t + (Number(p.montant) || 0), 0);
+    const dep = (state.depenses || []).filter(d => d.date === todayStr());
+    return { pays, esp, autres, espSum: sum(esp), autresSum: sum(autres), nb: new Set(pays.map(p => p.factureId)).size, dep, depSum: dep.reduce((t, d) => t + (Number(d.montant) || 0), 0), byId };
+  }
+  function clCounts() { const c = {}; document.querySelectorAll('#clDenoms input').forEach(i => { const n = Math.max(0, Math.floor(Number(i.value) || 0)); if (n) c[i.dataset.k] = n; }); return c; }
+  function renderCloture() {
+    if (!document.getElementById('clotureCard')) return;
+    const boss = state.currentUser && (state.currentUser.role === 'proprietaire' || state.currentUser.role === 'admin');
+    document.getElementById('clotureCard').style.display = boss ? '' : 'none';
+    if (!boss) return;
+    if (!clBuilt) clBuild();
+    const T = clToday();
+    document.getElementById('clDate').textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const depEl = document.getElementById('clDep');
+    if (!depEl.dataset.touched) depEl.value = T.depSum || '';
+    const fond = Number(document.getElementById('clFond').value) || 0, dep = Number(depEl.value) || 0;
+    const attendu = fond + T.espSum - dep;
+    const counts = clCounts();
+    let compte = 0;
+    CL_DENOMS.forEach(([k, , v]) => { const n = counts[k] || 0; compte += n * v; const sub = document.getElementById('cls-' + k); if (sub) sub.textContent = n ? (n * v).toLocaleString('fr-FR') : '0'; const row = document.querySelector(`[data-row="${k}"]`); if (row) row.classList.toggle('has', n > 0); });
+    const set = (id, txt) => { const el = document.getElementById(id); if (el && el.textContent !== txt) el.textContent = txt; };
+    set('clEsp', euros(T.espSum)); set('clAttendu', euros(attendu)); set('clAutres', euros(T.autresSum)); set('clNb', String(T.nb)); set('clCompte', euros(compte));
+    const diff = compte - attendu, any = Object.keys(counts).length > 0;
+    const V = document.getElementById('clVerdict');
+    let st = 'idle', title = 'Compte les billets et les pièces pour voir l\'écart.', ecart = '', hint = '';
+    if (any) {
+      if (diff === 0) { st = 'ok'; title = '✓ Caisse juste, bravo !'; ecart = euros(0); }
+      else if (diff > 0) { st = 'plus'; title = 'Il y a un excédent dans le tiroir'; ecart = '+' + euros(diff); }
+      else { st = 'moins'; title = 'Il manque de l\'argent dans le tiroir'; ecart = '−' + euros(-diff); }
+      const a = Math.abs(diff);
+      if (diff < 0) {
+        const m = T.esp.find(p => Math.round(Number(p.montant)) === a);
+        const dm = T.dep.find(d => Math.round(Number(d.montant)) === a);
+        const inv = m && T.byId[m.factureId];
+        if (m) hint = `💡 L'écart est exactement le montant ${inv ? 'de la vente FAC-' + String(inv.num).padStart(4, '0') : 'd\'un paiement'} (${euros(a)}) : a-t-il vraiment été encaissé en espèces ?`;
+        else if (dm) hint = `💡 L'écart est exactement une dépense (${escapeHtml(dm.categorie || '')} ${euros(a)}) : vérifie qu'elle n'est pas comptée deux fois.`;
+        else hint = '💡 Vérifie : ventes non enregistrées, dépenses payées en espèces non notées, ou monnaie mal rendue.';
+      } else if (diff > 0) {
+        const dm = T.dep.find(d => Math.round(Number(d.montant)) === a);
+        hint = dm ? `💡 L'excédent est exactement une dépense (${escapeHtml(dm.categorie || '')} ${euros(a)}) : a-t-elle été payée autrement qu'en espèces ?` : '💡 Vérifie : une vente encaissée mais non enregistrée, ou un fond de caisse oublié.';
+      }
+    }
+    set('clVerdictTitle', title); set('clVerdictHint', hint);
+    const ecEl = document.getElementById('clEcart'); if (ecEl.textContent !== ecart) ecEl.textContent = ecart;
+    V.dataset.state = st;
+    if (clLastState !== st && st !== 'idle') { V.classList.remove('pop'); void V.offsetWidth; V.classList.add('pop'); }
+    clLastState = st;
+    renderClHistory();
+  }
+  function renderClHistory() {
+    const h = clLoad('sf_clotures', []);
+    const el = document.getElementById('clHistory');
+    const sig = JSON.stringify(h); if (el._sig === sig) return; el._sig = sig;
+    el.innerHTML = h.length ? '<h3 class="cl-h" style="margin:10px 0 4px;">Dernières clôtures (sur cet appareil)</h3>' + h.slice(0, 7).map(c => `<div class="cl-h-row"><span>${escapeHtml(c.date.split('-').reverse().join('/'))} · ${escapeHtml(c.by || '')}</span><span>attendu ${euros(c.attendu)} · compté ${euros(c.compte)}</span><span class="cl-chip ${c.ecart === 0 ? 'ok' : c.ecart > 0 ? 'plus' : 'moins'}">${c.ecart > 0 ? '+' : c.ecart < 0 ? '−' : ''}${euros(Math.abs(c.ecart))}</span></div>`).join('') : '';
+  }
+  document.getElementById('clDenoms').addEventListener('input', () => { clStore(clKey(), clCounts()); renderCloture(); });
+  document.getElementById('clFond').addEventListener('input', () => { clStore('sf_cl_fond', document.getElementById('clFond').value); renderCloture(); });
+  document.getElementById('clDep').addEventListener('input', () => { document.getElementById('clDep').dataset.touched = '1'; renderCloture(); });
+  document.getElementById('clReset').addEventListener('click', () => {
+    if (!confirm('Remettre tout le comptage à zéro ?')) return;
+    document.querySelectorAll('#clDenoms input').forEach(i => { i.value = ''; });
+    clStore(clKey(), {}); renderCloture();
+  });
+  function clSnapshot() {
+    const T = clToday(), counts = clCounts();
+    const fond = Number(document.getElementById('clFond').value) || 0, dep = Number(document.getElementById('clDep').value) || 0;
+    const attendu = fond + T.espSum - dep; let compte = 0; CL_DENOMS.forEach(([k, , v]) => { compte += (counts[k] || 0) * v; });
+    const modes = {}; T.pays.forEach(p => { modes[p.mode || 'Autre'] = (modes[p.mode || 'Autre'] || 0) + (Number(p.montant) || 0); });
+    return { T, counts, fond, dep, attendu, compte, ecart: compte - attendu, modes, by: state.currentUser ? state.currentUser.nom : '' };
+  }
+  document.getElementById('clSave').addEventListener('click', () => {
+    const S = clSnapshot();
+    if (!Object.keys(S.counts).length) { toast('⚠ Compte d\'abord les billets et les pièces.'); return; }
+    const h = clLoad('sf_clotures', []).filter(c => c.date !== todayStr());
+    h.unshift({ date: todayStr(), attendu: S.attendu, compte: S.compte, ecart: S.ecart, by: S.by });
+    clStore('sf_clotures', h.slice(0, 30)); clStore('sf_last_close', todayStr());
+    try { localStorage.setItem('sf_last_close', todayStr()); } catch (e) {}
+    toast(S.ecart === 0 ? 'Clôture enregistrée : caisse juste ✓' : `Clôture enregistrée (écart ${S.ecart > 0 ? '+' : '−'}${euros(Math.abs(S.ecart))}).`);
+    renderCloture();
+  });
+  document.getElementById('clPrint').addEventListener('click', () => {
+    const S = clSnapshot(), c = state.commerce || {}, n0 = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR');
+    const den = CL_DENOMS.filter(([k]) => S.counts[k]).map(([k, lab, v]) => `<div class="tk-row"><span>${lab} × ${S.counts[k]}</span><span>${n0(S.counts[k] * v)}</span></div>`).join('');
+    const totalAll = S.T.espSum + S.T.autresSum;
+    const html = `
+      <div class="tk-center"><div class="tk-shop">${escapeHtml(c.nom || 'StockFlow Pro')}</div><div class="tk-thanks">CLÔTURE DE CAISSE</div></div>
+      <div class="tk-sep"></div>
+      <div class="tk-row"><span>Date</span><span>${new Date().toLocaleDateString('fr-FR')} ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span></div>
+      <div>Clôturée par : ${escapeHtml(S.by)}</div>
+      <div class="tk-sep"></div>
+      <div class="tk-row"><span>Ventes encaissées</span><span>${S.T.nb}</span></div>
+      ${Object.entries(S.modes).map(([m, v]) => `<div class="tk-row"><span>${escapeHtml(m)}</span><span>${n0(v)}</span></div>`).join('')}
+      <div class="tk-row tk-total"><span>TOTAL</span><span>${n0(totalAll)}</span></div>
+      <div class="tk-sep"></div>
+      <div class="tk-row"><span>Fond de caisse</span><span>${n0(S.fond)}</span></div>
+      <div class="tk-row"><span>+ Espèces encaissées</span><span>${n0(S.T.espSum)}</span></div>
+      <div class="tk-row"><span>- Dépenses espèces</span><span>${n0(S.dep)}</span></div>
+      <div class="tk-row"><b>= Attendu</b><b>${n0(S.attendu)}</b></div>
+      <div class="tk-row"><b>Compté</b><b>${n0(S.compte)}</b></div>
+      <div class="tk-row tk-total"><span>ÉCART</span><span>${S.ecart > 0 ? '+' : ''}${n0(S.ecart)}</span></div>
+      ${den ? '<div class="tk-sep"></div><div class="tk-small">Détail du comptage :</div>' + den : ''}
+      <div class="tk-sep"></div>
+      <div style="margin-top:8mm;">Signature caissier : ______________</div>
+      <div style="margin-top:8mm;">Signature responsable : ___________</div>
+      <div class="tk-cut">.</div>`;
+    document.getElementById('printTicket').innerHTML = html;
+    document.getElementById('printTicket').className = 'tk-w80';
+    const page = document.createElement('style'); page.id = 'ticket-page'; page.textContent = '@page { size: 80mm auto; margin: 0; }'; document.head.appendChild(page);
+    document.body.classList.add('print-ticket');
+    const cleanup = () => { document.body.classList.remove('print-ticket'); const x = document.getElementById('ticket-page'); if (x) x.remove(); window.removeEventListener('afterprint', cleanup); };
+    window.addEventListener('afterprint', cleanup);
+    setTimeout(() => window.print(), 350);
+  });
 
   // ---- Gestion / fusion des catégories ----
   const cmSel = new Set();
@@ -2170,7 +2441,7 @@
         const waBtn = waUrl ? `<a href="${waUrl}" target="_blank" rel="noopener noreferrer" style="text-decoration:none; margin-left:8px; font-size:13px;" title="Commander sur WhatsApp">💬</a>` : '';
         return `<li><span>${escapeHtml(p.nom)}${waBtn}</span><span class="r">${p.stock} ${escapeHtml(p.unite || 'unité')} · ${tag}</span></li>`;
       }).join('');
-    }
+    }    if (typeof renderInsights === 'function') renderInsights();
   }
 
   // ================= Produits (catalogue) =================
@@ -4274,6 +4545,7 @@
   function renderCaisse() {
     if (!document.getElementById('cs-du') || !document.getElementById('cs-du').value) return;
     if (!document.getElementById('panel-caisse').classList.contains('active')) return;
+    if (typeof renderCloture === 'function') renderCloture();
     const list = caissePaiements();
 
     const totals = { 'Espèces': 0, 'Mobile Money': 0, 'Virement': 0, 'Chèque': 0 };
@@ -4839,7 +5111,7 @@
       (err) => console.error(err)
     );
     db.collection('depenses').onSnapshot(
-      (snap) => { state.depenses = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderComptabilite(); scheduleAutoBackup(); },
+      (snap) => { state.depenses = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderComptabilite(); renderCaisse(); scheduleAutoBackup(); },
       (err) => console.error(err)
     );
     db.collection('documents').onSnapshot(
@@ -5016,6 +5288,56 @@
 .toast.warn { background:#dc2626 !important; color:#fff !important; font-weight:800 !important; font-size:16.5px !important; border:2px solid #fff; box-shadow:0 0 0 4px rgba(220,38,38,.35), 0 16px 44px rgba(220,38,38,.55) !important; }
 #finalizeHint.fh-warn { display:block; padding:12px 14px; border-radius:12px; background:rgba(220,38,38,.14); border:2px solid #dc2626; color:var(--danger) !important; font-weight:800; font-size:15.5px; opacity:1; animation:fhPulse 1.6s ease-in-out infinite; }
 @keyframes fhPulse { 0%,100% { box-shadow:0 0 0 0 rgba(220,38,38,.45); } 50% { box-shadow:0 0 0 7px rgba(220,38,38,0); } }
+</style>
+<style id="smart-ui-css">
+/* Conseils intelligents */
+.ai-card{border:1.5px solid color-mix(in srgb,var(--brick) 55%,transparent);box-shadow:0 0 0 4px color-mix(in srgb,var(--brick) 10%,transparent);}
+#aiInsights{display:grid;gap:10px;}
+.ai-item{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:14px;cursor:pointer;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--brick);
+  animation:aiIn .45s cubic-bezier(.2,.9,.3,1) both;animation-delay:var(--d,0ms);transition:transform .15s,box-shadow .15s;}
+.ai-item:hover{transform:translateX(5px);box-shadow:0 8px 22px rgba(60,40,160,.2);}
+.ai-item .ai-ic{font-size:26px;flex:0 0 auto;}
+.ai-item .ai-tx{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;}
+.ai-item .ai-tx b{font-size:15px;}
+.ai-item .ai-tx span{font-size:13px;opacity:.85;}
+.ai-item .ai-arrow{font-size:24px;opacity:.5;}
+.ai-item.sev-danger{border-left-color:#dc2626;background:color-mix(in srgb,#dc2626 9%,var(--paper));}
+.ai-item.sev-danger .ai-ic{animation:aiPulse 1.4s ease-in-out infinite;}
+.ai-item.sev-warn{border-left-color:var(--gold);background:color-mix(in srgb,var(--gold) 9%,var(--paper));}
+.ai-item.sev-good{border-left-color:var(--moss);background:color-mix(in srgb,var(--moss) 9%,var(--paper));}
+@keyframes aiIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+@keyframes aiPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.2);}}
+/* Clôture de caisse */
+.cl-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
+@media (max-width:860px){.cl-grid{grid-template-columns:1fr;}}
+.cl-h{margin:0 0 8px;font-size:15px;color:var(--brick);}
+.cl-line{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);color:var(--ink);}
+.cl-line input{width:130px;text-align:right;}
+.cl-line b{white-space:nowrap;}
+.cl-big{font-size:17px;font-weight:800;border-bottom:2px solid var(--brick);}
+.cl-muted{opacity:.75;font-size:13px;}
+.cl-den{display:grid;grid-template-columns:1fr 78px 110px;align-items:center;gap:8px;padding:4px 0;color:var(--ink);}
+.cl-den input{width:78px;text-align:center;}
+.cl-den .cl-sub{text-align:right;font-variant-numeric:tabular-nums;opacity:.85;}
+.cl-den.has{font-weight:700;}
+.cl-verdict{margin:16px 0 8px;padding:16px;border-radius:16px;text-align:center;border:2px solid var(--line);color:var(--ink);transition:background .3s,border-color .3s;}
+.cl-verdict .cl-vt{font-size:18px;font-weight:800;}
+.cl-verdict .cl-ecart{font-size:34px;font-weight:900;margin:4px 0;}
+.cl-verdict .cl-vh{font-size:13.5px;opacity:.9;}
+.cl-verdict[data-state="ok"]{background:color-mix(in srgb,var(--moss) 16%,transparent);border-color:var(--moss);}
+.cl-verdict[data-state="plus"]{background:color-mix(in srgb,var(--gold) 16%,transparent);border-color:var(--gold);}
+.cl-verdict[data-state="moins"]{background:rgba(220,38,38,.14);border-color:#dc2626;}
+.cl-verdict[data-state="ok"] .cl-ecart{color:var(--moss);}
+.cl-verdict[data-state="plus"] .cl-ecart{color:var(--gold);}
+.cl-verdict[data-state="moins"] .cl-ecart{color:#ff5a5a;}
+.cl-verdict.pop{animation:clPop .5s cubic-bezier(.2,1.5,.4,1);}
+@keyframes clPop{0%{transform:scale(.94);}60%{transform:scale(1.03);}100%{transform:scale(1);}}
+.cl-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
+#clHistory{margin-top:12px;display:grid;gap:6px;}
+.cl-h-row{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:8px 12px;border-radius:10px;background:var(--paper);border:1px solid var(--line);font-size:13.5px;color:var(--ink);}
+.cl-chip{font-weight:800;padding:1px 10px;border-radius:999px;color:#fff;}
+.cl-chip.ok{background:var(--moss);color:#06281d;}.cl-chip.plus{background:var(--gold);color:#3a2a00;}.cl-chip.moins{background:#dc2626;}
+@media (prefers-reduced-motion:reduce){.ai-item,.ai-item .ai-ic,.cl-verdict.pop{animation:none !important;}}
 </style>
 </body>
 </html>
