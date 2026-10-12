@@ -2817,9 +2817,9 @@
       if (Number(l.qte) > Number(prod.stock)) return `${prod.nom} (stock: ${prod.stock} ${prod.unite || ''}, demandé: ${l.qte})`;
       return null;
     }).filter(Boolean);
-    const customLines = invoiceLines.filter(l => l.ref && !l.matched && l.nom).length;
+    const customLines = invoiceLines.filter(l => !l.matched && l.nom && l.nom.trim()).length;
     if (shortages.length) { hint.textContent = '⚠ Stock insuffisant — ' + shortages.join(', '); hint.style.color = 'var(--danger)'; }
-    else if (customLines) { hint.textContent = `${customLines} ligne(s) hors-catalogue — le stock ne sera pas décompté pour celles-ci.`; hint.style.color = ''; }
+    else if (customLines) { hint.textContent = `⚠ ${customLines} ligne(s) hors catalogue (produit non enregistré dans ton stock) — le stock ne sera PAS déduit pour ces lignes.`; hint.style.color = 'var(--gold)'; }
     else { hint.textContent = 'La finalisation déduit automatiquement les quantités du stock pour les articles du catalogue.'; hint.style.color = ''; }
   }
   function closeAllAutocomplete() { document.querySelectorAll('.ac-list').forEach(el => el.style.display = 'none'); }
@@ -2949,7 +2949,9 @@
       document.getElementById('f-remise').value = '';
       renderInvoiceLines();
       const resteMsg = montantPaye < total ? ` — reste à payer : ${euros(total - montantPaye)}` : '';
-      toast(`Facture FAC-${String(num).padStart(4, '0')} finalisée — stock mis à jour${resteMsg}.`);
+      const nbHors = invDoc.lignes.filter(l => !l.matched).length;
+      const stockMsg = nbHors === invDoc.lignes.length ? 'aucun article du catalogue, stock inchangé' : (nbHors ? `stock mis à jour (sauf ${nbHors} ligne(s) hors catalogue)` : 'stock mis à jour');
+      toast(`Facture FAC-${String(num).padStart(4, '0')} finalisée — ${stockMsg}${resteMsg}.`);
       if (document.getElementById('tkAuto') && document.getElementById('tkAuto').checked) printTicket(invDoc);
     } catch (err) {
       console.error(err);
