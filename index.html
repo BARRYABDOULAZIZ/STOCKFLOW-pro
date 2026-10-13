@@ -537,6 +537,7 @@
   <!-- DASHBOARD -->
   <section class="panel active" id="panel-dashboard">
 
+    <div class="eye-row cost-col"><button type="button" class="eye-btn" data-eye title="Masquer / afficher les montants">👁 Montants</button></div>
     <div class="hero-row" id="dashboardHeroRow">
       <div class="hero-card invest">
         <div class="hlbl">💰 Montant investi dans le stock — payé aux fournisseurs</div>
@@ -680,7 +681,15 @@
         <button class="ghost" id="btnScanCatalog" type="button" title="Scanner pour chercher" style="padding: 8px 12px;">📷</button>
       </div>
     </div>
-    <div class="table-wrap">
+    <div class="cat-toolbar">
+      <div id="catChips" class="cat-chips"></div>
+      <div class="cat-right">
+        <div class="cost-col stock-value-bar">📦 Valeur du stock <b id="stockValue">–</b> <button type="button" class="eye-btn" data-eye title="Masquer / afficher les montants">👁</button></div>
+        <div class="view-toggle"><button type="button" data-view="cards">▦ Cartes</button><button type="button" data-view="table">☰ Tableau</button></div>
+      </div>
+    </div>
+    <div id="stockCards" class="stock-cards"></div>
+    <div class="table-wrap" id="stockTableWrap">
       <table>
         <thead>
           <tr><th>Référence</th><th>Nom</th><th>Code-barres</th><th>Fournisseur</th><th>Catégorie</th><th>Emplacement</th><th class="num-cell cost-col">Achat</th><th class="num-cell">Vente</th><th class="num-cell">Stock</th><th>Unité</th><th></th></tr>
@@ -886,6 +895,14 @@
           </select>
         </div>
       </div>
+      <div id="f-extra-wrap" class="field-grid" style="margin-bottom:6px;">
+        <div>
+          <label>Type de vente</label>
+          <div class="sale-type"><button type="button" class="st-btn on" data-st="comptant">💵 Comptant</button><button type="button" class="st-btn" data-st="credit">🧾 À crédit</button></div>
+        </div>
+        <div id="f-echeance-wrap" style="display:none;"><label>À payer avant le</label><input id="f-echeance" type="date"></div>
+        <div style="grid-column:1/-1;"><label>Remarque (facultatif)</label><input id="f-remarque" maxlength="200" placeholder="Ex : paiement par Wave au 77…, livraison jeudi"></div>
+      </div>
       <p class="hint-text" style="margin-top:0;">Cherche une référence du catalogue, ou tape librement pour une ligne hors-catalogue.</p>
       <div class="inv-lines" id="invLines"></div>
       <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
@@ -910,6 +927,7 @@
       </div>
       <div id="invBreakdown" style="text-align:right; font-size:13px; margin:8px 0 4px; line-height:1.7;"></div>
       <div class="inv-total-row"><span class="lbl" id="invTotalLbl">Total</span><span class="amt" id="invGrandTotal">0 FCFA</span></div>
+      <div id="invLettres" class="inv-lettres"></div>
       <p class="muted" id="finalizeHint" style="margin-top:14px;"></p>
       <div style="margin-top:18px; display:flex; gap:12px; justify-content:flex-end; align-items:center; flex-wrap:wrap;">
         <label class="tk-opt"><input type="checkbox" id="tkAuto"> 🧾 Imprimer le ticket après la vente</label>
@@ -1467,8 +1485,10 @@
   </table>
   <div id="pi-breakdown"></div>
   <div class="pi-total"><span id="pi-total-lbl">Total</span><span id="pi-total"></span></div>
+  <div id="pi-lettres" style="font-family:'Inter',sans-serif; font-size:12px; font-style:italic; margin-top:6px; text-align:right; clear:both;"></div>
   <div id="pi-statut" style="margin-top:10px; text-align:right; font-family:'Inter',sans-serif; font-weight:700; font-size:14px; padding:6px 14px; border-radius:6px; display:inline-block; float:right;"></div>
   <div style="clear:both;"></div>
+  <div id="pi-remarque" style="display:none; font-family:'Inter',sans-serif; font-size:12.5px; margin-top:14px; padding:8px 12px; border-left:3px solid #1d4ed8; background:#f1f5f9;"></div>
   <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:24px; margin-top:36px;">
     <div id="pi-message" style="font-family:'Inter',sans-serif; font-size:13px; font-style:italic; color:#333; flex:1;"></div>
     <div id="pi-client-sign" style="display:none; text-align:center;">
@@ -1849,7 +1869,7 @@
     let oldDebt = 0;
     if (reste.length) {
       const groups = {};
-      reste.forEach(o => { const k = o.i.clientId || (o.i.client || 'Client comptoir'); const g = groups[k] || (groups[k] = { name: o.i.client || 'Client comptoir', cid: o.i.clientId, sum: 0, oldest: 0, nums: [] }); g.sum += o.r; g.oldest = Math.max(g.oldest, ago(o.i.date)); g.nums.push('FAC-' + String(o.i.num).padStart(4, '0')); });
+      reste.forEach(o => { const k = o.i.clientId || (o.i.client || 'Client comptoir'); const g = groups[k] || (groups[k] = { name: o.i.client || 'Client comptoir', cid: o.i.clientId, sum: 0, oldest: 0, nums: [] }); g.sum += o.r; g.oldest = Math.max(g.oldest, ago(o.i.date)); if (o.i.echeance && o.i.echeance < today) g.late = Math.max(g.late || 0, ago(o.i.echeance)); g.nums.push('FAC-' + String(o.i.num).padStart(4, '0')); });
       const sum = reste.reduce((t, o) => t + o.r, 0), old = reste.filter(o => ago(o.i.date) > 7).length; oldDebt = old;
       add({ cat: 'argent', sev: old ? 'warn' : 'info', ic: '💰', tab: 'clients', t: `${reste.length} facture${reste.length > 1 ? 's' : ''} impayée${reste.length > 1 ? 's' : ''} : ${euros(sum)} à encaisser`, d: old ? `Dont ${old} depuis plus de 7 jours. Les plus gros débiteurs sont juste en dessous.` : 'Aucune n\'est en retard de plus de 7 jours.' });
       Object.values(groups).sort((a, b) => b.sum - a.sum).slice(0, 3).forEach((g, idx) => {
@@ -1857,7 +1877,7 @@
         const cl = g.cid ? (state.clients || []).find(c => c.id === g.cid) : (state.clients || []).find(c => (c.nom || '').trim().toLowerCase() === g.name.trim().toLowerCase());
         const aid = 'rel_' + idx + '_' + g.name;
         aiActions[aid] = () => aiOpenWa(cl && cl.telephone, `Bonjour ${g.name}, petit rappel amical de ${shop} : il reste ${n0(g.sum)} FCFA à régler (${g.nums.slice(0, 3).join(', ')}). Merci d'avance et bonne journée !`, g.name);
-        add({ cat: 'argent', sev: g.oldest > 14 ? 'danger' : g.oldest > 7 ? 'warn' : 'info', ic: '🙋', tab: 'clients', t: `${escapeHtml(g.name)} te doit ${euros(g.sum)}`, d: `Plus ancienne dette : ${g.oldest} jour${g.oldest > 1 ? 's' : ''}. Un message WhatsApp poli suffit souvent.`, act: aid, actLabel: '💬 Relancer' });
+        add({ cat: 'argent', sev: (g.late > 3 || g.oldest > 14) ? 'danger' : (g.late || g.oldest > 7) ? 'warn' : 'info', ic: '🙋', tab: 'clients', t: `${escapeHtml(g.name)} te doit ${euros(g.sum)}`, d: g.late ? `⏰ En retard de ${g.late} jour${g.late > 1 ? 's' : ''} sur la date promise. Un message WhatsApp poli suffit souvent.` : `Plus ancienne dette : ${g.oldest} jour${g.oldest > 1 ? 's' : ''}. Un message WhatsApp poli suffit souvent.`, act: aid, actLabel: '💬 Relancer' });
       });
     }
     // ---- Clients : meilleur client du mois + clients qui ne reviennent plus ----
@@ -2596,7 +2616,9 @@
   }
 
   // ================= Produits (catalogue) =================
-  let stockFilter = '';
+  let stockFilter = '', stockCat = '';
+  let stockView = 'cards'; try { stockView = localStorage.getItem('sf_stock_view') || 'cards'; } catch (e) {}
+  const stockAmt = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR');
   document.getElementById('stockSearch').addEventListener('input', e => { stockFilter = e.target.value.trim().toLowerCase(); renderStock(); });
 
   function renderStock() {
@@ -2604,7 +2626,23 @@
     const empty = document.getElementById('stockEmpty');
     body.innerHTML = '';
 
+    // Pastilles de catégories (les plus remplies d'abord) + "Stock bas"
+    const catCount = {}; state.products.forEach(p => { const c = (p.categorie || '').trim(); if (c) catCount[c] = (catCount[c] || 0) + 1; });
+    const lowCount = state.products.filter(p => Number(p.stock) <= Number(p.seuil)).length;
+    const topCats = Object.entries(catCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    if (stockCat && stockCat !== '__low' && !catCount[stockCat]) stockCat = '';
+    document.getElementById('catChips').innerHTML = [['', 'Tous', state.products.length]].concat(lowCount ? [['__low', '⚠ Stock bas', lowCount]] : []).concat(topCats.map(([c, n]) => [c, c, n]))
+      .map(([k, l, n]) => `<button type="button" class="cat-chip ${stockCat === k ? 'on' : ''}" data-cat="${escapeHtml(k)}">${escapeHtml(l)} <em>${n}</em></button>`).join('');
+    document.getElementById('stockValue').textContent = stockAmt(state.products.reduce((t, p) => t + (Number(p.prixAchat) || 0) * (Number(p.stock) || 0), 0)) + ' FCFA';
+    document.querySelectorAll('.view-toggle button').forEach(b => b.classList.toggle('on', b.dataset.view === stockView));
+    document.getElementById('stockTableWrap').style.display = stockView === 'table' ? '' : 'none';
+    const cardsBox = document.getElementById('stockCards');
+    cardsBox.style.display = stockView === 'cards' ? '' : 'none';
+    cardsBox.innerHTML = '';
+
     const filtered = state.products.filter(p => {
+      if (stockCat === '__low' && !(Number(p.stock) <= Number(p.seuil))) return false;
+      if (stockCat && stockCat !== '__low' && (p.categorie || '').trim() !== stockCat) return false;
       if (!stockFilter) return true;
       return (p.ref || '').toLowerCase().includes(stockFilter) || (p.nom || '').toLowerCase().includes(stockFilter) || (p.codeBarre || '').toLowerCase().includes(stockFilter) || (p.emplacement || '').toLowerCase().includes(stockFilter);
     }).sort((a, b) => (a.ref || '').localeCompare(b.ref || ''));
@@ -2618,6 +2656,18 @@
       empty.style.display = 'none';
       const frag = document.createDocumentFragment();
       const CAP = 500;
+      if (stockView === 'cards') {
+        cardsBox.innerHTML = filtered.slice(0, 300).map(p => {
+          const zero = Number(p.stock) <= 0, low = !zero && Number(p.stock) <= Number(p.seuil);
+          const unit = escapeHtml(p.unite || 'unité');
+          return `<div class="sc ${zero ? 'zero' : low ? 'low' : ''}">
+            <div class="sc-main"><div class="sc-name">${escapeHtml(p.nom)}</div><div class="sc-sub">${escapeHtml(p.ref || '')}${p.categorie ? ' · ' + escapeHtml(p.categorie) : ''}${p.emplacement ? ' · 📍' + escapeHtml(p.emplacement) : ''}</div></div>
+            <div class="sc-stock"><b>${zero ? 'Rupture' : escapeHtml(String(p.stock))}</b><small>${zero ? 'à commander' : unit + (low ? ' · bas' : '')}</small></div>
+            <div class="sc-prices"><span class="v">Vente ${stockAmt(p.prixVente)}</span><span class="a cost-col">Achat ${stockAmt(p.prixAchat)}</span></div>
+            <div class="sc-act"><button class="icon-btn" data-edit="${p.id}" title="Modifier">✎</button><button class="icon-btn" data-del="${p.id}" title="Supprimer">✕</button></div>
+          </div>`;
+        }).join('') + (filtered.length > 300 ? `<div class="muted" style="grid-column:1/-1;text-align:center;padding:12px;">+ ${filtered.length - 300} autres produits — affine ta recherche.</div>` : '');
+      } else
       filtered.slice(0, CAP).forEach(p => {
         const zero = Number(p.stock) <= 0;
         const low = !zero && Number(p.stock) <= Number(p.seuil);
@@ -2654,11 +2704,22 @@
 
     body.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => deleteProduct(b.dataset.del)));
     body.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => startEditProduct(b.dataset.edit)));
+    cardsBox.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => deleteProduct(b.dataset.del)));
+    cardsBox.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => startEditProduct(b.dataset.edit)));
 
     if (state.products.length > 3000) setSync(true, `synchronisé · ${state.products.length} réf. — catalogue volumineux, pense à archiver les articles inactifs`);
 
     updatePerteSelect();
   }
+
+  document.getElementById('catChips').addEventListener('click', (e) => { const b = e.target.closest('[data-cat]'); if (!b) return; stockCat = b.dataset.cat; renderStock(); });
+  document.querySelector('.view-toggle').addEventListener('click', (e) => { const b = e.target.closest('[data-view]'); if (!b) return; stockView = b.dataset.view; try { localStorage.setItem('sf_stock_view', stockView); } catch (er) {} renderStock(); });
+  // Œil : masque les gros montants quand un client regarde l'écran
+  (function () {
+    const apply = (on) => { document.body.classList.toggle('hide-amounts', on); document.querySelectorAll('[data-eye]').forEach(b => { b.textContent = on ? '🙈' : '👁'; }); };
+    try { apply(localStorage.getItem('sf_hide_amounts') === '1'); } catch (e) {}
+    document.addEventListener('click', (e) => { const b = e.target.closest('[data-eye]'); if (!b) return; const on = !document.body.classList.contains('hide-amounts'); apply(on); try { localStorage.setItem('sf_hide_amounts', on ? '1' : '0'); } catch (er) {} });
+  })();
 
   function updatePerteSelect() {
     const sel = document.getElementById('ps-produit');
@@ -2984,6 +3045,37 @@
     if (wsel) wsel.addEventListener('change', () => { try { localStorage.setItem('sf_ticket_w', wsel.value); } catch (e) {} });
   })();
 
+  // ================= Montant en lettres (FCFA) =================
+  function nombreEnLettres(n) {
+    n = Math.floor(Math.abs(Number(n) || 0));
+    if (n === 0) return 'zéro';
+    const U = ['', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf', 'dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize', 'dix-sept', 'dix-huit', 'dix-neuf'];
+    const T = ['', '', 'vingt', 'trente', 'quarante', 'cinquante', 'soixante'];
+    const b100 = (x, fin) => {
+      if (x < 20) return U[x];
+      if (x < 70) { const t = Math.floor(x / 10), u = x % 10; return T[t] + (u === 1 ? ' et un' : u ? '-' + U[u] : ''); }
+      if (x < 80) { const r = x - 60; return 'soixante' + (r === 11 ? ' et onze' : '-' + U[r]); }
+      const r = x - 80; return r === 0 ? 'quatre-vingt' + (fin ? 's' : '') : 'quatre-vingt-' + U[r];
+    };
+    const b1000 = (x, fin) => {
+      const c = Math.floor(x / 100), r = x % 100; let o = '';
+      if (c > 0) { o = c === 1 ? 'cent' : U[c] + ' cent'; if (r === 0 && c > 1 && fin) o += 's'; }
+      if (r > 0) o += (o ? ' ' : '') + b100(r, fin);
+      return o;
+    };
+    const parts = [], bn = Math.floor(n / 1e9), m = Math.floor(n % 1e9 / 1e6), k = Math.floor(n % 1e6 / 1000), r = n % 1000;
+    if (bn) parts.push(b1000(bn, true) + ' milliard' + (bn > 1 ? 's' : ''));
+    if (m) parts.push(b1000(m, true) + ' million' + (m > 1 ? 's' : ''));
+    if (k) parts.push(k === 1 ? 'mille' : b1000(k, false) + ' mille');
+    if (r) parts.push(b1000(r, true));
+    return parts.join(' ');
+  }
+  function fcfaEnLettres(n) {
+    const t = nombreEnLettres(n), v = Math.round(Number(n) || 0);
+    return t.charAt(0).toUpperCase() + t.slice(1) + (v >= 1e6 && v % 1e6 === 0 ? ' de francs CFA' : v > 1 ? ' francs CFA' : ' franc CFA');
+  }
+  const frDate = (d) => String(d || '').split('-').reverse().join('/');
+
   // Ticket en texte (WhatsApp)
   function ticketText(inv) {
     const c = state.commerce || {};
@@ -3009,8 +3101,10 @@
     if (tm === 'add') L.push('TVA ' + tx + '% : + ' + n0(tv)); else if (tm === 'incl') L.push('dont TVA ' + tx + '% : ' + n0(tv));
     const total = Number(inv.total) || 0, paye = Number(inv.montantPaye) || 0, reste = Math.max(0, total - paye);
     L.push('*TOTAL : ' + n0(total) + ' FCFA*');
+    L.push('_' + fcfaEnLettres(total) + '_');
     L.push('Payé : ' + n0(paye) + ' FCFA');
-    if (reste > 0) L.push('⚠️ *Reste à payer : ' + n0(reste) + ' FCFA*');
+    if (reste > 0) L.push('⚠️ *Reste à payer : ' + n0(reste) + ' FCFA*' + (inv.echeance ? ' avant le ' + frDate(inv.echeance) : ''));
+    if (inv.remarque) L.push('📝 ' + inv.remarque);
     L.push('');
     L.push(c.messageFacture || 'Merci pour votre confiance, à bientôt !');
     return L.join('\n');
@@ -3071,7 +3165,10 @@
       <div class="tk-row tk-total"><span>TOTAL</span><span>${num0(total)} FCFA</span></div>
       <div class="tk-row"><span>Payé</span><span>${num0(paye)}</span></div>
       ${reste > 0 ? `<div class="tk-row tk-reste"><span>RESTE À PAYER</span><span>${num0(reste)}</span></div>` : ''}
+      ${reste > 0 && inv.echeance ? `<div class="tk-small">À payer avant le ${escapeHtml(frDate(inv.echeance))}</div>` : ''}
       <div class="tk-small">${nbArt} article(s)</div>
+      <div class="tk-small">Arrêté à la somme de : ${escapeHtml(fcfaEnLettres(total))}</div>
+      ${inv.remarque ? `<div class="tk-small">Note : ${escapeHtml(inv.remarque)}</div>` : ''}
       <div class="tk-sep"></div>
       <div class="tk-center tk-thanks">${escapeHtml(c.messageFacture || 'Merci pour votre confiance, à bientôt !')}</div>
       <div class="tk-center tk-small">Ticket non valable comme facture fiscale</div>
@@ -3126,6 +3223,13 @@
       document.getElementById('pi-total-lbl').textContent = (kind !== 'bon_livraison' && tm !== 'none') ? 'Total TTC' : 'Total';
     }
     document.getElementById('pi-total').textContent = euros(inv.total);
+    {
+      const lt = document.getElementById('pi-lettres');
+      const pre = kind === 'devis' ? 'Arrêté le présent devis' : (kind === 'bon_commande' ? 'Arrêté le présent bon de commande' : 'Arrêtée la présente facture');
+      lt.textContent = isBL ? '' : pre + ' à la somme de : ' + fcfaEnLettres(inv.total);
+      const rm = document.getElementById('pi-remarque');
+      if (inv.remarque) { rm.style.display = ''; rm.textContent = 'Remarque : ' + inv.remarque; } else { rm.style.display = 'none'; rm.textContent = ''; }
+    }
     const paye = Number(inv.montantPaye) || 0;
     const reste = Math.max(0, Number(inv.total || 0) - paye);
     const statutEl = document.getElementById('pi-statut');
@@ -3133,10 +3237,10 @@
       statutEl.textContent = kind === 'devis' ? (inv.validite ? "Offre valable jusqu'au " + inv.validite : 'Offre sans engagement') : (isBL ? 'Marchandises livrées — merci de vérifier la quantité à la réception' : 'Commande à préparer / livrer');
       statutEl.style.background = '#e0e7ff'; statutEl.style.color = '#3730a3';
     } else if (paye <= 0) {
-      statutEl.textContent = '⚠ NON PAYÉE — reste à payer : ' + euros(reste);
+      statutEl.textContent = '⚠ NON PAYÉE — reste à payer : ' + euros(reste) + (inv.echeance ? ' avant le ' + frDate(inv.echeance) : '');
       statutEl.style.background = '#fee2e2'; statutEl.style.color = '#991b1b';
     } else if (reste > 0) {
-      statutEl.textContent = '◐ PAYÉE PARTIELLEMENT — payé : ' + euros(paye) + ' — reste : ' + euros(reste);
+      statutEl.textContent = '◐ PAYÉE PARTIELLEMENT — payé : ' + euros(paye) + ' — reste : ' + euros(reste) + (inv.echeance ? ' avant le ' + frDate(inv.echeance) : '');
       statutEl.style.background = '#fef3c7'; statutEl.style.color = '#92400e';
     } else {
       statutEl.textContent = '✓ PAYÉE INTÉGRALEMENT';
@@ -3147,6 +3251,7 @@
   }
 
   // ================= Ventes (invoice builder) =================
+  let saleType = 'comptant';
   let invoiceLines = [freshLine()];
   function freshLine() { return { ref: '', nom: '', qte: 1, prix: 0, unite: '', matched: false }; }
 
@@ -3254,6 +3359,7 @@
       if (T.mode === 'incl') bd.push(`dont TVA (${T.taux} %) : <b>${euros(T.tva)}</b>`);
     }
     document.getElementById('invBreakdown').innerHTML = bd.join('<br>');
+    { const lt = document.getElementById('invLettres'); if (lt) lt.textContent = total > 0 ? 'Arrêtée à la somme de : ' + fcfaEnLettres(total) : ''; }
 
     const payeVal = document.getElementById('f-paye').value.trim();
     const infoEl = document.getElementById('f-rendu-info');
@@ -3270,6 +3376,9 @@
           infoEl.textContent = `✓ Compte exact`;
           infoEl.style.color = 'var(--moss)';
         }
+      } else if (saleType === 'credit' && total > 0) {
+        infoEl.textContent = `⚠ Vente à crédit : reste dû ${euros(total)}`;
+        infoEl.style.color = 'var(--danger)';
       } else {
         infoEl.textContent = '';
       }
@@ -3290,6 +3399,18 @@
     if (sv && ['none', 'add', 'incl'].includes(sv.mode)) { document.getElementById('f-tva-mode').value = sv.mode; if (sv.taux) document.getElementById('f-tva-taux').value = sv.taux; }
   } catch (e) {}
   document.getElementById('f-paye').addEventListener('input', updateGrandTotal);
+  // Type de vente : comptant (par défaut) ou à crédit (date limite + acompte facultatif)
+  function setSaleType(t) {
+    saleType = t;
+    document.querySelectorAll('.st-btn').forEach(b => b.classList.toggle('on', b.dataset.st === t));
+    document.getElementById('f-echeance-wrap').style.display = t === 'credit' ? '' : 'none';
+    const lab = document.querySelector('#f-paye-wrap label'), inp = document.getElementById('f-paye');
+    if (lab) lab.textContent = t === 'credit' ? 'Acompte versé (FCFA)' : 'Montant payé (FCFA)';
+    inp.placeholder = t === 'credit' ? 'Vide ou 0 = rien payé maintenant' : 'Laisser vide = payé en totalité';
+    if (t === 'credit' && !document.getElementById('f-echeance').value) { const d = new Date(Date.now() + 7 * 86400000); document.getElementById('f-echeance').value = d.toISOString().slice(0, 10); }
+    updateGrandTotal();
+  }
+  document.querySelectorAll('.st-btn').forEach(b => b.addEventListener('click', () => setSaleType(b.dataset.st)));
   function updateFinalizeHint() {
     const hint = document.getElementById('finalizeHint');
     const shortages = invoiceLines.filter(l => l.matched).map(l => {
@@ -3347,6 +3468,7 @@
     const shortage = validLines.find(l => { if (!l.matched) return false; const prod = state.products.find(p => p.ref === l.ref); return prod && Number(l.qte) > Number(prod.stock); });
     if (shortage) { toast(`Stock insuffisant pour ${shortage.nom}.`); return; }
     if (!state.db) { toast('Connexion non disponible — réessaie dans un instant.'); return; }
+    if (saleType === 'credit' && !document.getElementById('f-client').value.trim()) { toast('⚠ Pour une vente à crédit, indique le nom du client : sans nom, impossible de savoir qui doit payer.'); document.getElementById('f-client').focus(); return; }
 
     const btn = document.getElementById('btnFinalize');
     btn.disabled = true;
@@ -3382,8 +3504,11 @@
       // Montant payé au moment de la vente : champ vide = payé en totalité (cas le plus courant).
       const payeRaw = document.getElementById('f-paye').value.trim();
       const mode = document.getElementById('f-mode-paiement').value;
-      let montantPaye = payeRaw === '' ? total : Math.max(0, Math.min(total, Number(payeRaw) || 0));
+      let montantPaye = payeRaw === '' ? (saleType === 'credit' ? 0 : total) : Math.max(0, Math.min(total, Number(payeRaw) || 0));
       invDoc.montantPaye = montantPaye;
+      const remarque = (document.getElementById('f-remarque').value || '').trim();
+      if (remarque) invDoc.remarque = remarque;
+      if (saleType === 'credit' && montantPaye < total) { const ech = document.getElementById('f-echeance').value; if (ech) invDoc.echeance = ech; }
       const invId = 'fac-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
 
       // Regrouper les quantités par produit avant de déduire, pour éviter d'écraser
@@ -3429,6 +3554,9 @@
       document.getElementById('f-client').value = '';
       document.getElementById('f-paye').value = '';
       document.getElementById('f-remise').value = '';
+      document.getElementById('f-remarque').value = '';
+      document.getElementById('f-echeance').value = '';
+      setSaleType('comptant');
       renderInvoiceLines();
       const resteMsg = montantPaye < total ? ` — reste à payer : ${euros(total - montantPaye)}` : '';
       const nbHors = invDoc.lignes.filter(l => !l.matched).length;
@@ -3460,6 +3588,7 @@
     const isInv = t === 'facture';
     document.getElementById('ventesTitle').textContent = isInv ? 'Nouvelle vente' : (t === 'devis' ? 'Nouveau devis' : (t === 'bon_livraison' ? 'Nouveau bon de livraison' : 'Nouveau bon de commande'));
     document.getElementById('f-paye-wrap').style.display = isInv ? '' : 'none';
+    document.getElementById('f-extra-wrap').style.display = isInv ? '' : 'none';
     document.getElementById('fiscalBlock').style.display = t === 'bon_livraison' ? 'none' : '';
     updateGrandTotal();
     document.getElementById('f-mode-wrap').style.display = isInv ? '' : 'none';
@@ -5581,6 +5710,46 @@
 .ai-item.sev-info{border-left-color:var(--brick);}
 @media (max-width:640px){.ai-spark{margin-left:0;}.ai-top{gap:12px;}}
 @media (prefers-reduced-motion:reduce){.ai-ring,.ai-spark i{animation:none !important;}}
+</style>
+<style id="sale-ui-css">
+/* Vente : type, lettres */
+.sale-type{display:flex;gap:8px;}
+.st-btn{flex:1;padding:11px 10px;border-radius:12px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-weight:800;font-size:14px;cursor:pointer;transition:all .15s;}
+.st-btn.on{background:var(--brick);border-color:var(--brick);color:#fff;box-shadow:0 4px 14px color-mix(in srgb,var(--brick) 40%,transparent);}
+.st-btn[data-st="credit"].on{background:var(--gold);border-color:var(--gold);color:#3a2a00;}
+.inv-lettres{text-align:right;font-style:italic;font-size:13.5px;color:var(--ink);opacity:.85;margin:4px 0 0;min-height:18px;}
+/* Produits : cartes */
+.cat-toolbar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:6px 0 12px;}
+.cat-chips{display:flex;gap:8px;flex-wrap:wrap;}
+.cat-chip{padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-weight:700;font-size:13px;cursor:pointer;}
+.cat-chip em{font-style:normal;opacity:.65;margin-left:3px;}
+.cat-chip.on{background:var(--brick);border-color:var(--brick);color:#fff;}
+.cat-right{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.stock-value-bar{font-size:13.5px;color:var(--ink);padding:6px 12px;border-radius:12px;background:var(--paper);border:1px solid var(--line);}
+.stock-value-bar b{font-size:15px;margin:0 4px;}
+.eye-btn{border:0;background:transparent;color:var(--ink);cursor:pointer;font-size:15px;padding:2px 6px;border-radius:8px;}
+.eye-btn:hover{background:var(--line);}
+.eye-row{display:flex;justify-content:flex-end;margin:0 0 6px;}
+.view-toggle{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+.view-toggle button{padding:7px 12px;border:0;background:var(--paper);color:var(--ink);font-weight:700;font-size:13px;cursor:pointer;}
+.view-toggle button.on{background:var(--brick);color:#fff;}
+.stock-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:10px;margin-bottom:18px;}
+.sc{display:grid;grid-template-columns:1fr auto;grid-template-areas:"main stock" "prices act";gap:6px 12px;align-items:center;padding:13px 15px;border-radius:16px;background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--moss);color:var(--ink);transition:transform .15s,box-shadow .15s;}
+.sc:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.18);}
+.sc.low{border-left-color:var(--gold);}.sc.zero{border-left-color:#dc2626;background:color-mix(in srgb,#dc2626 7%,var(--paper));}
+.sc-main{grid-area:main;min-width:0;}
+.sc-name{font-size:16px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sc-sub{font-size:12.5px;opacity:.7;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sc-stock{grid-area:stock;text-align:right;line-height:1.1;}
+.sc-stock b{display:block;font-size:22px;}
+.sc-stock small{font-size:12px;opacity:.75;}
+.sc.low .sc-stock b{color:var(--gold);}.sc.zero .sc-stock b{color:#ff5a5a;font-size:18px;}
+.sc-prices{grid-area:prices;display:flex;gap:14px;font-size:13.5px;flex-wrap:wrap;}
+.sc-prices .v{color:var(--moss);font-weight:800;}.sc-prices .a{opacity:.7;}
+.sc-act{grid-area:act;display:flex;gap:4px;justify-content:flex-end;}
+.sc-act .icon-btn{opacity:.6;}.sc-act .icon-btn:hover{opacity:1;}
+body.hide-amounts #stockValue,body.hide-amounts #heroInvesti,body.hide-amounts #heroValeur,body.hide-amounts #heroBenefice,body.hide-amounts #statTotalValue,body.hide-amounts .ai-kpi b{filter:blur(9px);user-select:none;}
+@media (max-width:640px){.stock-cards{grid-template-columns:1fr;}.cat-right{width:100%;justify-content:space-between;}}
 </style>
 </body>
 </html>
