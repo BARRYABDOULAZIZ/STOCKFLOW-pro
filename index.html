@@ -2868,14 +2868,19 @@
   function sendTicketWhatsApp(inv, askIfMissing) {
     let cl = inv.clientId ? (state.clients || []).find(x => x.id === inv.clientId) : null;
     if (!cl && inv.client) cl = (state.clients || []).find(x => (x.nom || '').trim().toLowerCase() === String(inv.client).trim().toLowerCase());
-    let phone = toWhatsAppNumber(cl && cl.telephone);
-    if (!phone && askIfMissing) {
-      const r = prompt('Numéro WhatsApp du client (ex : 77 123 45 67).\nLaissez vide pour choisir le contact dans WhatsApp :');
+    const key = String((cl && cl.id) || inv.client || '').trim().toLowerCase();
+    let cache = {};
+    try { cache = JSON.parse(localStorage.getItem('sf_wa_phones') || '{}') || {}; } catch (e) {}
+    let phone = toWhatsAppNumber(cl && cl.telephone) || (key ? toWhatsAppNumber(cache[key]) : '');
+    // Demande le numéro seulement si on connaît le client mais pas son téléphone (1 seule fois, ensuite mémorisé)
+    if (!phone && askIfMissing && key) {
+      const r = prompt('Numéro WhatsApp de ' + (inv.client || 'ce client') + ' (ex : 77 123 45 67).\nIl sera mémorisé. Laissez vide pour choisir le contact dans WhatsApp :');
       if (r === null) return;
       phone = toWhatsAppNumber(r);
+      if (phone) { cache[key] = phone; try { localStorage.setItem('sf_wa_phones', JSON.stringify(cache)); } catch (e) {} }
     }
     const url = (phone ? 'https://wa.me/' + phone : 'https://wa.me/') + '?text=' + encodeURIComponent(ticketText(inv));
-    const win = window.open(url, '_blank');
+    const win = window.open(url, 'sf_whatsapp');   // même onglet réutilisé à chaque envoi
     if (!win) toast('⚠ Le navigateur a bloqué WhatsApp : allez dans Factures > bouton 💬 WhatsApp.');
   }
 
