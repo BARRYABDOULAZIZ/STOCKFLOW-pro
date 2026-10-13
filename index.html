@@ -2638,7 +2638,8 @@
   let stockFilter = '', stockCat = '';
   let stockView = 'cards'; try { stockView = localStorage.getItem('sf_stock_view') || 'cards'; } catch (e) {}
   const stockAmt = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR');
-  document.getElementById('stockSearch').addEventListener('input', e => { stockFilter = e.target.value.trim().toLowerCase(); renderStock(); });
+  let stockSearchT = null;
+  document.getElementById('stockSearch').addEventListener('input', e => { stockFilter = e.target.value.trim().toLowerCase(); clearTimeout(stockSearchT); stockSearchT = setTimeout(renderStock, 150); });
 
   function renderStock() {
     const body = document.getElementById('stockBody');
@@ -3038,6 +3039,7 @@
       // Annulation + remise en stock + journal, en une seule opération côté base
       const { data, error } = await supabaseClient.rpc('cancel_invoice', { p_invoice_id: inv.id, p_reason: reason.trim() });
       if (error) throw new Error(error.message);
+      if (state.db && state.db.refresh) state.db.refresh('produits', 'factures', 'paiements', 'mouvements');
       // Historique des mouvements de stock (la base renvoie les nouveaux stocks)
       for (const r of (data || [])) {
         const prod = state.products.find(p => p.id === r.productId);
@@ -3520,6 +3522,7 @@
   async function adjustStock(productId, delta) {
     const { data, error } = await supabaseClient.rpc('adjust_stock', { p_product_id: productId, p_delta: delta });
     if (error) throw new Error(error.message);
+    if (state.db && state.db.refresh) state.db.refresh('produits');
     return Number(data);
   }
 
@@ -5382,6 +5385,13 @@
   // mais parle en vrai à la base Postgres de Supabase — en filtrant automatiquement
   // par commerce_id pour que chaque commerce ne voie jamais les données d'un autre.
   function createSupabaseDb(client) {
+    // Rafraîchissement ciblé après une écriture (au lieu d'attendre le prochain tour de 5 s)
+    const refreshers = {}; const kickTimers = {};
+    function kick(table) {
+      clearTimeout(kickTimers[table]);
+      kickTimers[table] = setTimeout(() => { (refreshers[table] || []).forEach(f => f()); }, 250);
+    }
+    const POLL_MS = { produits: 8000, factures: 8000, paiements: 12000, clients: 15000, depenses: 20000, fournisseurs: 30000, commandes_fournisseurs: 30000, documents: 30000, mouvements: 60000 };
     // Le prix d'achat vit dans une table à part (produits_couts), lisible et modifiable uniquement par propriétaire et admin.
     function canSeeCosts() {
       return !!(state.currentUser && (state.currentUser.role === 'proprietaire' || state.currentUser.role === 'admin'));
@@ -5402,6 +5412,7 @@
           const { error } = await client.from(table).upsert(row, { onConflict: 'id' });
           if (error) throw error;
           if (table === 'produits' && cost !== undefined) await saveCost(id, cost);
+          kick(table);
         },
         async update(data) {
           let cost;
@@ -5414,6 +5425,7 @@
             if (error) throw error;
           }
           if (table === 'produits' && cost !== undefined) await saveCost(id, cost);
+          kick(table);
         },
         async delete() {
           let q = client.from(table).delete().eq('id', id);
@@ -5421,6 +5433,7 @@
           const { error } = await q;
           if (error) throw error;
           if (table === 'produits' && canSeeCosts()) { try { await client.from('produits_couts').delete().eq('id', String(id)); } catch (e) { console.error(e); } }
+          kick(table);
         },
       };
     }
@@ -5429,9 +5442,15 @@
       return {
         doc(id) { return docRef(table, id); },
         onSnapshot(onNext, onError) {
-          let stopped = false;
+          let stopped = false, busy = false, again = false, lastSig = null;
           async function fetchAll() {
-            if (tenant && !CURRENT_COMMERCE_ID) { onNext({ docs: [] }); return; }
+            if (busy) { again = true; return; }   // une requête est déjà en cours : on la relancera juste après, sans empiler
+            busy = true;
+            try { await fetchOnce(); } finally { busy = false; }
+            if (again) { again = false; fetchAll(); }
+          }
+          async function fetchOnce() {
+            if (tenant && !CURRENT_COMMERCE_ID) { if (lastSig !== '[]') { lastSig = '[]'; onNext({ docs: [] }); } return; }
             // Supabase renvoie 1000 lignes maximum par requête : on charge par tranches jusqu'à tout avoir.
             const PAGE = 1000;
             let data = [], error = null;
@@ -5459,21 +5478,29 @@
               }
               data = data.map(r => ({ ...r, prix_achat: costMap[String(r.id)] ?? 0 }));
             }
+            // Rien n'a changé depuis le dernier passage ? On ne redessine pas l'écran (c'est ce qui ralentissait les gros magasins).
+            const sig = JSON.stringify(data);
+            if (sig === lastSig) return;
+            lastSig = sig;
             const docs = data.map(row => {
               const obj = fromDbRow(table, row);
               return { id: obj.id, data: () => obj };
             });
             onNext({ docs });
           }
+          (refreshers[table] = refreshers[table] || new Set()).add(fetchAll);
           fetchAll();
-          const interval = setInterval(() => { if (!document.hidden) fetchAll(); }, 5000); // toutes les 5s, sauf onglet caché
-          const stop = () => { stopped = true; clearInterval(interval); activePolls.delete(stop); };
+          const interval = setInterval(() => { if (!document.hidden) fetchAll(); }, (POLL_MS[table] || 15000) + Math.floor(Math.random() * 1500)); // selon la table, sauf onglet caché
+          const onVisible = () => { if (!document.hidden) fetchAll(); };
+          document.addEventListener('visibilitychange', onVisible);
+          const stop = () => { stopped = true; clearInterval(interval); document.removeEventListener('visibilitychange', onVisible); refreshers[table].delete(fetchAll); activePolls.delete(stop); };
           activePolls.add(stop);
           return stop;
         },
       };
     }
     return {
+      refresh(...tables) { tables.forEach(kick); },
       collection(name) { return collectionRef(name); },
       doc(path) {
         const idx = path.indexOf('/');
