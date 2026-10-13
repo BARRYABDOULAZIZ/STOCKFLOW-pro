@@ -912,6 +912,7 @@
       <p class="muted" id="finalizeHint" style="margin-top:14px;"></p>
       <div style="margin-top:18px; display:flex; gap:12px; justify-content:flex-end; align-items:center; flex-wrap:wrap;">
         <label class="tk-opt"><input type="checkbox" id="tkAuto"> 🧾 Imprimer le ticket après la vente</label>
+        <label class="tk-opt"><input type="checkbox" id="tkWa"> 💬 Envoyer le ticket par WhatsApp après la vente</label>
         <select id="tkWidth" title="Largeur du papier du ticket"><option value="80">Ticket 80 mm</option><option value="58">Ticket 58 mm</option></select>
         <button class="primary" id="btnFinalize">Finaliser la vente</button>
       </div>
@@ -2763,6 +2764,7 @@
           <td class="num-cell" style="white-space:nowrap;">
             <button class="ghost" data-print="${inv.id}" style="padding:6px 12px; font-size:12px;">Imprimer</button>
             <button class="ghost" data-ticket="${inv.id}" style="padding:6px 12px; font-size:12px; margin-left:6px;">🧾 Ticket</button>
+            <button class="ghost" data-wa-ticket="${inv.id}" style="padding:6px 12px; font-size:12px; margin-left:6px;">💬 WhatsApp</button>
             ${(annulee || !(state.currentUser && (state.currentUser.role === 'proprietaire' || state.currentUser.role === 'admin'))) ? '' : `<button class="ghost" data-cancel="${inv.id}" style="padding:6px 12px; font-size:12px; margin-left:6px;">Annuler</button>`}
           </td>
         `;
@@ -2773,6 +2775,9 @@
       });
       body.querySelectorAll('[data-ticket]').forEach(b => {
         b.addEventListener('click', () => { const inv = state.invoices.find(i => i.id === b.dataset.ticket); if (inv) printTicket(inv); });
+      });
+      body.querySelectorAll('[data-wa-ticket]').forEach(b => {
+        b.addEventListener('click', () => { const inv = state.invoices.find(i => i.id === b.dataset.waTicket); if (inv) sendTicketWhatsApp(inv, true); });
       });
       body.querySelectorAll('[data-cancel]').forEach(b => {
         b.addEventListener('click', () => cancelInvoice(b.dataset.cancel));
@@ -2823,8 +2828,56 @@
     const auto = document.getElementById('tkAuto'), wsel = document.getElementById('tkWidth');
     try { if (auto) auto.checked = localStorage.getItem('sf_ticket_auto') === '1'; if (wsel && localStorage.getItem('sf_ticket_w')) wsel.value = localStorage.getItem('sf_ticket_w'); } catch (e) {}
     if (auto) auto.addEventListener('change', () => { try { localStorage.setItem('sf_ticket_auto', auto.checked ? '1' : '0'); } catch (e) {} });
+    const wa = document.getElementById('tkWa');
+    try { if (wa) wa.checked = localStorage.getItem('sf_ticket_wa') === '1'; } catch (e) {}
+    if (wa) wa.addEventListener('change', () => { try { localStorage.setItem('sf_ticket_wa', wa.checked ? '1' : '0'); } catch (e) {} });
     if (wsel) wsel.addEventListener('change', () => { try { localStorage.setItem('sf_ticket_w', wsel.value); } catch (e) {} });
   })();
+
+  // Ticket en texte (WhatsApp)
+  function ticketText(inv) {
+    const c = state.commerce || {};
+    const num = 'FAC-' + String(inv.num).padStart(4, '0');
+    const dt = inv.createdAt ? new Date(inv.createdAt) : new Date();
+    const dateTxt = (inv.date ? inv.date.split('-').reverse().join('/') : dt.toLocaleDateString('fr-FR')) + ' ' + dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const n0 = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR').replace(/[  ]/g, ' ');
+    const L = [];
+    L.push('🧾 *' + (c.nom || 'StockFlow Pro') + '*');
+    if (c.adresse) L.push(c.adresse);
+    if (c.telephone) L.push('Tél : ' + c.telephone);
+    L.push('─────────────');
+    L.push('Ticket ' + num + ' — ' + dateTxt);
+    if (inv.client) L.push('Client : ' + inv.client);
+    L.push('─────────────');
+    (inv.lignes || []).forEach(l => {
+      const q = Number(l.qte) || 0, pr = Number(l.prix) || 0;
+      L.push('• ' + l.nom + '\n   ' + q + (l.unite ? ' ' + l.unite : '') + ' × ' + n0(pr) + ' = ' + n0(q * pr));
+    });
+    L.push('─────────────');
+    const rem = Number(inv.remise) || 0, tm = inv.tvaMode || 'none', tv = Number(inv.tvaMontant) || 0, tx = Number(inv.tvaTaux) || 0;
+    if (rem > 0) L.push('Remise : - ' + n0(rem));
+    if (tm === 'add') L.push('TVA ' + tx + '% : + ' + n0(tv)); else if (tm === 'incl') L.push('dont TVA ' + tx + '% : ' + n0(tv));
+    const total = Number(inv.total) || 0, paye = Number(inv.montantPaye) || 0, reste = Math.max(0, total - paye);
+    L.push('*TOTAL : ' + n0(total) + ' FCFA*');
+    L.push('Payé : ' + n0(paye) + ' FCFA');
+    if (reste > 0) L.push('⚠️ *Reste à payer : ' + n0(reste) + ' FCFA*');
+    L.push('');
+    L.push(c.messageFacture || 'Merci pour votre confiance, à bientôt !');
+    return L.join('\n');
+  }
+  function sendTicketWhatsApp(inv, askIfMissing) {
+    let cl = inv.clientId ? (state.clients || []).find(x => x.id === inv.clientId) : null;
+    if (!cl && inv.client) cl = (state.clients || []).find(x => (x.nom || '').trim().toLowerCase() === String(inv.client).trim().toLowerCase());
+    let phone = toWhatsAppNumber(cl && cl.telephone);
+    if (!phone && askIfMissing) {
+      const r = prompt('Numéro WhatsApp du client (ex : 77 123 45 67).\nLaissez vide pour choisir le contact dans WhatsApp :');
+      if (r === null) return;
+      phone = toWhatsAppNumber(r);
+    }
+    const url = (phone ? 'https://wa.me/' + phone : 'https://wa.me/') + '?text=' + encodeURIComponent(ticketText(inv));
+    const win = window.open(url, '_blank');
+    if (!win) toast('⚠ Le navigateur a bloqué WhatsApp : allez dans Factures > bouton 💬 WhatsApp.');
+  }
 
   function printTicket(inv) {
     const w = (document.getElementById('tkWidth') && document.getElementById('tkWidth').value === '58') ? 58 : 80;
@@ -3227,6 +3280,7 @@
       const stockMsg = nbHors === invDoc.lignes.length ? 'aucun article du catalogue, stock inchangé' : (nbHors ? `stock mis à jour (sauf ${nbHors} ligne(s) hors catalogue)` : 'stock mis à jour');
       toast(`Facture FAC-${String(num).padStart(4, '0')} finalisée — ${stockMsg}${resteMsg}.`);
       if (document.getElementById('tkAuto') && document.getElementById('tkAuto').checked) printTicket(invDoc);
+      if (document.getElementById('tkWa') && document.getElementById('tkWa').checked) sendTicketWhatsApp(invDoc, false);
     } catch (err) {
       console.error(err);
       const detail = (err && err.message) ? err.message : String(err);
