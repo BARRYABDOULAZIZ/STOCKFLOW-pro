@@ -863,31 +863,47 @@
 
   <!-- VENTES -->
   <section class="panel" id="panel-ventes">
-    <div class="card">
+    <div class="card sale2">
       <div class="row-head">
         <h2 id="ventesTitle">Nouvelle vente</h2>
-        <select id="f-doctype" style="max-width:230px;">
+        <select id="f-doctype" style="max-width:230px;" title="Type de document">
           <option value="facture">🧾 Facture (vente)</option>
           <option value="devis">📝 Devis</option>
           <option value="bon_commande">📦 Bon de commande</option>
           <option value="bon_livraison">🚚 Bon de livraison</option>
         </select>
       </div>
-      <div class="field-grid">
-        <div style="position:relative;"><label>Client</label><input id="f-client" placeholder="Nom du client (ou choisis dans la liste)" autocomplete="off"><div id="clientSuggest" class="client-suggest" style="display:none;"></div></div>
-        <div><label>Date</label><input id="f-date" type="date"></div>
-        <div id="f-paye-wrap">
-          <label>Montant payé (FCFA)</label>
-          <input id="f-paye" type="number" min="0" step="1" placeholder="Laisser vide = payé en totalité">
-          <div id="f-rendu-info" style="font-size:12.5px; font-weight:700; margin-top:5px;"></div>
+
+      <div class="sale-step"><span class="sn">1</span> Pour qui ? <em>(facultatif)</em></div>
+      <div style="position:relative;"><input id="f-client" placeholder="Nom du client — ou choisis dans la liste" autocomplete="off"><div id="clientSuggest" class="client-suggest" style="display:none;"></div></div>
+
+      <div class="sale-step"><span class="sn">2</span> Qu'est-ce qu'il achète ?</div>
+      <div class="inv-lines" id="invLines"></div>
+      <div class="sale-addrow">
+        <button class="ghost" id="btnAddLine" type="button">＋ Ajouter un article</button>
+        <button class="ghost" id="btnQuickScanSale" type="button" style="color:var(--brick); border-color:var(--brick);">📷 Scanner</button>
+      </div>
+
+      <div id="saleStep3">
+        <div class="sale-step"><span class="sn">3</span> Comment il paie ?</div>
+        <div id="f-extra-wrap">
+          <div class="sale-type"><button type="button" class="st-btn on" data-st="comptant">💵 Il paie maintenant</button><button type="button" class="st-btn" data-st="credit">🧾 Il paiera plus tard (crédit)</button></div>
+          <div id="f-echeance-wrap" style="display:none; margin-top:10px;"><label>Il doit payer avant le</label><input id="f-echeance" type="date"></div>
         </div>
-        <div id="f-validite-wrap" style="display:none;">
-          <label>Valable jusqu'au</label>
-          <input id="f-validite" type="date">
+        <div id="f-paye-wrap" style="margin-top:12px;">
+          <label>Montant payé par le client (FCFA)</label>
+          <input id="f-paye" type="number" min="0" step="1" placeholder="Laisse vide si le client paie tout">
+          <div id="f-rendu-info" style="font-size:13.5px; font-weight:800; margin-top:6px;"></div>
         </div>
-        <div id="f-mode-wrap">
-          <label>Mode de paiement</label>
-          <select id="f-mode-paiement">
+        <div id="f-mode-wrap" style="margin-top:12px;">
+          <label>Avec quoi ?</label>
+          <div class="mode-chips" id="modeChips">
+            <button type="button" class="mode-chip on" data-mode="Espèces">💵 Espèces</button>
+            <button type="button" class="mode-chip" data-mode="Mobile Money">📱 Mobile Money</button>
+            <button type="button" class="mode-chip" data-mode="Virement">🏦 Virement</button>
+            <button type="button" class="mode-chip" data-mode="Chèque">📄 Chèque</button>
+          </div>
+          <select id="f-mode-paiement" style="display:none;">
             <option value="Espèces">Espèces</option>
             <option value="Mobile Money">Mobile Money</option>
             <option value="Virement">Virement</option>
@@ -895,45 +911,43 @@
           </select>
         </div>
       </div>
-      <div id="f-extra-wrap" class="field-grid" style="margin-bottom:6px;">
-        <div>
-          <label>Type de vente</label>
-          <div class="sale-type"><button type="button" class="st-btn on" data-st="comptant">💵 Comptant</button><button type="button" class="st-btn" data-st="credit">🧾 À crédit</button></div>
+
+      <details id="saleMore" class="sale-more">
+        <summary>⚙️ Plus d'options <small>(date, remise, TVA, remarque, ticket)</small></summary>
+        <div class="field-grid" style="margin-top:12px;">
+          <div><label>Date de la vente</label><input id="f-date" type="date"></div>
+          <div id="f-validite-wrap" style="display:none;"><label>Devis valable jusqu'au</label><input id="f-validite" type="date"></div>
         </div>
-        <div id="f-echeance-wrap" style="display:none;"><label>À payer avant le</label><input id="f-echeance" type="date"></div>
-        <div style="grid-column:1/-1;"><label>Remarque (facultatif)</label><input id="f-remarque" maxlength="200" placeholder="Ex : paiement par Wave au 77…, livraison jeudi"></div>
-      </div>
-      <p class="hint-text" style="margin-top:0;">Cherche une référence du catalogue, ou tape librement pour une ligne hors-catalogue.</p>
-      <div class="inv-lines" id="invLines"></div>
-      <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
-        <button class="ghost" id="btnAddLine">+ Ajouter une ligne</button>
-        <button class="ghost" id="btnQuickScanSale" style="color:var(--brick); border-color:var(--brick);">📷 Scan rapide article</button>
-      </div>
-      <div id="fiscalBlock" class="field-grid" style="margin-bottom:6px;">
-        <div>
-          <label>Remise (réduction accordée)</label>
-          <div style="display:flex; gap:6px;">
-            <input id="f-remise" type="number" min="0" step="any" placeholder="0">
-            <select id="f-remise-unit" style="max-width:96px;"><option value="fcfa">FCFA</option><option value="pct">%</option></select>
+        <div id="fiscalBlock" class="field-grid" style="margin-top:10px;">
+          <div>
+            <label>Remise (réduction accordée)</label>
+            <div style="display:flex; gap:6px;">
+              <input id="f-remise" type="number" min="0" step="any" placeholder="0">
+              <select id="f-remise-unit" style="max-width:96px;"><option value="fcfa">FCFA</option><option value="pct">%</option></select>
+            </div>
+          </div>
+          <div>
+            <label>TVA</label>
+            <div style="display:flex; gap:6px;">
+              <select id="f-tva-mode"><option value="none">Sans TVA</option><option value="add">TVA en plus des prix</option><option value="incl">TVA déjà incluse dans les prix</option></select>
+              <input id="f-tva-taux" type="number" min="0" max="100" step="any" value="18" style="max-width:84px; display:none;" title="Taux de TVA en %">
+            </div>
           </div>
         </div>
-        <div>
-          <label>TVA</label>
-          <div style="display:flex; gap:6px;">
-            <select id="f-tva-mode"><option value="none">Sans TVA</option><option value="add">TVA en plus des prix</option><option value="incl">TVA déjà incluse dans les prix</option></select>
-            <input id="f-tva-taux" type="number" min="0" max="100" step="any" value="18" style="max-width:84px; display:none;" title="Taux de TVA en %">
-          </div>
+        <div id="f-remarque-wrap" style="margin-top:10px;"><label>Remarque sur la facture</label><input id="f-remarque" maxlength="200" placeholder="Ex : paiement par Wave au 77…, livraison jeudi"></div>
+        <div class="sale-tk">
+          <label class="tk-opt"><input type="checkbox" id="tkAuto"> 🧾 Imprimer le ticket après la vente</label>
+          <label class="tk-opt"><input type="checkbox" id="tkWa"> 💬 Envoyer le ticket par WhatsApp après la vente</label>
+          <select id="tkWidth" title="Largeur du papier du ticket"><option value="80">Ticket 80 mm</option><option value="58">Ticket 58 mm</option></select>
         </div>
-      </div>
-      <div id="invBreakdown" style="text-align:right; font-size:13px; margin:8px 0 4px; line-height:1.7;"></div>
-      <div class="inv-total-row"><span class="lbl" id="invTotalLbl">Total</span><span class="amt" id="invGrandTotal">0 FCFA</span></div>
-      <div id="invLettres" class="inv-lettres"></div>
-      <p class="muted" id="finalizeHint" style="margin-top:14px;"></p>
-      <div style="margin-top:18px; display:flex; gap:12px; justify-content:flex-end; align-items:center; flex-wrap:wrap;">
-        <label class="tk-opt"><input type="checkbox" id="tkAuto"> 🧾 Imprimer le ticket après la vente</label>
-        <label class="tk-opt"><input type="checkbox" id="tkWa"> 💬 Envoyer le ticket par WhatsApp après la vente</label>
-        <select id="tkWidth" title="Largeur du papier du ticket"><option value="80">Ticket 80 mm</option><option value="58">Ticket 58 mm</option></select>
-        <button class="primary" id="btnFinalize">Finaliser la vente</button>
+      </details>
+
+      <div class="sale-footer">
+        <div id="invBreakdown" style="text-align:right; font-size:13px; line-height:1.6;"></div>
+        <div class="inv-total-row"><span class="lbl" id="invTotalLbl">Total à payer</span><span class="amt" id="invGrandTotal">0 FCFA</span></div>
+        <div id="invLettres" class="inv-lettres"></div>
+        <p class="muted" id="finalizeHint" style="margin:8px 0;"></p>
+        <button class="primary sale-go" id="btnFinalize">✓ Finaliser la vente</button>
       </div>
     </div>
   </section>
@@ -3261,6 +3275,18 @@
     return state.products.filter(p => (p.ref || '').toLowerCase().includes(q) || (p.nom || '').toLowerCase().includes(q) || (p.codeBarre || '').toLowerCase().includes(q)).slice(0, 8);
   }
 
+  function lineStockHtml(line) {
+    const prod = line.matched ? state.products.find(p => p.ref === line.ref) : null;
+    if (prod) {
+      const over = Number(line.qte) > Number(prod.stock);
+      return over ? `<span class="il-warn">⚠ Il n'en reste que ${prod.stock} ${escapeHtml(prod.unite || '')}</span>` : `<span class="il-ok">En stock : ${prod.stock} ${escapeHtml(prod.unite || '')}</span>`;
+    }
+    return line.nom && line.nom.trim() ? `<span class="il-hors">Hors stock — ne sera pas déduit</span>` : '';
+  }
+  function pickProduct(i, prod) {
+    if (!prod || !invoiceLines[i]) return;
+    invoiceLines[i] = { ref: prod.ref, nom: prod.nom, qte: Number(invoiceLines[i].qte) || 1, prix: prod.prixVente, unite: prod.unite || '', matched: true };
+  }
   function renderInvoiceLines() {
     const wrap = document.getElementById('invLines');
     wrap.innerHTML = '';
@@ -3268,41 +3294,66 @@
     invoiceLines.forEach((line, idx) => {
       const total = (Number(line.prix) || 0) * (Number(line.qte) || 0);
       const row = document.createElement('div');
-      row.className = 'inv-line';
+      row.className = 'inv-line il2';
       row.innerHTML = `
-        <div class="autocomplete-wrap">
-          <div class="mini-label">Référence / recherche</div>
-          <input type="text" class="line-ref" data-idx="${idx}" value="${escapeHtml(line.ref)}" placeholder="Nom, réf. ou code-barres" autocomplete="off">
+        <div class="il-name autocomplete-wrap">
+          <input type="text" class="line-nom" data-idx="${idx}" value="${escapeHtml(line.nom)}" placeholder="🔎 Tape le nom de l'article…" autocomplete="off">
           <div class="ac-list" data-ac="${idx}" style="display:none;"></div>
+          <div class="il-stock" data-stk="${idx}">${lineStockHtml(line)}</div>
         </div>
-        <div><div class="mini-label">Désignation</div><input type="text" class="line-nom" data-idx="${idx}" value="${escapeHtml(line.nom)}" placeholder="Nom de l'article"></div>
-        <div><div class="mini-label">Quantité</div><input type="number" min="0" step="any" class="line-qty" data-idx="${idx}" value="${line.qte}"></div>
-        <div><div class="mini-label">Unité</div><input type="text" class="line-unite" data-idx="${idx}" value="${escapeHtml(line.unite)}" placeholder="kg, L…"></div>
-        <div><div class="mini-label">Prix vente (FCFA)</div><input type="number" min="0" step="1" class="line-prix" data-idx="${idx}" value="${line.prix}"></div>
-        <div><div class="mini-label">Total</div><div class="ltotal-box">${euros(total)}</div></div>
-        <div class="rm-cell"><button class="icon-btn" data-rm="${idx}" title="Retirer la ligne" style="margin-top:20px;">✕</button></div>
+        <div class="il-qty"><div class="mini-label">Quantité</div>
+          <div class="qty-box"><button type="button" class="q-btn" data-q="-1" data-idx="${idx}">−</button><input type="number" min="0" step="any" class="line-qty" data-idx="${idx}" value="${line.qte}" inputmode="decimal"><button type="button" class="q-btn" data-q="1" data-idx="${idx}">+</button></div>
+          <input type="text" class="line-unite" data-idx="${idx}" value="${escapeHtml(line.unite)}" placeholder="unité (kg, sac…)" title="Unité">
+        </div>
+        <div class="il-price"><div class="mini-label">Prix de 1</div><input type="number" min="0" step="1" class="line-prix" data-idx="${idx}" value="${line.prix}" inputmode="numeric"></div>
+        <div class="il-total"><div class="mini-label">Total</div><div class="ltotal-box">${euros(total)}</div></div>
+        <button class="icon-btn il-rm" data-rm="${idx}" title="Retirer cet article" type="button">✕</button>
       `;
       wrap.appendChild(row);
     });
 
-    wrap.querySelectorAll('.line-ref').forEach(inp => {
-      inp.addEventListener('input', e => { const idx = +e.target.dataset.idx; invoiceLines[idx].ref = e.target.value; invoiceLines[idx].matched = false; openAutocomplete(idx, e.target.value); });
+    wrap.querySelectorAll('.line-nom').forEach(inp => {
+      inp.addEventListener('input', e => { const idx = +e.target.dataset.idx; const l = invoiceLines[idx]; l.nom = e.target.value; l.ref = ''; l.matched = false; refreshLineStock(idx); openAutocomplete(idx, e.target.value); updateFinalizeHint(); });
       inp.addEventListener('focus', e => openAutocomplete(+e.target.dataset.idx, e.target.value));
-      inp.addEventListener('blur', () => setTimeout(() => closeAllAutocomplete(), 150));
+      inp.addEventListener('keydown', e => {
+        if (e.key !== 'Enter') return; e.preventDefault();
+        const idx = +e.target.dataset.idx, m = matchProducts(e.target.value);
+        if (m.length) { pickProduct(idx, m[0]); closeAllAutocomplete(); renderInvoiceLines(); const q = document.querySelectorAll('.line-qty')[idx]; if (q) { q.focus(); q.select(); } }
+      });
+      inp.addEventListener('blur', e => {
+        const idx = +e.target.dataset.idx;
+        setTimeout(() => {
+          closeAllAutocomplete();
+          // Si le nom tapé correspond exactement à un produit du stock, on le relie automatiquement
+          const l = invoiceLines[idx]; if (!l || l.matched) return;
+          const t = (l.nom || '').trim().toLowerCase(); if (!t) return;
+          const hit = state.products.filter(p => (p.nom || '').trim().toLowerCase() === t || (p.ref || '').trim().toLowerCase() === t || (p.codeBarre || '').trim().toLowerCase() === t);
+          if (hit.length === 1) { pickProduct(idx, hit[0]); renderInvoiceLines(); }
+        }, 160);
+      });
     });
-    wrap.querySelectorAll('.line-nom').forEach(inp => inp.addEventListener('input', e => { invoiceLines[+e.target.dataset.idx].nom = e.target.value; }));
     wrap.querySelectorAll('.line-unite').forEach(inp => inp.addEventListener('input', e => { invoiceLines[+e.target.dataset.idx].unite = e.target.value; }));
     wrap.querySelectorAll('.line-qty').forEach(inp => inp.addEventListener('input', e => { invoiceLines[+e.target.dataset.idx].qte = e.target.value; updateLineTotal(+e.target.dataset.idx); }));
     wrap.querySelectorAll('.line-prix').forEach(inp => inp.addEventListener('input', e => { invoiceLines[+e.target.dataset.idx].prix = e.target.value; updateLineTotal(+e.target.dataset.idx); }));
+    wrap.querySelectorAll('.q-btn').forEach(b => b.addEventListener('click', () => {
+      const idx = +b.dataset.idx, l = invoiceLines[idx];
+      l.qte = Math.max(1, (Number(l.qte) || 0) + Number(b.dataset.q));
+      const box = b.parentElement.querySelector('.line-qty'); if (box) box.value = l.qte;
+      updateLineTotal(idx);
+    }));
     wrap.querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', () => { invoiceLines.splice(+b.dataset.rm, 1); if (invoiceLines.length === 0) invoiceLines = [freshLine()]; renderInvoiceLines(); }));
 
     updateGrandTotal();
     updateFinalizeHint();
   }
+  function refreshLineStock(idx) {
+    const el = document.querySelector(`[data-stk="${idx}"]`); if (el && invoiceLines[idx]) el.innerHTML = lineStockHtml(invoiceLines[idx]);
+  }
 
   function updateLineTotal(idx) {
     const row = document.querySelectorAll('.inv-line')[idx];
     if (row) { const line = invoiceLines[idx]; row.querySelector('.ltotal-box').textContent = euros((Number(line.prix) || 0) * (Number(line.qte) || 0)); }
+    refreshLineStock(idx);
     updateGrandTotal(); updateFinalizeHint();
   }
   // WhatsApp exige le format international (ex : 221771234567). Numéro local (9 chiffres ou moins) => on ajoute l'indicatif du Sénégal.
@@ -3405,12 +3456,17 @@
     document.querySelectorAll('.st-btn').forEach(b => b.classList.toggle('on', b.dataset.st === t));
     document.getElementById('f-echeance-wrap').style.display = t === 'credit' ? '' : 'none';
     const lab = document.querySelector('#f-paye-wrap label'), inp = document.getElementById('f-paye');
-    if (lab) lab.textContent = t === 'credit' ? 'Acompte versé (FCFA)' : 'Montant payé (FCFA)';
-    inp.placeholder = t === 'credit' ? 'Vide ou 0 = rien payé maintenant' : 'Laisser vide = payé en totalité';
+    if (lab) lab.textContent = t === 'credit' ? 'Acompte versé maintenant (FCFA) — facultatif' : 'Montant payé par le client (FCFA)';
+    inp.placeholder = t === 'credit' ? 'Vide = rien payé maintenant' : 'Laisse vide si le client paie tout';
     if (t === 'credit' && !document.getElementById('f-echeance').value) { const d = new Date(Date.now() + 7 * 86400000); document.getElementById('f-echeance').value = d.toISOString().slice(0, 10); }
     updateGrandTotal();
   }
   document.querySelectorAll('.st-btn').forEach(b => b.addEventListener('click', () => setSaleType(b.dataset.st)));
+  document.getElementById('modeChips').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-mode]'); if (!b) return;
+    document.getElementById('f-mode-paiement').value = b.dataset.mode;
+    document.querySelectorAll('.mode-chip').forEach(c => c.classList.toggle('on', c === b));
+  });
   function updateFinalizeHint() {
     const hint = document.getElementById('finalizeHint');
     const shortages = invoiceLines.filter(l => l.matched).map(l => {
@@ -3434,8 +3490,8 @@
     if (matches.length === 0) list.innerHTML = `<div class="ac-empty">Aucune correspondance — la ligne restera libre (hors-catalogue).</div>`;
     else list.innerHTML = matches.map(p => `
       <div class="ac-item" data-pick="${escapeHtml(p.ref)}" data-idx="${idx}">
-        <div class="ac-ref">${escapeHtml(p.ref)} — ${escapeHtml(p.nom)}</div>
-        <div class="ac-meta">${euros(p.prixVente)} / ${escapeHtml(p.unite || 'unité')} · stock: ${p.stock}</div>
+        <div class="ac-ref">${escapeHtml(p.nom)}</div>
+        <div class="ac-meta">${euros(p.prixVente)} / ${escapeHtml(p.unite || 'unité')} · en stock : ${p.stock}${p.ref ? ' · ' + escapeHtml(p.ref) : ''}</div>
       </div>`).join('');
     list.style.display = 'block';
     list.querySelectorAll('[data-pick]').forEach(el => {
@@ -3443,14 +3499,14 @@
         ev.preventDefault();
         const i = +el.dataset.idx;
         const prod = state.products.find(p => p.ref === el.dataset.pick);
-        if (prod) invoiceLines[i] = { ref: prod.ref, nom: prod.nom, qte: invoiceLines[i].qte || 1, prix: prod.prixVente, unite: prod.unite || '', matched: true };
+        if (prod) pickProduct(i, prod);
         closeAllAutocomplete();
         renderInvoiceLines();
       });
     });
   }
 
-  document.getElementById('btnAddLine').addEventListener('click', () => { invoiceLines.push(freshLine()); renderInvoiceLines(); });
+  document.getElementById('btnAddLine').addEventListener('click', () => { invoiceLines.push(freshLine()); renderInvoiceLines(); const all = document.querySelectorAll('.line-nom'); if (all.length) all[all.length - 1].focus(); });
   document.getElementById('btnFinalize').addEventListener('click', () => { if (currentDocType() === 'facture') finalizeInvoice(); else saveDocument(); });
   document.getElementById('f-doctype').addEventListener('change', () => { convertingDocId = null; applyDocMode(); });
 
@@ -3589,6 +3645,9 @@
     document.getElementById('ventesTitle').textContent = isInv ? 'Nouvelle vente' : (t === 'devis' ? 'Nouveau devis' : (t === 'bon_livraison' ? 'Nouveau bon de livraison' : 'Nouveau bon de commande'));
     document.getElementById('f-paye-wrap').style.display = isInv ? '' : 'none';
     document.getElementById('f-extra-wrap').style.display = isInv ? '' : 'none';
+    document.getElementById('saleStep3').style.display = isInv ? '' : 'none';
+    document.getElementById('f-remarque-wrap').style.display = isInv ? '' : 'none';
+    if (!isInv) document.getElementById('saleMore').open = true;
     document.getElementById('fiscalBlock').style.display = t === 'bon_livraison' ? 'none' : '';
     updateGrandTotal();
     document.getElementById('f-mode-wrap').style.display = isInv ? '' : 'none';
@@ -5750,6 +5809,51 @@
 .sc-act .icon-btn{opacity:.6;}.sc-act .icon-btn:hover{opacity:1;}
 body.hide-amounts #stockValue,body.hide-amounts #heroInvesti,body.hide-amounts #heroValeur,body.hide-amounts #heroBenefice,body.hide-amounts #statTotalValue,body.hide-amounts .ai-kpi b{filter:blur(9px);user-select:none;}
 @media (max-width:640px){.stock-cards{grid-template-columns:1fr;}.cat-right{width:100%;justify-content:space-between;}}
+</style>
+<style id="sale-simple-css">
+.sale2 .sale-step{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:800;margin:20px 0 10px;color:var(--ink);}
+.sale2 .sale-step:first-of-type{margin-top:4px;}
+.sale2 .sale-step em{font-weight:500;opacity:.6;font-size:13px;font-style:normal;}
+.sale2 .sn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--brick);color:#fff;font-size:14px;font-weight:900;flex:0 0 auto;}
+.sale2 #f-client{font-size:16px;padding:13px 14px;}
+.sale2 .inv-lines{display:grid;gap:10px;margin-bottom:10px;}
+.inv-lines .inv-line.il2{display:grid;grid-template-columns:minmax(0,2.4fr) auto minmax(90px,1fr) minmax(100px,1fr) 34px;gap:10px 12px;align-items:start;padding:12px;border-radius:16px;background:var(--paper);border:1px solid var(--line);margin:0;}
+.il2 .line-nom{font-size:16px;font-weight:700;padding:12px 12px;}
+.il2 .il-stock{font-size:12.5px;margin-top:5px;min-height:16px;}
+.il-ok{color:var(--moss);font-weight:700;}.il-warn{color:#ff5a5a;font-weight:800;}.il-hors{color:var(--gold);font-weight:700;}
+.il2 .mini-label{font-size:11px;opacity:.65;margin-bottom:4px;}
+.il2 .qty-box{display:flex;align-items:center;gap:4px;}
+.il2 .qty-box .line-qty{width:64px;text-align:center;font-size:17px;font-weight:800;padding:9px 4px;}
+.q-btn{width:38px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--paper-2,var(--paper));color:var(--ink);font-size:20px;font-weight:900;cursor:pointer;line-height:1;}
+.q-btn:active{transform:scale(.92);}
+.il2 .line-unite{margin-top:6px;width:100%;font-size:12px;padding:6px 8px;opacity:.85;}
+.il2 .line-prix{font-size:15px;font-weight:700;padding:10px 8px;}
+.il2 .ltotal-box{font-size:16px;font-weight:900;padding:9px 0;text-align:left;}
+.il2 .il-rm{margin-top:20px;}
+.sale-addrow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px;}
+.sale-addrow .ghost{padding:12px 18px;font-weight:800;font-size:15px;}
+.sale2 .sale-type .st-btn{padding:14px 10px;font-size:15px;}
+.sale2 #f-paye{font-size:17px;padding:12px;}
+.mode-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
+.mode-chip{padding:11px 16px;border-radius:999px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-weight:800;font-size:14px;cursor:pointer;}
+.mode-chip.on{background:var(--moss);border-color:var(--moss);color:#06281d;}
+.sale-more{margin-top:18px;border:1px dashed var(--line);border-radius:14px;padding:10px 14px;color:var(--ink);}
+.sale-more summary{cursor:pointer;font-weight:800;list-style:none;}
+.sale-more summary::-webkit-details-marker{display:none;}
+.sale-more summary small{font-weight:500;opacity:.65;}
+.sale-tk{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:14px;}
+.sale-footer{position:sticky;bottom:0;z-index:6;margin:18px -8px -8px;padding:12px 8px 8px;background:var(--paper);border-top:2px solid var(--line);}
+.sale-footer .inv-total-row{border-top:0;margin-top:0;padding-top:4px;}
+.sale-footer .inv-total-row .amt{font-size:30px;}
+.sale-go{width:100%;padding:16px;font-size:18px;font-weight:900;border-radius:14px;}
+@media (max-height:640px){.sale-footer{position:static;}}
+@media (max-width:720px){
+  .sale-footer .inv-lettres{font-size:11.5px;}.sale-footer .inv-total-row .amt{font-size:24px;}.sale-go{padding:13px;font-size:16px;}.sale-footer #finalizeHint{font-size:12.5px;}
+  .inv-lines .inv-line.il2{grid-template-columns:1fr 1fr;}
+  .il2 .il-name{grid-column:1 / -1;}
+  .il2 .il-qty{grid-column:1 / 2;}.il2 .il-price{grid-column:2 / 3;}
+  .il2 .il-total{grid-column:1 / 2;}.il2 .il-rm{grid-column:2 / 3;justify-self:end;margin-top:0;}
+}
 </style>
 </body>
 </html>
