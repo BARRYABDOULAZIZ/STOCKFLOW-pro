@@ -1574,6 +1574,8 @@
     const duration = (msg && msg.length > 60) || isWarn ? 9000 : 2800;
     toast._h = setTimeout(() => t.classList.remove('show'), duration);
   }
+  const sfTimings = {};
+  function showTimings() { const el = document.getElementById('syncStatus'); if (el) el.title = 'Temps de chargement : ' + Object.entries(sfTimings).map(([k, v]) => k + ' ' + v + ' ms').join(' · '); }
   function setSync(ok, label) {
     document.getElementById('syncLabel').textContent = label;
     document.getElementById('syncStatus').classList.toggle('off', !ok);
@@ -5291,12 +5293,19 @@
   }
 
   // ---- Sauvegarde locale (localStorage, propre à ce navigateur) ----
-  let autoBackupTimer = null;
+  let autoBackupTimer = null, autoBackupLast = 0;
 
   function scheduleAutoBackup() {
     clearTimeout(autoBackupTimer);
-    autoBackupTimer = setTimeout(() => saveLocalBackup(true), 900);
+    // La copie locale transforme TOUTES les données en texte : c'est lourd dans un gros magasin.
+    // On la fait au plus une fois toutes les 5 minutes, quand l'appareil est au repos, et quand on quitte la page.
+    const wait = Math.max(4000, autoBackupLast + 300000 - Date.now());
+    autoBackupTimer = setTimeout(() => {
+      const run = () => { autoBackupLast = Date.now(); saveLocalBackup(true); };
+      if (window.requestIdleCallback) requestIdleCallback(run, { timeout: 15000 }); else run();
+    }, wait);
   }
+  document.addEventListener('visibilitychange', () => { if (document.hidden && state.products && state.products.length && Date.now() - autoBackupLast > 60000) { autoBackupLast = Date.now(); saveLocalBackup(true); } });
 
   function saveLocalBackup(silent) {
     try {
@@ -5450,6 +5459,10 @@
             if (again) { again = false; fetchAll(); }
           }
           async function fetchOnce() {
+            const t0 = performance.now();
+            try { await fetchBody(); } finally { sfTimings[table] = Math.round(performance.now() - t0); showTimings(); }
+          }
+          async function fetchBody() {
             if (tenant && !CURRENT_COMMERCE_ID) { if (lastSig !== '[]') { lastSig = '[]'; onNext({ docs: [] }); } return; }
             // Supabase renvoie 1000 lignes maximum par requête : on charge par tranches jusqu'à tout avoir.
             const PAGE = 1000;
@@ -5907,6 +5920,12 @@ body.hide-amounts #stockValue,body.hide-amounts #heroInvesti,body.hide-amounts #
   .il2 .qty-box .line-qty{width:34px;}
   .il2 input{font-size:13px;padding:6px 4px;}
 }
+</style>
+<style id="perf-css">
+/* Performance : plus d'animation permanente sur l'en-tête (elle redessinait l'écran en continu sur les téléphones modestes) */
+header.top{animation:none !important;background-size:100% 100% !important;}
+.sync .dot,.sync .dot::before,.sync .dot::after{animation:none !important;}
+.stk.low{animation:none !important;}
 </style>
 </body>
 </html>
