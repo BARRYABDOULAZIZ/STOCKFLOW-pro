@@ -864,7 +864,7 @@
   <!-- VENTES -->
   <section class="panel" id="panel-ventes">
     <div class="card sale2">
-      <div class="row-head">
+      <div class="row-head" style="margin-bottom:10px;">
         <h2 id="ventesTitle">Nouvelle vente</h2>
         <select id="f-doctype" style="max-width:230px;" title="Type de document">
           <option value="facture">🧾 Facture (vente)</option>
@@ -873,81 +873,86 @@
           <option value="bon_livraison">🚚 Bon de livraison</option>
         </select>
       </div>
-
-      <div class="sale-step"><span class="sn">1</span> Pour qui ? <em>(facultatif)</em></div>
-      <div style="position:relative;"><input id="f-client" placeholder="Nom du client — ou choisis dans la liste" autocomplete="off"><div id="clientSuggest" class="client-suggest" style="display:none;"></div></div>
-
-      <div class="sale-step"><span class="sn">2</span> Qu'est-ce qu'il achète ?</div>
-      <div class="inv-lines" id="invLines"></div>
-      <div class="sale-addrow">
-        <button class="ghost" id="btnAddLine" type="button">＋ Ajouter un article</button>
-        <button class="ghost" id="btnQuickScanSale" type="button" style="color:var(--brick); border-color:var(--brick);">📷 Scanner</button>
-      </div>
-
-      <div id="saleStep3">
-        <div class="sale-step"><span class="sn">3</span> Comment il paie ?</div>
-        <div id="f-extra-wrap">
-          <div class="sale-type"><button type="button" class="st-btn on" data-st="comptant">💵 Il paie maintenant</button><button type="button" class="st-btn" data-st="credit">🧾 Il paiera plus tard (crédit)</button></div>
-          <div id="f-echeance-wrap" style="display:none; margin-top:10px;"><label>Il doit payer avant le</label><input id="f-echeance" type="date"></div>
-        </div>
-        <div id="f-paye-wrap" style="margin-top:12px;">
-          <label>Montant payé par le client (FCFA)</label>
-          <input id="f-paye" type="number" min="0" step="1" placeholder="Laisse vide si le client paie tout">
-          <div id="f-rendu-info" style="font-size:13.5px; font-weight:800; margin-top:6px;"></div>
-        </div>
-        <div id="f-mode-wrap" style="margin-top:12px;">
-          <label>Avec quoi ?</label>
-          <div class="mode-chips" id="modeChips">
-            <button type="button" class="mode-chip on" data-mode="Espèces">💵 Espèces</button>
-            <button type="button" class="mode-chip" data-mode="Mobile Money">📱 Mobile Money</button>
-            <button type="button" class="mode-chip" data-mode="Virement">🏦 Virement</button>
-            <button type="button" class="mode-chip" data-mode="Chèque">📄 Chèque</button>
+      <div class="sale-grid">
+        <div class="sale-left">
+          <div class="sale-step"><span class="sn">1</span> Articles vendus</div>
+          <div class="il-head"><span>Article</span><span>Stock</span><span>Quantité</span><span>Unité</span><span>Prix de 1</span><span>Total FCFA</span><span></span></div>
+          <div class="inv-lines" id="invLines"></div>
+          <div class="sale-addrow">
+            <button class="ghost" id="btnAddLine" type="button">＋ Ajouter une ligne</button>
+            <button class="ghost" id="btnQuickScanSale" type="button" style="color:var(--brick); border-color:var(--brick);">📷 Scanner</button>
           </div>
-          <select id="f-mode-paiement" style="display:none;">
-            <option value="Espèces">Espèces</option>
-            <option value="Mobile Money">Mobile Money</option>
-            <option value="Virement">Virement</option>
-            <option value="Chèque">Chèque</option>
-          </select>
         </div>
-      </div>
 
-      <details id="saleMore" class="sale-more">
-        <summary>⚙️ Plus d'options <small>(date, remise, TVA, remarque, ticket)</small></summary>
-        <div class="field-grid" style="margin-top:12px;">
-          <div><label>Date de la vente</label><input id="f-date" type="date"></div>
-          <div id="f-validite-wrap" style="display:none;"><label>Devis valable jusqu'au</label><input id="f-validite" type="date"></div>
-        </div>
-        <div id="fiscalBlock" class="field-grid" style="margin-top:10px;">
-          <div>
-            <label>Remise (réduction accordée)</label>
-            <div style="display:flex; gap:6px;">
-              <input id="f-remise" type="number" min="0" step="any" placeholder="0">
-              <select id="f-remise-unit" style="max-width:96px;"><option value="fcfa">FCFA</option><option value="pct">%</option></select>
+        <div class="sale-right">
+          <div class="sale-step"><span class="sn">2</span> Client <em>(facultatif)</em></div>
+          <div style="position:relative;"><input id="f-client" placeholder="Nom du client" autocomplete="off"><div id="clientSuggest" class="client-suggest" style="display:none;"></div></div>
+
+          <div id="saleStep3">
+            <div class="sale-step"><span class="sn">3</span> Paiement</div>
+            <div id="f-extra-wrap">
+              <div class="sale-type"><button type="button" class="st-btn on" data-st="comptant">💵 Paie maintenant</button><button type="button" class="st-btn" data-st="credit">🧾 Crédit</button></div>
+              <div id="f-echeance-wrap" style="display:none; margin-top:8px;"><label>À payer avant le</label><input id="f-echeance" type="date"></div>
+            </div>
+            <div id="f-paye-wrap" style="margin-top:8px;">
+              <label>Montant payé (FCFA)</label>
+              <input id="f-paye" type="number" min="0" step="1" placeholder="Vide = il paie tout">
+              <div id="f-rendu-info" style="font-size:13px; font-weight:800; margin-top:4px;"></div>
+            </div>
+            <div id="f-mode-wrap" style="margin-top:8px;">
+              <div class="mode-chips" id="modeChips">
+                <button type="button" class="mode-chip on" data-mode="Espèces">💵 Espèces</button>
+                <button type="button" class="mode-chip" data-mode="Mobile Money">📱 Mobile Money</button>
+                <button type="button" class="mode-chip" data-mode="Virement">🏦 Virement</button>
+                <button type="button" class="mode-chip" data-mode="Chèque">📄 Chèque</button>
+              </div>
+              <select id="f-mode-paiement" style="display:none;">
+                <option value="Espèces">Espèces</option>
+                <option value="Mobile Money">Mobile Money</option>
+                <option value="Virement">Virement</option>
+                <option value="Chèque">Chèque</option>
+              </select>
             </div>
           </div>
-          <div>
-            <label>TVA</label>
-            <div style="display:flex; gap:6px;">
-              <select id="f-tva-mode"><option value="none">Sans TVA</option><option value="add">TVA en plus des prix</option><option value="incl">TVA déjà incluse dans les prix</option></select>
-              <input id="f-tva-taux" type="number" min="0" max="100" step="any" value="18" style="max-width:84px; display:none;" title="Taux de TVA en %">
+
+          <details id="saleMore" class="sale-more">
+            <summary>⚙️ Plus d'options <small>(date, remise, TVA, remarque, ticket)</small></summary>
+            <div class="field-grid" style="margin-top:10px;">
+              <div><label>Date de la vente</label><input id="f-date" type="date"></div>
+              <div id="f-validite-wrap" style="display:none;"><label>Devis valable jusqu'au</label><input id="f-validite" type="date"></div>
             </div>
+            <div id="fiscalBlock" class="field-grid" style="margin-top:8px;">
+              <div>
+                <label>Remise</label>
+                <div style="display:flex; gap:6px;">
+                  <input id="f-remise" type="number" min="0" step="any" placeholder="0">
+                  <select id="f-remise-unit" style="max-width:84px;"><option value="fcfa">FCFA</option><option value="pct">%</option></select>
+                </div>
+              </div>
+              <div>
+                <label>TVA</label>
+                <div style="display:flex; gap:6px;">
+                  <select id="f-tva-mode"><option value="none">Sans TVA</option><option value="add">TVA en plus</option><option value="incl">TVA incluse</option></select>
+                  <input id="f-tva-taux" type="number" min="0" max="100" step="any" value="18" style="max-width:70px; display:none;" title="Taux de TVA en %">
+                </div>
+              </div>
+            </div>
+            <div id="f-remarque-wrap" style="margin-top:8px;"><label>Remarque sur la facture</label><input id="f-remarque" maxlength="200" placeholder="Ex : paiement par Wave au 77…"></div>
+            <div class="sale-tk">
+              <label class="tk-opt"><input type="checkbox" id="tkAuto"> 🧾 Imprimer le ticket après la vente</label>
+              <label class="tk-opt"><input type="checkbox" id="tkWa"> 💬 Ticket par WhatsApp après la vente</label>
+              <select id="tkWidth" title="Largeur du papier du ticket"><option value="80">Ticket 80 mm</option><option value="58">Ticket 58 mm</option></select>
+            </div>
+          </details>
+
+          <div class="sale-footer">
+            <div id="invBreakdown" style="text-align:right; font-size:12.5px; line-height:1.5;"></div>
+            <div class="inv-total-row"><span class="lbl" id="invTotalLbl">Total à payer</span><span class="amt" id="invGrandTotal">0 FCFA</span></div>
+            <div id="invLettres" class="inv-lettres"></div>
+            <p class="muted" id="finalizeHint" style="margin:6px 0;"></p>
+            <button class="primary sale-go" id="btnFinalize">✓ Finaliser la vente</button>
           </div>
         </div>
-        <div id="f-remarque-wrap" style="margin-top:10px;"><label>Remarque sur la facture</label><input id="f-remarque" maxlength="200" placeholder="Ex : paiement par Wave au 77…, livraison jeudi"></div>
-        <div class="sale-tk">
-          <label class="tk-opt"><input type="checkbox" id="tkAuto"> 🧾 Imprimer le ticket après la vente</label>
-          <label class="tk-opt"><input type="checkbox" id="tkWa"> 💬 Envoyer le ticket par WhatsApp après la vente</label>
-          <select id="tkWidth" title="Largeur du papier du ticket"><option value="80">Ticket 80 mm</option><option value="58">Ticket 58 mm</option></select>
-        </div>
-      </details>
-
-      <div class="sale-footer">
-        <div id="invBreakdown" style="text-align:right; font-size:13px; line-height:1.6;"></div>
-        <div class="inv-total-row"><span class="lbl" id="invTotalLbl">Total à payer</span><span class="amt" id="invGrandTotal">0 FCFA</span></div>
-        <div id="invLettres" class="inv-lettres"></div>
-        <p class="muted" id="finalizeHint" style="margin:8px 0;"></p>
-        <button class="primary sale-go" id="btnFinalize">✓ Finaliser la vente</button>
       </div>
     </div>
   </section>
@@ -3277,11 +3282,8 @@
 
   function lineStockHtml(line) {
     const prod = line.matched ? state.products.find(p => p.ref === line.ref) : null;
-    if (prod) {
-      const over = Number(line.qte) > Number(prod.stock);
-      return over ? `<span class="il-warn">⚠ Il n'en reste que ${prod.stock} ${escapeHtml(prod.unite || '')}</span>` : `<span class="il-ok">En stock : ${prod.stock} ${escapeHtml(prod.unite || '')}</span>`;
-    }
-    return line.nom && line.nom.trim() ? `<span class="il-hors">Hors stock — ne sera pas déduit</span>` : '';
+    if (prod) return Number(line.qte) > Number(prod.stock) ? `<span class="il-warn" title="Stock insuffisant">⚠ ${prod.stock}</span>` : `<span class="il-ok" title="En stock">${prod.stock}</span>`;
+    return line.nom && line.nom.trim() ? `<span class="il-hors" title="Hors stock : ne sera pas déduit du stock">hors</span>` : '';
   }
   function pickProduct(i, prod) {
     if (!prod || !invoiceLines[i]) return;
@@ -3290,30 +3292,33 @@
   function renderInvoiceLines() {
     const wrap = document.getElementById('invLines');
     wrap.innerHTML = '';
+    while (invoiceLines.length < 6) invoiceLines.push(freshLine());   // lignes vides prêtes à remplir, comme dans un tableur
 
     invoiceLines.forEach((line, idx) => {
+      const filled = !!(line.nom && line.nom.trim());
       const total = (Number(line.prix) || 0) * (Number(line.qte) || 0);
       const row = document.createElement('div');
       row.className = 'inv-line il2';
       row.innerHTML = `
         <div class="il-name autocomplete-wrap">
-          <input type="text" class="line-nom" data-idx="${idx}" value="${escapeHtml(line.nom)}" placeholder="🔎 Tape le nom de l'article…" autocomplete="off">
+          <input type="text" class="line-nom" data-idx="${idx}" value="${escapeHtml(line.nom)}" placeholder="${idx === 0 ? 'Tape le nom d\'un article…' : ''}" autocomplete="off">
           <div class="ac-list" data-ac="${idx}" style="display:none;"></div>
-          <div class="il-stock" data-stk="${idx}">${lineStockHtml(line)}</div>
         </div>
-        <div class="il-qty"><div class="mini-label">Quantité</div>
-          <div class="qty-box"><button type="button" class="q-btn" data-q="-1" data-idx="${idx}">−</button><input type="number" min="0" step="any" class="line-qty" data-idx="${idx}" value="${line.qte}" inputmode="decimal"><button type="button" class="q-btn" data-q="1" data-idx="${idx}">+</button></div>
-          <input type="text" class="line-unite" data-idx="${idx}" value="${escapeHtml(line.unite)}" placeholder="unité (kg, sac…)" title="Unité">
-        </div>
-        <div class="il-price"><div class="mini-label">Prix de 1</div><input type="number" min="0" step="1" class="line-prix" data-idx="${idx}" value="${line.prix}" inputmode="numeric"></div>
-        <div class="il-total"><div class="mini-label">Total</div><div class="ltotal-box">${euros(total)}</div></div>
-        <button class="icon-btn il-rm" data-rm="${idx}" title="Retirer cet article" type="button">✕</button>
+        <div class="il-stock" data-stk="${idx}">${lineStockHtml(line)}</div>
+        <div class="qty-box"><button type="button" class="q-btn" data-q="-1" data-idx="${idx}" tabindex="-1">−</button><input type="number" min="0" step="any" class="line-qty" data-idx="${idx}" value="${filled ? line.qte : ''}" inputmode="decimal"><button type="button" class="q-btn" data-q="1" data-idx="${idx}" tabindex="-1">+</button></div>
+        <input type="text" class="line-unite" data-idx="${idx}" value="${escapeHtml(line.unite)}" title="Unité">
+        <input type="number" min="0" step="1" class="line-prix" data-idx="${idx}" value="${filled ? line.prix : ''}" inputmode="numeric">
+        <div class="ltotal-box">${filled ? Math.round(total).toLocaleString('fr-FR') : ''}</div>
+        <button class="icon-btn il-rm" data-rm="${idx}" title="Vider cette ligne" type="button" tabindex="-1">✕</button>
       `;
       wrap.appendChild(row);
     });
 
     wrap.querySelectorAll('.line-nom').forEach(inp => {
-      inp.addEventListener('input', e => { const idx = +e.target.dataset.idx; const l = invoiceLines[idx]; l.nom = e.target.value; l.ref = ''; l.matched = false; refreshLineStock(idx); openAutocomplete(idx, e.target.value); updateFinalizeHint(); });
+      inp.addEventListener('input', e => { const idx = +e.target.dataset.idx; const l = invoiceLines[idx]; l.nom = e.target.value; l.ref = ''; l.matched = false;
+        const rw = e.target.closest('.inv-line'), qi = rw.querySelector('.line-qty'), pi = rw.querySelector('.line-prix');
+        if (l.nom.trim()) { if (qi && qi.value === '') qi.value = l.qte; if (pi && pi.value === '') pi.value = l.prix; }
+        updateLineTotal(idx); openAutocomplete(idx, e.target.value); });
       inp.addEventListener('focus', e => openAutocomplete(+e.target.dataset.idx, e.target.value));
       inp.addEventListener('keydown', e => {
         if (e.key !== 'Enter') return; e.preventDefault();
@@ -3352,7 +3357,7 @@
 
   function updateLineTotal(idx) {
     const row = document.querySelectorAll('.inv-line')[idx];
-    if (row) { const line = invoiceLines[idx]; row.querySelector('.ltotal-box').textContent = euros((Number(line.prix) || 0) * (Number(line.qte) || 0)); }
+    if (row) { const line = invoiceLines[idx]; row.querySelector('.ltotal-box').textContent = (line.nom && line.nom.trim()) ? Math.round((Number(line.prix) || 0) * (Number(line.qte) || 0)).toLocaleString('fr-FR') : ''; }
     refreshLineStock(idx);
     updateGrandTotal(); updateFinalizeHint();
   }
@@ -5811,48 +5816,69 @@ body.hide-amounts #stockValue,body.hide-amounts #heroInvesti,body.hide-amounts #
 @media (max-width:640px){.stock-cards{grid-template-columns:1fr;}.cat-right{width:100%;justify-content:space-between;}}
 </style>
 <style id="sale-simple-css">
-.sale2 .sale-step{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:800;margin:20px 0 10px;color:var(--ink);}
-.sale2 .sale-step:first-of-type{margin-top:4px;}
-.sale2 .sale-step em{font-weight:500;opacity:.6;font-size:13px;font-style:normal;}
-.sale2 .sn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--brick);color:#fff;font-size:14px;font-weight:900;flex:0 0 auto;}
-.sale2 #f-client{font-size:16px;padding:13px 14px;}
-.sale2 .inv-lines{display:grid;gap:10px;margin-bottom:10px;}
-.inv-lines .inv-line.il2{display:grid;grid-template-columns:minmax(0,2.4fr) auto minmax(90px,1fr) minmax(100px,1fr) 34px;gap:10px 12px;align-items:start;padding:12px;border-radius:16px;background:var(--paper);border:1px solid var(--line);margin:0;}
-.il2 .line-nom{font-size:16px;font-weight:700;padding:12px 12px;}
-.il2 .il-stock{font-size:12.5px;margin-top:5px;min-height:16px;}
-.il-ok{color:var(--moss);font-weight:700;}.il-warn{color:#ff5a5a;font-weight:800;}.il-hors{color:var(--gold);font-weight:700;}
-.il2 .mini-label{font-size:11px;opacity:.65;margin-bottom:4px;}
-.il2 .qty-box{display:flex;align-items:center;gap:4px;}
-.il2 .qty-box .line-qty{width:64px;text-align:center;font-size:17px;font-weight:800;padding:9px 4px;}
-.q-btn{width:38px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--paper-2,var(--paper));color:var(--ink);font-size:20px;font-weight:900;cursor:pointer;line-height:1;}
-.q-btn:active{transform:scale(.92);}
-.il2 .line-unite{margin-top:6px;width:100%;font-size:12px;padding:6px 8px;opacity:.85;}
-.il2 .line-prix{font-size:15px;font-weight:700;padding:10px 8px;}
-.il2 .ltotal-box{font-size:16px;font-weight:900;padding:9px 0;text-align:left;}
-.il2 .il-rm{margin-top:20px;}
-.sale-addrow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px;}
-.sale-addrow .ghost{padding:12px 18px;font-weight:800;font-size:15px;}
-.sale2 .sale-type .st-btn{padding:14px 10px;font-size:15px;}
-.sale2 #f-paye{font-size:17px;padding:12px;}
-.mode-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
-.mode-chip{padding:11px 16px;border-radius:999px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-weight:800;font-size:14px;cursor:pointer;}
+/* Écran de vente compact, façon tableur : tout tient sans défiler */
+.sale2 .sale-grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:16px;align-items:start;}
+.sale2 .sale-right{position:sticky;top:8px;display:flex;flex-direction:column;gap:2px;}
+.sale2 .sale-step{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:800;margin:10px 0 6px;color:var(--ink);}
+.sale2 .sale-left .sale-step,.sale2 .sale-right>.sale-step:first-child{margin-top:0;}
+.sale2 .sale-step em{font-weight:500;opacity:.6;font-size:12px;font-style:normal;}
+.sale2 .sn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--brick);color:#fff;font-size:12px;font-weight:900;flex:0 0 auto;}
+.sale2 label{font-size:12px;margin-bottom:3px;}
+.sale2 input,.sale2 select{padding:8px 10px;font-size:14px;}
+.sale2 #f-client{font-size:14.5px;}
+.il-head,.inv-lines .inv-line.il2{display:grid;grid-template-columns:minmax(0,1fr) 54px 108px 58px 84px 100px 26px;align-items:stretch;}
+.il-head{background:var(--paper-2,var(--paper));border:1px solid var(--line);border-bottom:2px solid var(--ink);font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--ink);}
+.il-head span{padding:6px 8px;border-right:1px solid var(--line);}
+.il-head span:last-child{border-right:0;}
+.il-head span:nth-child(n+2){text-align:center;}
+.inv-lines{display:block;margin:0;border:1px solid var(--line);border-top:0;background:var(--paper);}
+.inv-lines .inv-line.il2{margin:0;padding:0;border:0;border-bottom:1px solid var(--line);border-radius:0;background:var(--paper);gap:0;min-height:34px;}
+.inv-lines .inv-line.il2:hover{background:color-mix(in srgb,var(--brick) 6%,var(--paper));}
+.il2 > *{border-right:1px solid var(--line);display:flex;align-items:center;min-width:0;}
+.il2 > *:last-child{border-right:0;}
+.il2 input{border:0 !important;background:transparent !important;border-radius:0 !important;box-shadow:none !important;width:100%;padding:6px 8px;font-size:14px;color:var(--ink);height:100%;}
+.il2 input:focus{outline:2px solid var(--brick);outline-offset:-2px;background:color-mix(in srgb,var(--brick) 8%,transparent) !important;}
+.il2 .line-nom{font-weight:700;}
+.il2 .il-name{position:relative;}
+.il2 .il-stock{justify-content:center;font-size:12.5px;}
+.il-ok{color:var(--moss);font-weight:800;}.il-warn{color:#ff5a5a;font-weight:900;}.il-hors{color:var(--gold);font-weight:800;font-size:11px;}
+.il2 .qty-box{display:flex;align-items:center;justify-content:center;gap:0;padding:0 2px;}
+.il2 .qty-box .line-qty{width:42px;text-align:center;font-weight:800;padding:6px 0;}
+.q-btn{width:24px;height:24px;border-radius:6px;border:1px solid var(--line);background:var(--paper-2,var(--paper));color:var(--ink);font-size:15px;font-weight:900;cursor:pointer;line-height:1;padding:0;flex:0 0 auto;}
+.q-btn:active{transform:scale(.9);}
+.il2 .line-unite{font-size:12px;text-align:center;opacity:.85;}
+.il2 .line-prix{text-align:right;}
+.il2 .ltotal-box{justify-content:flex-end;font-size:14px;font-weight:900;padding:0 8px;text-align:right;white-space:nowrap;}
+.il2 .il-rm{justify-content:center;border:0;background:transparent;color:var(--ink);opacity:.35;cursor:pointer;font-size:12px;padding:0;}
+.il2 .il-rm:hover{opacity:1;color:#dc2626;}
+.il2 .ac-list{top:100%;left:0;right:auto;min-width:300px;}
+.sale-addrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.sale-addrow .ghost{padding:8px 14px;font-weight:800;font-size:13.5px;}
+.sale2 .sale-type{display:flex;gap:6px;}
+.sale2 .sale-type .st-btn{padding:9px 6px;font-size:13px;}
+.mode-chips{display:flex;gap:6px;flex-wrap:wrap;}
+.mode-chip{padding:7px 11px;border-radius:999px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-weight:800;font-size:12.5px;cursor:pointer;}
 .mode-chip.on{background:var(--moss);border-color:var(--moss);color:#06281d;}
-.sale-more{margin-top:18px;border:1px dashed var(--line);border-radius:14px;padding:10px 14px;color:var(--ink);}
+.sale-more{margin-top:8px;border:1px dashed var(--line);border-radius:10px;padding:7px 10px;color:var(--ink);font-size:13px;}
 .sale-more summary{cursor:pointer;font-weight:800;list-style:none;}
 .sale-more summary::-webkit-details-marker{display:none;}
 .sale-more summary small{font-weight:500;opacity:.65;}
-.sale-tk{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:14px;}
-.sale-footer{position:sticky;bottom:0;z-index:6;margin:18px -8px -8px;padding:12px 8px 8px;background:var(--paper);border-top:2px solid var(--line);}
-.sale-footer .inv-total-row{border-top:0;margin-top:0;padding-top:4px;}
-.sale-footer .inv-total-row .amt{font-size:30px;}
-.sale-go{width:100%;padding:16px;font-size:18px;font-weight:900;border-radius:14px;}
-@media (max-height:640px){.sale-footer{position:static;}}
-@media (max-width:720px){
-  .sale-footer .inv-lettres{font-size:11.5px;}.sale-footer .inv-total-row .amt{font-size:24px;}.sale-go{padding:13px;font-size:16px;}.sale-footer #finalizeHint{font-size:12.5px;}
-  .inv-lines .inv-line.il2{grid-template-columns:1fr 1fr;}
-  .il2 .il-name{grid-column:1 / -1;}
-  .il2 .il-qty{grid-column:1 / 2;}.il2 .il-price{grid-column:2 / 3;}
-  .il2 .il-total{grid-column:1 / 2;}.il2 .il-rm{grid-column:2 / 3;justify-self:end;margin-top:0;}
+.sale-tk{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;font-size:13px;}
+.sale-footer{margin-top:8px;padding-top:8px;border-top:2px solid var(--line);}
+.sale-footer .inv-total-row{border-top:0;margin-top:0;padding-top:2px;}
+.sale-footer .inv-total-row .lbl{font-size:13px;}
+.sale-footer .inv-total-row .amt{font-size:26px;}
+.sale2 .inv-lettres{font-size:11.5px;min-height:14px;margin:0;}
+.sale-go{width:100%;padding:13px;font-size:16px;font-weight:900;border-radius:12px;}
+@media (max-width:980px){
+  .sale2 .sale-grid{grid-template-columns:1fr;}
+  .sale2 .sale-right{position:static;}
+}
+@media (max-width:640px){
+  .il-head,.inv-lines .inv-line.il2{grid-template-columns:minmax(0,1fr) 92px 58px 66px 20px;}
+  .il-head span:nth-child(2),.il-head span:nth-child(4),.il2 .il-stock,.il2 .line-unite{display:none;}
+  .il2 .qty-box .line-qty{width:34px;}
+  .il2 input{font-size:13px;padding:6px 4px;}
 }
 </style>
 </body>
