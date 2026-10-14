@@ -1602,18 +1602,29 @@
     const db = state.db; const st = db && db.status ? db.status() : { pend: 0, failed: 0, fails: 0, paused: null, flushing: false };
     const off = navigator.onLine === false || st.fails >= 2;
     const lbl = document.getElementById('syncLabel');
+    const txt = st.pendTxt || (st.pend + ' opération(s)');
     let cls = '', html = '';
-    if (st.paused === 'auth') { cls = 'warn'; html = '🔒 Session expirée — reconnecte-toi pour envoyer ' + st.pend + ' opération(s) en attente <button id="netBarBtn">Se reconnecter</button>'; }
+    if (st.paused === 'auth') { cls = 'warn'; html = '🔒 Session expirée — reconnecte-toi pour envoyer ' + txt + ' en attente <button id="netBarBtn">Se reconnecter</button>'; }
     else if (st.failed) { cls = 'bad'; html = '⚠ ' + st.failed + ' opération(s) refusée(s) par le serveur <button id="netBarBtn">Voir</button>'; }
-    else if (off && st.pend) { cls = 'off'; html = '📵 Pas d\'internet — <b>' + st.pend + ' opération(s) gardée(s) sur l\'appareil</b>, envoi automatique au retour du réseau'; }
+    else if (off && st.pend) { cls = 'off'; html = '📵 Pas d\'internet — <b>' + txt + ' gardé(es) sur l\'appareil</b>, envoi automatique au retour du réseau'; }
     else if (off) { cls = 'off'; html = '📵 Pas d\'internet — tu peux continuer à vendre, tout sera envoyé ensuite'; }
-    else if (st.pend) { cls = 'sync'; html = '⏳ Envoi de ' + st.pend + ' opération(s)… <button id="netBarBtn">Réessayer</button>'; }
+    else if (st.pend) { cls = 'sync'; html = '⏳ Envoi de ' + txt + '… <button id="netBarBtn">Réessayer</button>'; }
+    // Hors connexion : la bannière orange s'affiche quelques secondes puis disparaît
+    // (l'indicateur en haut de l'écran garde l'information). Les erreurs restent affichées.
+    if (cls === 'off') {
+      if (netBarUpdate._last !== html) {
+        netBarUpdate._last = html; netBarUpdate._hidden = false;
+        clearTimeout(netBarUpdate._t);
+        netBarUpdate._t = setTimeout(() => { netBarUpdate._hidden = true; const b = document.getElementById('netBar'); if (b && b.classList.contains('off')) b.className = ''; }, 5000);
+      }
+      if (netBarUpdate._hidden) cls = '';
+    } else { netBarUpdate._last = ''; clearTimeout(netBarUpdate._t); }
     bar.className = cls ? ('show ' + cls) : '';
-    bar.innerHTML = html;
+    bar.innerHTML = cls ? html : '';
     if (lbl && state.syncStarted) {
       const sy = document.getElementById('syncStatus');
-      if (off) { lbl.textContent = st.pend ? ('hors connexion · ' + st.pend + ' en attente') : 'hors connexion'; sy.classList.add('off'); }
-      else if (st.pend) { lbl.textContent = st.pend + ' en attente d\'envoi'; sy.classList.remove('off'); }
+      if (off) { lbl.textContent = st.pend ? ('hors connexion · ' + txt) : 'hors connexion'; sy.classList.add('off'); }
+      else if (st.pend) { lbl.textContent = txt + ' en attente d\'envoi'; sy.classList.remove('off'); }
       else if (lbl.textContent.indexOf('hors connexion') === 0 || /en attente d/.test(lbl.textContent)) { lbl.textContent = 'synchronisé'; sy.classList.remove('off'); }
     }
   }
@@ -3255,7 +3266,7 @@
     L.push(c.messageFacture || 'Merci pour votre confiance, à bientôt !');
     return L.join('\n');
   }
-  function sendTicketWhatsApp(inv, askIfMissing) {
+  function sendTicketWhatsApp(inv, askIfMissing, text) {
     let cl = inv.clientId ? (state.clients || []).find(x => x.id === inv.clientId) : null;
     if (!cl && inv.client) cl = (state.clients || []).find(x => (x.nom || '').trim().toLowerCase() === String(inv.client).trim().toLowerCase());
     const key = String((cl && cl.id) || inv.client || '').trim().toLowerCase();
@@ -3269,7 +3280,7 @@
       phone = toWhatsAppNumber(r);
       if (phone) { cache[key] = phone; try { localStorage.setItem('sf_wa_phones', JSON.stringify(cache)); } catch (e) {} }
     }
-    const url = (phone ? 'https://wa.me/' + phone : 'https://wa.me/') + '?text=' + encodeURIComponent(ticketText(inv));
+    const url = (phone ? 'https://wa.me/' + phone : 'https://wa.me/') + '?text=' + encodeURIComponent(text || ticketText(inv));
     const win = window.open(url, 'sf_whatsapp');   // même onglet réutilisé à chaque envoi
     if (!win) toast('⚠ Le navigateur a bloqué WhatsApp : allez dans Factures > bouton 💬 WhatsApp.');
   }
@@ -3836,6 +3847,40 @@
     }
   }
 
+  // Texte WhatsApp d'un devis / bon de commande / bon de livraison (le BL n'affiche pas les prix, comme à l'impression)
+  function docWhatsAppText(d) {
+    const c = state.commerce || {};
+    const isBL = d.type === 'bon_livraison';
+    const n0 = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR').replace(/[  ]/g, ' ');
+    const icon = d.type === 'devis' ? '📋' : (isBL ? '🚚' : '📦');
+    const L = [];
+    L.push(icon + ' *' + (c.nom || 'StockFlow Pro') + '*');
+    if (c.adresse) L.push(c.adresse);
+    if (c.telephone) L.push('Tél : ' + c.telephone);
+    L.push('─────────────');
+    L.push('*' + (DOC_LABELS[d.type] || 'Document') + ' ' + docNumLabel(d) + '*' + (d.date ? ' — ' + d.date.split('-').reverse().join('/') : ''));
+    if (d.client) L.push('Client : ' + d.client);
+    L.push('─────────────');
+    (d.lignes || []).forEach(l => {
+      const q = Number(l.qte) || 0, pr = Number(l.prix) || 0, u = l.unite ? ' ' + l.unite : '';
+      L.push(isBL ? ('• ' + l.nom + ' : ' + q + u) : ('• ' + l.nom + '\n   ' + q + u + ' × ' + n0(pr) + ' = ' + n0(q * pr)));
+    });
+    L.push('─────────────');
+    if (isBL) {
+      L.push('Merci de vérifier les quantités à la réception.');
+    } else {
+      const rem = Number(d.remise) || 0, tm = d.tvaMode || 'none', tv = Number(d.tvaMontant) || 0, tx = Number(d.tvaTaux) || 0;
+      if (rem > 0) L.push('Remise : - ' + n0(rem));
+      if (tm === 'add') L.push('TVA ' + tx + '% : + ' + n0(tv)); else if (tm === 'incl') L.push('dont TVA ' + tx + '% : ' + n0(tv));
+      L.push('*TOTAL : ' + n0(d.total) + ' FCFA*');
+      L.push('_' + fcfaEnLettres(Number(d.total) || 0) + '_');
+      if (d.type === 'devis') L.push(d.validite ? "Offre valable jusqu'au " + d.validite.split('-').reverse().join('/') : 'Offre sans engagement');
+    }
+    L.push('');
+    L.push(c.messageFacture || 'Merci pour votre confiance, à bientôt !');
+    return L.join('\n');
+  }
+
   function renderDocuments() {
     const body = document.getElementById('docsBody');
     if (!body || !document.getElementById('panel-documents').classList.contains('active')) return;
@@ -3862,7 +3907,7 @@
         <td class="num-cell">${euros(d.total)}</td>
         <td>${statutBadge(d)}</td>
         <td class="num-cell" style="white-space:nowrap;">
-          <button class="ghost" data-doc-act="print" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">Imprimer</button>
+          <button class="ghost" data-doc-act="print" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">Imprimer</button><button class="ghost" data-doc-act="wa" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">💬 WhatsApp</button>
           ${d.type === 'devis' && d.statut === 'en_attente' ? `<button class="ghost" data-doc-act="accept" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">✓ Accepté</button><button class="ghost" data-doc-act="refuse" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">✗ Refusé</button>` : ''}
           ${d.type === 'devis' && open ? `<button class="ghost" data-doc-act="tobc" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">→ Bon de commande</button>` : ''}
           ${(d.type === 'bon_commande' || d.type === 'devis') && (d.statut === 'en_attente' || d.statut === 'accepte') ? `<button class="ghost" data-doc-act="tobl" data-doc-id="${escapeHtml(d.id)}" style="${btnStyle}">🚚 Bon de livraison</button>` : ''}
@@ -3881,6 +3926,7 @@
     if (!d || !state.db) return;
     try {
       if (act === 'print') { printInvoice(d, d.type); return; }
+      if (act === 'wa') { sendTicketWhatsApp(d, true, docWhatsAppText(d)); return; }
       if (act === 'accept') { await state.db.doc('documents/' + id).update({ statut: 'accepte' }); toast(`${docNumLabel(d)} marqué comme accepté.`); return; }
       if (act === 'refuse') { await state.db.doc('documents/' + id).update({ statut: 'refuse' }); toast(`${docNumLabel(d)} marqué comme refusé.`); return; }
       if (act === 'livre') { await state.db.doc('documents/' + id).update({ statut: 'livre' }); toast(`${docNumLabel(d)} marqué comme livré.`); return; }
@@ -5635,6 +5681,24 @@
       else if (o.k === 'stock') { const cur = m.get(id); if (cur) m.set(id, { ...cur, stock: (Number(cur.stock) || 0) + o.delta }); }
     }
     const pendingFor = (table) => outbox.filter(o => o.table === table);
+    // Compte ce que l'utilisateur a fait (1 vente = 1), pas chaque morceau technique (stock, facture, paiement…)
+    function pendingText() {
+      if (!outbox.length) return '';
+      const facIds = new Set(outbox.filter(o => o.table === 'factures' && o.k === 'set').map(o => String(o.id)));
+      const ventes = facIds.size;
+      const autres = outbox.filter(o => {
+        if (o.silent) return false;
+        if (o.table === 'factures' && o.k === 'set') return false;
+        if (o.data && o.data.factureId && facIds.has(String(o.data.factureId))) return false;
+        if (o.k === 'stock' && ventes) return false;
+        if (o.table === 'clients' && o.k === 'set' && ventes) return false;
+        return true;
+      }).length;
+      const parts = [];
+      if (ventes) parts.push(ventes + (ventes > 1 ? ' ventes' : ' vente'));
+      if (autres) parts.push(autres + (autres > 1 ? ' modifications' : ' modification'));
+      return parts.length ? parts.join(' et ') : '1 modification';
+    }
     function view(table) {
       const t = ts(table); const pend = pendingFor(table);
       if (!pend.length) return [...t.server.values()];
@@ -5987,7 +6051,7 @@
       },
       logAudit(row) { return enqueue({ k: 'insert', table: 'audit_logs', id: 'a', row: clone(row) }, { silent: true, nowait: true }); },
       pendingCount() { return outbox.length; },
-      status() { return { pend: outbox.length, flushing, failed: failed.length, paused, fails: net.fails, lastMs: net.lastMs }; },
+      status() { return { pend: outbox.length, pendTxt: pendingText(), flushing, failed: failed.length, paused, fails: net.fails, lastMs: net.lastMs }; },
       failedList() { return failed.slice(); },
       clearFailed() { failed = []; persistFailed(); notify(); },
       retryNow() { paused = null; retryDelay = 5000; scheduleFlush(0); Object.keys(refreshers).forEach(kick); },
