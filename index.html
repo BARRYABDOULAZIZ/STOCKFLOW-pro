@@ -570,6 +570,16 @@
       <div class="row-head"><h2>🧠 Conseils intelligents du jour</h2><span class="muted" id="aiSub"></span></div>
       <div id="aiHead"></div>
       <div id="aiInsights"></div>
+      <div id="aiAsk" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--line);">
+        <div style="font-weight:700; margin-bottom:6px;">🤖 Pose une question à ta boutique <span class="muted" style="font-weight:400; font-size:12px;">(test)</span></div>
+        <div id="aiAskChips" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;"></div>
+        <div style="display:flex; gap:6px;">
+          <input id="aiAskInput" type="text" maxlength="500" placeholder="Ex : qu'est-ce qui s'est le moins vendu ce mois-ci ?" style="flex:1; min-width:0;">
+          <button id="aiAskBtn" type="button">Demander</button>
+        </div>
+        <div id="aiAskAnswer" style="display:none; margin-top:10px; white-space:pre-wrap; line-height:1.45; padding:10px 12px; border-radius:10px; background:rgba(127,127,127,.08);"></div>
+        <div class="muted" style="font-size:11px; margin-top:6px;">L'IA peut se tromper : vérifie les chiffres importants. Elle ne modifie rien dans l'appli.</div>
+      </div>
     </div>
 
     <div class="cluster">
@@ -2534,6 +2544,87 @@
     applyRoleVisibility();
     try { localStorage.setItem('sf_last_user', user.id); } catch (e) {}
     if (state.db && !state.syncStarted) { state.syncStarted = true; startDataSync(state.db); }
+    aiAskInit();
+  }
+
+  // ================= IA (TEST) : « Pose une question à ta boutique » =================
+  // Visible seulement si le serveur dit que ce compte est autorisé (comptes de test, propriétaire/admin).
+  // L'IA lit un RÉSUMÉ des chiffres préparé ici ; elle ne modifie jamais rien.
+  let aiAskReady = false;
+  async function aiAskInit() {
+    const box = document.getElementById('aiAsk'); if (!box) return;
+    box.style.display = 'none';
+    if (!isOwnerOrAdmin() || !supabaseClient || navigator.onLine === false) return;
+    try {
+      const { data, error } = await supabaseClient.functions.invoke('ask-ai', { body: { ping: true } });
+      if (error || !data || !data.actif) return;
+      box.style.display = '';
+      if (aiAskReady) return; aiAskReady = true;
+      const chips = ["Qu'est-ce qui s'est le moins vendu ce mois-ci ?", 'Quels clients me doivent de l\'argent ?', 'Quels produits dois-je recommander ?', 'Comment se passe ma semaine ?'];
+      const cBox = document.getElementById('aiAskChips');
+      cBox.innerHTML = chips.map(q => `<button type="button" class="ghost" data-aiq="${escapeHtml(q)}" style="padding:4px 10px; font-size:12px;">${escapeHtml(q)}</button>`).join('');
+      cBox.querySelectorAll('[data-aiq]').forEach(b => b.addEventListener('click', () => { document.getElementById('aiAskInput').value = b.dataset.aiq; aiAsk(); }));
+      document.getElementById('aiAskBtn').addEventListener('click', aiAsk);
+      document.getElementById('aiAskInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') aiAsk(); });
+    } catch (e) { /* IA indisponible : on n'affiche rien */ }
+  }
+  function aiContexte() {
+    const c = state.commerce || {};
+    const n0 = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR').replace(/[  ]/g, ' ');
+    const today = todayStr();
+    const dayMs = 86400000, since = (d) => new Date(Date.now() - d * dayMs).toISOString().slice(0, 10);
+    const d30 = since(30), d7 = since(7);
+    const invs = (state.invoices || []).filter(i => !i.annulee);
+    const L = [];
+    L.push('Boutique : ' + (c.nom || '?') + ' — date du jour : ' + today);
+    // Produits
+    const prods = (state.products || []).slice(0, 400);
+    L.push('\nPRODUITS (nom | stock | seuil d\'alerte | prix de vente) — ' + (state.products || []).length + ' au total');
+    prods.forEach(p => L.push('- ' + p.nom + ' | ' + (Number(p.stock) || 0) + (p.unite ? ' ' + p.unite : '') + ' | ' + (p.seuil != null && p.seuil !== '' ? p.seuil : '-') + ' | ' + n0(p.prixVente)));
+    // Ventes 30 jours
+    const recent = invs.filter(i => (i.date || '') >= d30);
+    const perDay = {}; const perProd = {};
+    recent.forEach(i => {
+      perDay[i.date] = (perDay[i.date] || 0) + (Number(i.total) || 0);
+      (i.lignes || []).forEach(l => { const k = l.nom || '?'; const o = perProd[k] || (perProd[k] = { q: 0, m: 0 }); o.q += Number(l.qte) || 0; o.m += (Number(l.qte) || 0) * (Number(l.prix) || 0); });
+    });
+    const sum = (arr) => arr.reduce((t, x) => t + x, 0);
+    L.push('\nVENTES : ' + recent.length + ' factures sur 30 jours, total ' + n0(sum(Object.values(perDay))) + ' FCFA ; 7 derniers jours : ' + n0(sum(Object.entries(perDay).filter(([d]) => d >= d7).map(([, v]) => v))) + ' FCFA');
+    L.push('Chiffre par jour (30 j) : ' + Object.keys(perDay).sort().map(d => d.slice(5).split('-').reverse().join('/') + '=' + n0(perDay[d])).join(', '));
+    const ranked = Object.entries(perProd).sort((a, b) => b[1].m - a[1].m);
+    L.push('Produits vendus sur 30 jours (nom | quantité | montant) :');
+    ranked.slice(0, 60).forEach(([k, o]) => L.push('- ' + k + ' | ' + o.q + ' | ' + n0(o.m)));
+    const sold = new Set(Object.keys(perProd));
+    const unsold = (state.products || []).filter(p => !sold.has(p.nom)).map(p => p.nom);
+    if (unsold.length) L.push('Produits du catalogue NON vendus sur 30 jours (' + unsold.length + ') : ' + unsold.slice(0, 80).join(', '));
+    // Crédits clients
+    const dettes = {};
+    invs.forEach(i => { const r = (Number(i.total) || 0) - (Number(i.montantPaye) || 0); if (r > 0.5) { const k = i.client || 'Client sans nom'; const o = dettes[k] || (dettes[k] = { r: 0, n: 0, plusAncienne: i.date, ech: '' }); o.r += r; o.n++; if ((i.date || '') < (o.plusAncienne || '9')) o.plusAncienne = i.date; if (i.echeance && (!o.ech || i.echeance < o.ech)) o.ech = i.echeance; } });
+    const dl = Object.entries(dettes).sort((a, b) => b[1].r - a[1].r);
+    L.push('\nCLIENTS QUI DOIVENT DE L\'ARGENT (client | reste dû | nb factures | plus ancienne | échéance) — total ' + n0(sum(dl.map(([, o]) => o.r))) + ' FCFA');
+    dl.slice(0, 50).forEach(([k, o]) => L.push('- ' + k + ' | ' + n0(o.r) + ' | ' + o.n + ' | ' + (o.plusAncienne || '-') + ' | ' + (o.ech || '-')));
+    // Dépenses
+    const dep = (state.depenses || []).filter(d => (d.date || '') >= d30);
+    if (dep.length) L.push('\nDÉPENSES sur 30 jours : ' + n0(sum(dep.map(d => Number(d.montant) || 0))) + ' FCFA (' + dep.length + ' dépenses)');
+    return L.join('\n').slice(0, 30000);
+  }
+  async function aiAsk() {
+    const input = document.getElementById('aiAskInput'), btn = document.getElementById('aiAskBtn'), out = document.getElementById('aiAskAnswer');
+    const q = (input.value || '').trim();
+    if (!q) { input.focus(); return; }
+    if (!needOnline('l\'IA')) return;
+    btn.disabled = true; out.style.display = ''; out.textContent = '⏳ Je regarde tes chiffres…';
+    try {
+      const { data, error } = await supabaseClient.functions.invoke('ask-ai', { body: { question: q, contexte: aiContexte() } });
+      if (error) {
+        let msg = error.message || 'Erreur';
+        try { const j = await error.context.json(); if (j && j.error) msg = j.error; } catch (e) {}
+        out.textContent = '⚠ ' + msg; return;
+      }
+      out.textContent = (data && data.reponse) || '⚠ Pas de réponse.';
+    } catch (e) {
+      out.textContent = '⚠ ' + (isNetErr(e) ? 'Pas de connexion internet.' : ((e && e.message) || 'Erreur'));
+    } finally { btn.disabled = false; }
   }
   async function forgetLocal(userId, commerceId) {
     try { localStorage.removeItem('sf_last_user'); } catch (e) {}
