@@ -213,6 +213,7 @@
 
   <header class="top">
     <div class="mark"><h1>StockFlow Pro</h1><span class="tag" id="commerceTag">Chargement…</span></div>
+    <button type="button" id="belHeadBtn" class="bel-av" data-mood="idle" title="Parler à Bel" aria-label="Ouvrir Bel, ton assistant" style="display:none; background:none; border:none; padding:0; margin:0 8px; cursor:pointer; align-self:center;"></button>
     <div style="display:flex; align-items:center; gap:14px;">
       <div class="sync" id="syncStatus"><span class="dot"></span><span id="syncLabel">connexion…</span></div>
       <div id="userBadge" style="display:none; font-size:12px; cursor:pointer; padding:5px 10px; border:1px solid var(--line); border-radius:20px; white-space:nowrap;" title="Déconnexion"></div>
@@ -289,6 +290,17 @@
 
       <div id="loginError" style="display:none; color:#dc2626; font-size:13px; margin:10px 0 2px;"></div>
       <div style="text-align:center; margin-top:14px; font-size:12px;" class="muted"><a href="#" data-legal="cgu">Conditions d'utilisation</a> · <a href="#" data-legal="confidentialite">Confidentialité</a></div>
+    </div>
+  </div>
+
+  <!-- Page spéciale de Bel -->
+  <div id="belPage" style="display:none; position:fixed; inset:0; z-index:140; background:var(--paper, #fff); color:var(--ink, #111); overflow:auto;">
+    <div style="max-width:720px; margin:0 auto; padding:12px 14px calc(24px + env(safe-area-inset-bottom, 0px));">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px;">
+        <button type="button" class="ghost" id="belPageClose" style="padding:8px 14px; font-size:16px;">← Retour</button>
+        <span class="muted" style="font-size:12px;">🧠 Bel · ton assistant boutique</span>
+      </div>
+      <div id="belPageSlot"></div>
     </div>
   </div>
 
@@ -636,10 +648,9 @@
             <div class="bel-name">Bel <span class="muted" style="font-weight:400; font-size:11px;">(test)</span></div>
             <div class="bel-sub">🧠 Ton assistant boutique</div>
           </div>
-          <button type="button" class="ghost bel-iconbtn" id="belVoiceToggle" title="Lecture à voix haute automatique">🔇</button>
           <button type="button" class="ghost bel-iconbtn" id="aiAskReset" title="Nouvelle conversation" style="display:none;">🗑</button>
         </div>
-        <div class="bel-say" id="belSay" style="margin-bottom:10px;">👋 Salut ! Moi c'est <b>Bel</b>. Touche une image 👇 ou parle-moi 🎤</div>
+        <div class="bel-say" id="belSay" style="margin-bottom:10px;">👋 Salut ! Moi c'est <b>Bel</b>. Touche une image 👇 ou pose ta question 🎤✍️</div>
         <div class="bel-tiles" id="aiAskChips"></div>
         <div id="aiAskAnswer"></div>
         <div style="display:flex; gap:6px; align-items:center;">
@@ -2656,10 +2667,30 @@
   // Visible seulement si le serveur dit que ce compte est autorisé (comptes de test, propriétaire/admin).
   // L'IA lit un RÉSUMÉ des chiffres préparé ici ; elle ne modifie jamais rien.
   let aiAskReady = false, aiAskOk = false, aiAskFor = null;
+  // Page spéciale de Bel : on y déplace la discussion (même contenu, rien n'est dupliqué)
+  let belHome = null;
+  function belOpenPage() {
+    const box = document.getElementById('aiAsk'), page = document.getElementById('belPage'), slot = document.getElementById('belPageSlot');
+    if (!box || !page || box.style.display === 'none') return;
+    if (!belHome) belHome = { parent: box.parentNode, next: box.nextSibling };
+    slot.appendChild(box); box.style.borderTop = 'none'; box.style.marginTop = '0';
+    page.style.display = 'block'; document.body.style.overflow = 'hidden';
+    const out = document.getElementById('aiAskAnswer'); if (out) out.style.maxHeight = 'none';
+    belMood('happy'); setTimeout(() => { if (!aiBusy) belMood('idle'); }, 1500);
+  }
+  function belClosePage() {
+    const box = document.getElementById('aiAsk'), page = document.getElementById('belPage');
+    if (page) page.style.display = 'none'; document.body.style.overflow = '';
+    if (box && belHome) { belHome.parent.insertBefore(box, belHome.next); box.style.borderTop = ''; box.style.marginTop = ''; const out = document.getElementById('aiAskAnswer'); if (out) out.style.maxHeight = ''; belHome = null; }
+  }
+  document.getElementById('belHeadBtn').addEventListener('click', belOpenPage);
+  document.getElementById('belPageClose').addEventListener('click', belClosePage);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.getElementById('belPage').style.display === 'block') belClosePage(); });
   async function aiAskInit() {
     const box = document.getElementById('aiAsk'); if (!box) return;
-    if (!isOwnerOrAdmin() || !supabaseClient) { box.style.display = 'none'; return; }
-    if (aiAskFor !== CURRENT_USER_ID) { aiAskFor = CURRENT_USER_ID; aiAskOk = false; box.style.display = 'none'; }
+    const hbtn = document.getElementById('belHeadBtn');
+    if (!isOwnerOrAdmin() || !supabaseClient) { box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; belClosePage(); return; }
+    if (aiAskFor !== CURRENT_USER_ID) { aiAskFor = CURRENT_USER_ID; aiAskOk = false; box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; belClosePage(); }
     if (aiAskOk || navigator.onLine === false) return;   // déjà vérifié pour ce compte : pas de nouvelle vérification (évite que le cadre clignote)
     try {
       const { data, error } = await supabaseClient.functions.invoke('ask-ai', { body: { ping: true } });
@@ -2667,6 +2698,7 @@
       aiAskOk = true;
       box.style.display = '';
       const face = document.getElementById('belFace'); if (face && !face.innerHTML) face.innerHTML = belAvatarSvg(56);
+      const hb = document.getElementById('belHeadBtn'); if (hb) { if (!hb.innerHTML) hb.innerHTML = belAvatarSvg(42); hb.style.display = 'inline-block'; }
       if (aiAskReady) return; aiAskReady = true;
       // Grandes images-boutons : compréhensibles sans savoir lire
       const tiles = [
@@ -2686,13 +2718,10 @@
       document.getElementById('aiAskBtn').addEventListener('click', aiAsk);
       document.getElementById('aiAskReset').addEventListener('click', () => { belStop(); aiHistory = []; aiRender(); belMood('idle'); });
       document.getElementById('aiAskAnswer').addEventListener('click', (e) => {
-        const sp = e.target.closest('[data-belspeak]'); if (sp) { const h = aiHistory[Number(sp.dataset.belspeak)]; if (h) belSpeak(h.a); return; }
         const b = e.target.closest('[data-aiwa]'); if (!b) return;
         const a = aiWaActions[Number(b.dataset.aiwa)]; if (!a) return;
         aiOpenWa(aiPhoneOf(a.nom), a.msg, a.nom);
       });
-      document.getElementById('belVoiceToggle').addEventListener('click', () => { belVoiceOn = !belVoiceOn; try { localStorage.setItem('sf_bel_voice', belVoiceOn ? '1' : '0'); } catch (e) {} belVoiceUi(); if (!belVoiceOn) belStop(); else belSpeak("D'accord, je te lis mes réponses à voix haute."); });
-      belVoiceUi();
       belMicInit();
       document.getElementById('aiAskInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') aiAsk(); });
     } catch (e) { /* IA indisponible : on n'affiche rien */ }
@@ -2811,28 +2840,9 @@
         <ellipse class="mouth-o" cx="50" cy="70" rx="4" ry="4.5" fill="#7c2d12"/>
       </g></svg>`;
   }
-  function belMood(m) { const f = document.getElementById('belFace'); if (f) f.dataset.mood = m; document.querySelectorAll('#aiAskAnswer .bel-av.live').forEach(a => a.dataset.mood = m); }
-  // ----- Bel : voix (lecture à voix haute + micro), pour les commerçants qui ne lisent pas -----
-  let belVoiceOn = false; try { belVoiceOn = localStorage.getItem('sf_bel_voice') === '1'; } catch (e) {}
-  function belVoiceUi() { const b = document.getElementById('belVoiceToggle'); if (!b) return; if (!('speechSynthesis' in window)) { b.style.display = 'none'; return; } b.textContent = belVoiceOn ? '🔊' : '🔇'; b.classList.toggle('primary', belVoiceOn); }
-  function belPlain(t) {
-    return String(t || '')
-      .replace(/\[\[WHATSAPP\|([^|\]]+)\|[^\]]*\]\]/g, (m, nom) => 'Je t\'ai préparé un message WhatsApp pour ' + nom + '.')
-      .replace(/\*\*/g, '').replace(/^#{1,4}\s*/gm, '').replace(/^\s*[-*•]\s*/gm, '')
-      .replace(/\bFCFA\b/g, 'francs').replace(/(\d)\s(?=\d{3}\b)/g, '$1')
-      .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu, '')
-      .replace(/\s{2,}/g, ' ').trim();
-  }
-  function belStop() { try { if ('speechSynthesis' in window) speechSynthesis.cancel(); } catch (e) {} }
-  function belSpeak(t) {
-    if (!('speechSynthesis' in window)) { toast('🔇 La lecture à voix haute n\'est pas disponible sur cet appareil.'); return; }
-    belStop();
-    const u = new SpeechSynthesisUtterance(belPlain(t).slice(0, 3000));
-    u.lang = 'fr-FR'; u.rate = 0.95;
-    const v = speechSynthesis.getVoices().find(x => /^fr/i.test(x.lang)); if (v) u.voice = v;
-    u.onstart = () => belMood('happy'); u.onend = () => belMood('idle');
-    speechSynthesis.speak(u);
-  }
+  function belMood(m) { const f = document.getElementById('belFace'); if (f) f.dataset.mood = m; const hb = document.getElementById('belHeadBtn'); if (hb) hb.dataset.mood = m; document.querySelectorAll('#aiAskAnswer .bel-av.live').forEach(a => a.dataset.mood = m); }
+  // ----- Bel : micro (dicter sa question), pour les commerçants qui ne lisent pas -----
+  function belStop() {}
   function belMicInit() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const mic = document.getElementById('belMic'); if (!SR || !mic) return;
@@ -2876,7 +2886,7 @@
     const bot = (inner, cls, live) => `<div class="bel-row bot"><span class="bel-av${live ? ' live' : ''}" data-mood="${live ? 'think' : 'idle'}">${belAvatarSvg(30)}</span><div class="bel-bub ${cls || ''}">${inner}</div></div>`;
     const parts = aiHistory.map((h, i) => me(h.q) + (h.err
       ? bot('😕 ' + escapeHtml(h.a), 'err')
-      : bot(aiFormat(h.a) + `<div><button type="button" class="ghost bel-speak" data-belspeak="${i}" aria-label="Écouter">🔊 Écouter</button></div>`)));
+      : bot(aiFormat(h.a))));
     if (pendingQ) parts.push(me(pendingQ) + bot('<span class="bel-dots"><span></span><span></span><span></span></span> <span class="muted" style="font-size:12.5px;">🧠 Je regarde tes chiffres…</span>', '', true));
     out.innerHTML = parts.join('');
     out.style.display = parts.length ? 'block' : 'none';
@@ -2913,7 +2923,6 @@
       const last = aiHistory[aiHistory.length - 1];
       belMood(last && last.err ? 'sad' : 'happy');
       setTimeout(() => { if (!aiBusy) belMood('idle'); }, 2500);
-      if (last && !last.err && belVoiceOn) belSpeak(last.a);
     }
   }
   async function forgetLocal(userId, commerceId) {
