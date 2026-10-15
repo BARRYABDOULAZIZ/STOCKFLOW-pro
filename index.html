@@ -170,6 +170,15 @@
   #pi-breakdown { text-align:right; font-size:13px; margin-top:12px; }
   #pi-breakdown div { display:flex; justify-content:flex-end; gap:24px; padding:2px 0; }
   #pi-breakdown div span:last-child { min-width:140px; text-align:right; }
+  /* Factures en arabe : lecture de droite à gauche */
+  #printArea[dir="rtl"], #printTicket[dir="rtl"] { font-family: 'Noto Naskh Arabic', 'Segoe UI', Tahoma, Arial, sans-serif; }
+  #printArea[dir="rtl"] .pi-table th { text-align: right !important; }
+  #printArea[dir="rtl"] .pi-table .num-cell { text-align: left !important; }
+  #printArea[dir="rtl"] .pi-meta { text-align: left !important; }
+  #printArea[dir="rtl"] #pi-lettres { text-align: left !important; }
+  #printArea[dir="rtl"] #pi-statut { float: left !important; }
+  #printArea[dir="rtl"] #pi-remarque { border-left: none !important; border-right: 3px solid #1d4ed8; }
+  #printArea[dir="rtl"] #pi-breakdown { text-align: left; }
   #printArea.pi-bl .pi-table th:nth-child(5), #printArea.pi-bl .pi-table th:nth-child(6), #printArea.pi-bl .pi-table td:nth-child(5), #printArea.pi-bl .pi-table td:nth-child(6), #printArea.pi-bl .pi-total { display:none !important; }
   @media print {
     body.print-inv #printArea { display: none !important; }
@@ -745,8 +754,8 @@
             <option value="botte"></option>
           </datalist>
         </div>
-        <div class="cost-col"><label>Prix d'achat unitaire (FCFA)</label><input id="p-prixachat" type="number" min="0" step="1" value="0"></div>
-        <div><label>Prix de vente unitaire (FCFA)</label><input id="p-prixvente" type="number" min="0" step="1" value="0"></div>
+        <div class="cost-col"><label>Prix d'achat unitaire (<span class="cur-sym">FCFA</span>)</label><input id="p-prixachat" type="number" min="0" step="1" value="0"></div>
+        <div><label>Prix de vente unitaire (<span class="cur-sym">FCFA</span>)</label><input id="p-prixvente" type="number" min="0" step="1" value="0"></div>
         <div><label>Seuil d'alerte (stock mini)</label><input id="p-seuil" type="number" min="0" step="any" value="5"></div>
       </div>
       <p class="hint-text">Si la référence existe déjà, la quantité saisie s'ajoutera au stock actuel (réapprovisionnement).</p>
@@ -979,7 +988,7 @@
       <div class="sale-grid">
         <div class="sale-left">
           <div class="sale-step"><span class="sn">1</span> Articles vendus</div>
-          <div class="il-head"><span>Article</span><span>Stock</span><span>Quantité</span><span>Unité</span><span>Prix de 1</span><span>Total FCFA</span><span></span></div>
+          <div class="il-head"><span>Article</span><span>Stock</span><span>Quantité</span><span>Unité</span><span>Prix de 1</span><span>Total <span class="cur-sym">FCFA</span></span><span></span></div>
           <div class="inv-lines" id="invLines"></div>
           <div class="sale-addrow">
             <button class="ghost" id="btnAddLine" type="button">＋ Ajouter une ligne</button>
@@ -998,7 +1007,7 @@
               <div id="f-echeance-wrap" style="display:none; margin-top:8px;"><label>À payer avant le</label><input id="f-echeance" type="date"></div>
             </div>
             <div id="f-paye-wrap" style="margin-top:8px;">
-              <label>Montant payé (FCFA)</label>
+              <label>Montant payé (<span class="cur-sym">FCFA</span>)</label>
               <input id="f-paye" type="number" min="0" step="1" placeholder="Vide = il paie tout">
               <div id="f-rendu-info" style="font-size:13px; font-weight:800; margin-top:4px;"></div>
             </div>
@@ -1150,8 +1159,8 @@
       <div class="row-head"><h2>Ajouter une commande / un paiement</h2></div>
       <div class="field-grid">
         <div><label>Date</label><input id="fo-date" type="date"></div>
-        <div><label>Montant commandé (FCFA)</label><input id="fo-commande" type="number" min="0" step="1" value="0"></div>
-        <div><label>Montant payé (FCFA)</label><input id="fo-paye" type="number" min="0" step="1" value="0"></div>
+        <div><label>Montant commandé (<span class="cur-sym">FCFA</span>)</label><input id="fo-commande" type="number" min="0" step="1" value="0"></div>
+        <div><label>Montant payé (<span class="cur-sym">FCFA</span>)</label><input id="fo-paye" type="number" min="0" step="1" value="0"></div>
         <div><label>Note</label><input id="fo-note" placeholder="Facultatif"></div>
       </div>
       <p class="hint-text" style="margin-top:-4px;">Laisse "Montant commandé" à 0 pour enregistrer un simple paiement sur la dette existante.</p>
@@ -1219,7 +1228,7 @@
           <label>Facture concernée</label>
           <select id="cld-facture-select"></select>
         </div>
-        <div><label>Montant reçu (FCFA)</label><input id="cld-montant" type="number" min="0" step="1" value="0"></div>
+        <div><label>Montant reçu (<span class="cur-sym">FCFA</span>)</label><input id="cld-montant" type="number" min="0" step="1" value="0"></div>
         <div>
           <label>Mode de paiement</label>
           <select id="cld-mode">
@@ -1462,7 +1471,7 @@
             <option>Autre</option>
           </select>
         </div>
-        <div><label>Montant (FCFA)</label><input id="dp-montant" type="number" min="0" step="1" value="0"></div>
+        <div><label>Montant (<span class="cur-sym">FCFA</span>)</label><input id="dp-montant" type="number" min="0" step="1" value="0"></div>
         <div><label>Date</label><input id="dp-date" type="date"></div>
         <div><label>Note (optionnel)</label><input id="dp-note" placeholder="Précision"></div>
       </div>
@@ -1499,6 +1508,8 @@
         <div><label>Téléphone</label><input id="cm-telephone" placeholder="Téléphone"></div>
         <div><label>Email</label><input id="cm-email" type="email" placeholder="Email"></div>
         <div><label>Numéro fiscal</label><input id="cm-fiscal" placeholder="Optionnel"></div>
+        <div><label>💱 Devise (monnaie du pays)</label><select id="cm-devise"></select></div>
+        <div><label>🌍 Langue des factures et tickets</label><select id="cm-langue"></select></div>
       </div>
 
       <div class="field-grid" style="margin-top:14px;">
@@ -1609,7 +1620,7 @@
     </div>
     <div class="pi-meta"><div id="pi-num"></div><div id="pi-date"></div></div>
   </div>
-  <div class="pi-client"><strong>Client :</strong> <span id="pi-client"></span></div>
+  <div class="pi-client"><strong id="pi-client-lbl">Client :</strong> <span id="pi-client"></span></div>
   <table class="pi-table">
     <thead><tr><th>Référence</th><th>Désignation</th><th class="num-cell">Quantité</th><th>Unité</th><th class="num-cell">Prix</th><th class="num-cell">Total</th></tr></thead>
     <tbody id="pi-lines"></tbody>
@@ -1672,7 +1683,30 @@
       }, 4000);
     }
   })();
-  const euros = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR') + ' FCFA';
+  // ================= Devise du commerce (Sénégal, Guinée, Gambie, Mauritanie…) =================
+  const DEVISES = {
+    XOF: { sym: 'FCFA', label: "Franc CFA (FCFA) — Sénégal, Mali, Côte d'Ivoire…", fr: ['franc CFA', 'francs CFA'], en: ['CFA franc', 'CFA francs'], ar: 'فرنك سيفا' },
+    GNF: { sym: 'GNF', label: 'Franc guinéen (GNF) — Guinée', fr: ['franc guinéen', 'francs guinéens'], en: ['Guinean franc', 'Guinean francs'], ar: 'فرنك غيني' },
+    GMD: { sym: 'GMD', label: 'Dalasi (GMD) — Gambie', fr: ['dalasi', 'dalasis'], en: ['dalasi', 'dalasis'], ar: 'دلاسي' },
+    MRU: { sym: 'MRU', label: 'Ouguiya (MRU) — Mauritanie', fr: ['ouguiya', 'ouguiyas'], en: ['ouguiya', 'ouguiyas'], ar: 'أوقية' },
+  };
+  const INV_LANGS = { fr: 'Français', en: 'English (anglais)', ar: 'العربية (arabe)' };
+  // Réglage lu en base (colonnes devise / langue_facture) ; à défaut, gardé sur cet appareil
+  function commerceSetting(key, lsKey, ok, def) {
+    const c = typeof state !== 'undefined' && state.commerce;
+    if (c && ok(c[key])) return c[key];
+    try { const v = localStorage.getItem(lsKey + ':' + (c && c.id || '')); if (ok(v)) return v; } catch (e) {}
+    return def;
+  }
+  function curCode() { return commerceSetting('devise', 'sf_devise', (v) => !!DEVISES[v], 'XOF'); }
+  function curSym() { return DEVISES[curCode()].sym; }
+  function invLang() { return commerceSetting('langueFacture', 'sf_langue', (v) => !!INV_LANGS[v], 'fr'); }
+  function applyCurrencyUi() {
+    const s = curSym();
+    document.querySelectorAll('.cur-sym').forEach(el => { el.textContent = s; });
+    const o = document.querySelector('#f-remise-unit option[value="fcfa"]'); if (o) o.textContent = s;
+  }
+  const euros = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR') + ' ' + curSym();
   const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   const todayStr = () => new Date().toISOString().slice(0, 10);
 
@@ -1790,6 +1824,14 @@
     setIfIdle('cm-email', state.commerce.email);
     setIfIdle('cm-fiscal', state.commerce.numeroFiscal);
     setIfIdle('cm-message', state.commerce.messageFacture);
+    {
+      const ds = document.getElementById('cm-devise'), ls = document.getElementById('cm-langue');
+      if (ds && !ds.options.length) ds.innerHTML = Object.entries(DEVISES).map(([k, d]) => `<option value="${k}">${escapeHtml(d.label)}</option>`).join('');
+      if (ls && !ls.options.length) ls.innerHTML = Object.entries(INV_LANGS).map(([k, l]) => `<option value="${k}">${escapeHtml(l)}</option>`).join('');
+      if (ds && document.activeElement !== ds) ds.value = curCode();
+      if (ls && document.activeElement !== ls) ls.value = invLang();
+    }
+    applyCurrencyUi();
     renderCommerceImages();
     const codeEl = document.getElementById('inviteCodeDisplay');
     if (codeEl) codeEl.textContent = state.commerce.inviteCode || '------';
@@ -1889,8 +1931,19 @@
       if ('signature_url' in extra) state.commerce.signatureUrl = extra.signature_url;
       if ('message_facture' in extra) state.commerce.messageFacture = extra.message_facture;
       Object.keys(pendingImages).forEach(k => delete pendingImages[k]);
+      // Devise et langue des factures : enregistrées à part, pour ne pas bloquer le reste si la base n'est pas encore à jour
+      let localOnly = false;
+      const dv = document.getElementById('cm-devise').value, lgv = document.getElementById('cm-langue').value;
+      if (dv !== curCode() || lgv !== invLang()) {
+        const { error: e2 } = await supabaseClient.from('commerces').update({ devise: dv, langue_facture: lgv }).eq('id', state.currentUser.commerceId);
+        if (e2) { console.error(e2); localOnly = true; }
+        state.commerce.devise = dv; state.commerce.langueFacture = lgv;
+        try { localStorage.setItem('sf_devise:' + (state.commerce.id || ''), dv); localStorage.setItem('sf_langue:' + (state.commerce.id || ''), lgv); } catch (e) {}
+      }
       updateCommerceForm();
-      statusEl.textContent = '✅ Informations enregistrées.';
+      [renderDashboard, renderStock, renderInsights].forEach(f => { try { f(); } catch (e) {} });
+      try { updateGrandTotal(); } catch (e) {}
+      statusEl.textContent = localOnly ? '✅ Enregistré. ⚠ Devise et langue gardées seulement sur cet appareil pour l\'instant (mise à jour de la base à faire).' : '✅ Informations enregistrées.';
       toast('Commerce mis à jour.');
     } catch (err) {
       console.error(err);
@@ -2064,7 +2117,7 @@
         if (g.name === 'Client comptoir' && !g.cid) return;
         const cl = g.cid ? (state.clients || []).find(c => c.id === g.cid) : (state.clients || []).find(c => (c.nom || '').trim().toLowerCase() === g.name.trim().toLowerCase());
         const aid = 'rel_' + idx + '_' + g.name;
-        aiActions[aid] = () => aiOpenWa(cl && cl.telephone, `Bonjour ${g.name}, petit rappel amical de ${shop} : il reste ${n0(g.sum)} FCFA à régler (${g.nums.slice(0, 3).join(', ')}). Merci d'avance et bonne journée !`, g.name);
+        aiActions[aid] = () => aiOpenWa(cl && cl.telephone, `Bonjour ${g.name}, petit rappel amical de ${shop} : il reste ${n0(g.sum)} ${curSym()} à régler (${g.nums.slice(0, 3).join(', ')}). Merci d'avance et bonne journée !`, g.name);
         add({ cat: 'argent', sev: (g.late > 3 || g.oldest > 14) ? 'danger' : (g.late || g.oldest > 7) ? 'warn' : 'info', ic: '🙋', tab: 'clients', t: `${escapeHtml(g.name)} te doit ${euros(g.sum)}`, d: g.late ? `⏰ En retard de ${g.late} jour${g.late > 1 ? 's' : ''} sur la date promise. Un message WhatsApp poli suffit souvent.` : `Plus ancienne dette : ${g.oldest} jour${g.oldest > 1 ? 's' : ''}. Un message WhatsApp poli suffit souvent.`, act: aid, actLabel: '💬 Relancer' });
       });
     }
@@ -2280,7 +2333,7 @@
     // Aussi notée dans le Journal des actions (en base) : visible par le propriétaire depuis n'importe quel appareil
     try {
       const n0 = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR');
-      const ec = S.ecart === 0 ? 'caisse juste' : 'écart ' + (S.ecart > 0 ? '+' : '−') + n0(Math.abs(S.ecart)) + ' FCFA';
+      const ec = S.ecart === 0 ? 'caisse juste' : 'écart ' + (S.ecart > 0 ? '+' : '−') + n0(Math.abs(S.ecart)) + ' ' + curSym();
       logAction('CLOTURE_CAISSE', `Clôture du ${todayStr().split('-').reverse().join('/')} : attendu ${n0(S.attendu)} · compté ${n0(S.compte)} · ${ec} (${S.T.nb} vente(s))`);
     } catch (e) { console.error(e); }
     toast(S.ecart === 0 ? 'Clôture enregistrée : caisse juste ✓' : `Clôture enregistrée (écart ${S.ecart > 0 ? '+' : '−'}${euros(Math.abs(S.ecart))}).`);
@@ -2741,13 +2794,14 @@
     const L = [];
     L.push('Boutique : ' + (c.nom || '?') + (c.adresse ? ' — ' + c.adresse : '') + ' — date du jour : ' + today + ' (' + JOURS[new Date().getDay()] + ')');
     L.push('Utilisateur : ' + (state.currentUser ? state.currentUser.nom + ' (' + state.currentUser.role + ')' : '?'));
+    L.push('DEVISE DE LA BOUTIQUE : ' + DEVISES[curCode()].fr[1] + ' (' + curSym() + '). Écris tous les montants dans cette devise, avec « ' + curSym() + ' » (et non FCFA si la devise est différente).');
     // ---- Produits (avec prix d'achat si connu → marges)
     const prods = state.products || [];
     const cost = {}; prods.forEach(p => { if (Number(p.prixAchat) > 0) cost[p.nom] = Number(p.prixAchat); });
     L.push('\n## PRODUITS (' + prods.length + ') — nom | réf | catégorie | stock | seuil alerte | prix vente | prix achat | fournisseur');
     prods.slice(0, 1500).forEach(p => L.push('- ' + p.nom + ' | ' + (p.ref || '-') + ' | ' + (p.categorie || '-') + ' | ' + (Number(p.stock) || 0) + (p.unite ? ' ' + p.unite : '') + ' | ' + (p.seuil != null && p.seuil !== '' ? p.seuil : '-') + ' | ' + n0(p.prixVente) + ' | ' + (Number(p.prixAchat) > 0 ? n0(p.prixAchat) : '?') + ' | ' + (p.fournisseur || '-')));
     const valStock = sum(prods.map(p => (Number(p.stock) || 0) * (Number(p.prixAchat) || 0)));
-    if (valStock) L.push('Valeur du stock au prix d\'achat : ' + n0(valStock) + ' FCFA');
+    if (valStock) L.push('Valeur du stock au prix d\'achat : ' + n0(valStock) + ' ' + curSym() + '');
     // ---- Ventes : agrégats 90 jours
     const recent = invs.filter(i => (i.date || '') >= d90);
     const perDay = {}, perProd = {}, perWd = {}, perHour = {}, perSeller = {}, perClient = {};
@@ -2766,7 +2820,7 @@
       });
     });
     const per = (d) => sum(Object.entries(perDay).filter(([k]) => k >= d).map(([, v]) => v));
-    L.push('\n## VENTES (factures non annulées) — 7 j : ' + n0(per(d7)) + ' FCFA ; 30 j : ' + n0(per(d30)) + ' FCFA ; 90 j : ' + n0(per(d90)) + ' FCFA (' + recent.length + ' factures sur 90 j)');
+    L.push('\n## VENTES (factures non annulées) — 7 j : ' + n0(per(d7)) + ' ' + curSym() + ' ; 30 j : ' + n0(per(d30)) + ' ' + curSym() + ' ; 90 j : ' + n0(per(d90)) + ' ' + curSym() + ' (' + recent.length + ' factures sur 90 j)');
     L.push('Factures annulées sur 90 j : ' + allInv.filter(i => i.annulee && (i.date || '') >= d90).length);
     L.push('Chiffre par jour (90 j) : ' + Object.keys(perDay).sort().map(d => d.split('-').reverse().slice(0, 2).join('/') + '=' + n0(perDay[d])).join(', '));
     L.push('Par jour de la semaine (90 j) : ' + Object.entries(perWd).map(([k, o]) => k + ' ' + o.n + ' ventes / ' + n0(o.m)).join(' ; '));
@@ -2792,7 +2846,7 @@
     const dettes = {};
     invs.forEach(i => { const r = (Number(i.total) || 0) - (Number(i.montantPaye) || 0); if (r > 0.5) { const k = i.client || 'Client sans nom'; const o = dettes[k] || (dettes[k] = { r: 0, n: 0, plusAncienne: i.date, ech: '', fac: [] }); o.r += r; o.n++; o.fac.push('FAC-' + String(i.num).padStart(4, '0')); if ((i.date || '') < (o.plusAncienne || '9')) o.plusAncienne = i.date; if (i.echeance && (!o.ech || i.echeance < o.ech)) o.ech = i.echeance; } });
     const dl = Object.entries(dettes).sort((a, b) => b[1].r - a[1].r);
-    L.push('\n## CRÉDITS : CLIENTS QUI DOIVENT DE L\'ARGENT — total ' + n0(sum(dl.map(([, o]) => o.r))) + ' FCFA — client | reste dû | factures | plus ancienne | échéance | téléphone');
+    L.push('\n## CRÉDITS : CLIENTS QUI DOIVENT DE L\'ARGENT — total ' + n0(sum(dl.map(([, o]) => o.r))) + ' ' + curSym() + ' — client | reste dû | factures | plus ancienne | échéance | téléphone');
     dl.slice(0, 200).forEach(([k, o]) => L.push('- ' + k + ' | ' + n0(o.r) + ' | ' + o.fac.join(',') + ' | ' + (o.plusAncienne || '-') + ' | ' + (o.ech || '-') + ' | ' + (phoneOf(k) ? 'oui' : 'non')));
     // ---- Clients
     L.push('\n## CLIENTS (' + clients.length + ') — nom | achats 90 j | nb factures | dernière visite');
@@ -2809,7 +2863,7 @@
     const dep = (state.depenses || []).filter(d => (d.date || '') >= d90);
     if (dep.length) {
       const pc = {}; dep.forEach(d => { const k = d.categorie || 'Autre'; pc[k] = (pc[k] || 0) + (Number(d.montant) || 0); });
-      L.push('\n## DÉPENSES (90 j) — total ' + n0(sum(dep.map(d => d.montant))) + ' FCFA ; 30 j : ' + n0(sum(dep.filter(d => d.date >= d30).map(d => d.montant))) + ' FCFA');
+      L.push('\n## DÉPENSES (90 j) — total ' + n0(sum(dep.map(d => d.montant))) + ' ' + curSym() + ' ; 30 j : ' + n0(sum(dep.filter(d => d.date >= d30).map(d => d.montant))) + ' ' + curSym() + '');
       L.push('Par catégorie : ' + Object.entries(pc).map(([k, v]) => k + ' ' + n0(v)).join(' ; '));
       dep.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 150).forEach(d => L.push('- ' + d.date + ' | ' + (d.categorie || '-') + ' | ' + n0(d.montant) + (d.note ? ' | ' + d.note : '')));
     }
@@ -2851,7 +2905,7 @@
       .replace(/\[\[WHATSAPP\|([^|\]]{1,80})\|[^\]]*\]\]/g, (m, nom) => 'Je t\'ai préparé un message WhatsApp pour ' + nom.trim() + '.')
       .replace(/\*\*/g, '').replace(/^#{1,4}\s*/gm, '').replace(/^\s*[-*•] /gm, '')
       .replace(/\p{Extended_Pictographic}/gu, '').replace(/[‍️⃣]/g, '')
-      .replace(/FCFA/g, 'francs CFA').replace(/[ \t]+/g, ' ').replace(/^ +| +$/gm, '').replace(/\n\s*\n+/g, '\n').trim();
+      .split(curSym()).join(DEVISES[curCode()].fr[1]).replace(/[ \t]+/g, ' ').replace(/^ +| +$/gm, '').replace(/\n\s*\n+/g, '\n').trim();
   }
   function belPcmToWav(b64, mime) {
     const bin = atob(b64), n = bin.length, pcm = new Uint8Array(n);
@@ -3258,7 +3312,7 @@
     if (stockCat && stockCat !== '__low' && !catCount[stockCat]) stockCat = '';
     document.getElementById('catChips').innerHTML = [['', 'Tous', state.products.length]].concat(lowCount ? [['__low', '⚠ Stock bas', lowCount]] : []).concat(topCats.map(([c, n]) => [c, c, n]))
       .map(([k, l, n]) => `<button type="button" class="cat-chip ${stockCat === k ? 'on' : ''}" data-cat="${escapeHtml(k)}">${escapeHtml(l)} <em>${n}</em></button>`).join('');
-    document.getElementById('stockValue').textContent = stockAmt(state.products.reduce((t, p) => t + (Number(p.prixAchat) || 0) * (Number(p.stock) || 0), 0)) + ' FCFA';
+    document.getElementById('stockValue').textContent = stockAmt(state.products.reduce((t, p) => t + (Number(p.prixAchat) || 0) * (Number(p.stock) || 0), 0)) + ' ' + curSym();
     document.querySelectorAll('.view-toggle button').forEach(b => b.classList.toggle('on', b.dataset.view === stockView));
     document.getElementById('stockTableWrap').style.display = stockView === 'table' ? '' : 'none';
     const cardsBox = document.getElementById('stockCards');
@@ -3697,10 +3751,74 @@
     if (r) parts.push(b1000(r, true));
     return parts.join(' ');
   }
-  function fcfaEnLettres(n) {
-    const t = nombreEnLettres(n), v = Math.round(Number(n) || 0);
-    return t.charAt(0).toUpperCase() + t.slice(1) + (v >= 1e6 && v % 1e6 === 0 ? ' de francs CFA' : v > 1 ? ' francs CFA' : ' franc CFA');
+  function nombreEnAnglais(n) {
+    n = Math.floor(Math.abs(Number(n) || 0));
+    if (n === 0) return 'zero';
+    const U = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+    const T = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+    const b100 = (x) => x < 20 ? U[x] : T[Math.floor(x / 10)] + (x % 10 ? '-' + U[x % 10] : '');
+    const b1000 = (x) => [Math.floor(x / 100) ? U[Math.floor(x / 100)] + ' hundred' : '', x % 100 ? b100(x % 100) : ''].filter(Boolean).join(' ');
+    const parts = [];
+    [[1e9, 'billion'], [1e6, 'million'], [1e3, 'thousand'], [1, '']].forEach(([s, w]) => { const g = Math.floor(n / s) % 1000; if (g) parts.push(b1000(g) + (w ? ' ' + w : '')); });
+    return parts.join(' ');
   }
+  function nombreEnArabe(n) {
+    n = Math.floor(Math.abs(Number(n) || 0));
+    if (n === 0) return 'صفر';
+    const U = ['', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة', 'عشرة', 'أحد عشر', 'اثنا عشر', 'ثلاثة عشر', 'أربعة عشر', 'خمسة عشر', 'ستة عشر', 'سبعة عشر', 'ثمانية عشر', 'تسعة عشر'];
+    const T = ['', '', 'عشرون', 'ثلاثون', 'أربعون', 'خمسون', 'ستون', 'سبعون', 'ثمانون', 'تسعون'];
+    const H = ['', 'مائة', 'مائتان', 'ثلاثمائة', 'أربعمائة', 'خمسمائة', 'ستمائة', 'سبعمائة', 'ثمانمائة', 'تسعمائة'];
+    const b100 = (x) => x < 20 ? U[x] : (x % 10 ? U[x % 10] + ' و' + T[Math.floor(x / 10)] : T[Math.floor(x / 10)]);
+    const b1000 = (x) => [H[Math.floor(x / 100)], x % 100 ? b100(x % 100) : ''].filter(Boolean).join(' و');
+    const scale = (g, one, two, plural) => { if (g === 1) return one; if (g === 2) return two; const r = g % 100; return b1000(g) + ' ' + (r >= 3 && r <= 10 ? plural : one); };
+    const parts = [], bn = Math.floor(n / 1e9) % 1000, m = Math.floor(n / 1e6) % 1000, k = Math.floor(n / 1e3) % 1000, r = n % 1000;
+    if (bn) parts.push(scale(bn, 'مليار', 'ملياران', 'مليارات'));
+    if (m) parts.push(scale(m, 'مليون', 'مليونان', 'ملايين'));
+    if (k) parts.push(scale(k, 'ألف', 'ألفان', 'آلاف'));
+    if (r) parts.push(b1000(r));
+    return parts.join(' و');
+  }
+  // Montant en lettres, dans la langue des factures et la devise du commerce
+  function montantEnLettres(n, lang) {
+    const D = DEVISES[curCode()], v = Math.round(Number(n) || 0);
+    lang = lang || invLang();
+    if (lang === 'ar') return 'فقط ' + nombreEnArabe(v) + ' ' + D.ar + ' لا غير';
+    if (lang === 'en') { const t = nombreEnAnglais(v); return t.charAt(0).toUpperCase() + t.slice(1) + ' ' + (v === 1 ? D.en[0] : D.en[1]); }
+    const t = nombreEnLettres(v);
+    const de = /^[aeiouy]/i.test(D.fr[1]) ? " d'" : ' de ';
+    return t.charAt(0).toUpperCase() + t.slice(1) + (v >= 1e6 && v % 1e6 === 0 ? de + D.fr[1] : v > 1 ? ' ' + D.fr[1] : ' ' + D.fr[0]);
+  }
+  function fcfaEnLettres(n) { return montantEnLettres(n, 'fr'); }
+
+  // Textes des factures, tickets, devis et bons (français, anglais, arabe)
+  const INV_TXT = {
+    fr: { facture: 'Facture', devis: 'Devis', bon_commande: 'Bon de commande', bon_livraison: 'Bon de livraison', ticket: 'Ticket', num: 'N°', date: 'Date', client: 'Client', tel: 'Tél', fiscal: 'N° fiscal', vendeur: 'Vendeur',
+      ref: 'Référence', des: 'Désignation', qte: 'Quantité', unite: 'Unité', prix: 'Prix', total: 'Total', totalTTC: 'Total TTC', sous: 'Sous-total', remise: 'Remise', ht: 'Montant HT', tva: 'TVA', dontTva: 'Dont TVA',
+      paye: 'Payé', reste: 'Reste à payer', avant: (d) => 'avant le ' + d, articles: (n) => n + ' article(s)', nonFiscal: 'Ticket non valable comme facture fiscale', note: 'Note', remarque: 'Remarque',
+      lettres: { facture: 'Arrêtée la présente facture à la somme de : ', devis: 'Arrêté le présent devis à la somme de : ', bon_commande: 'Arrêté le présent bon de commande à la somme de : ', ticket: 'Arrêté à la somme de : ' },
+      valable: (d) => "Offre valable jusqu'au " + d, sansEng: 'Offre sans engagement', blInfo: 'Marchandises livrées — merci de vérifier la quantité à la réception', bcInfo: 'Commande à préparer / livrer',
+      nonPayee: '⚠ NON PAYÉE — reste à payer : ', partiel: (p, r) => '◐ PAYÉE PARTIELLEMENT — payé : ' + p + ' — reste : ' + r, payee: '✓ PAYÉE INTÉGRALEMENT',
+      merci: 'Merci pour votre confiance, à bientôt !', sign: 'Signature / cachet', livreur: 'Le livreur / cachet', accord: 'Bon pour accord (client)', recu: 'Reçu en bon état (nom + signature du client)', blCheck: 'Merci de vérifier les quantités à la réception.' },
+    en: { facture: 'Invoice', devis: 'Quotation', bon_commande: 'Purchase order', bon_livraison: 'Delivery note', ticket: 'Receipt', num: 'No.', date: 'Date', client: 'Customer', tel: 'Tel', fiscal: 'Tax ID', vendeur: 'Seller',
+      ref: 'Reference', des: 'Description', qte: 'Quantity', unite: 'Unit', prix: 'Price', total: 'Total', totalTTC: 'Total incl. VAT', sous: 'Subtotal', remise: 'Discount', ht: 'Amount excl. VAT', tva: 'VAT', dontTva: 'Incl. VAT',
+      paye: 'Paid', reste: 'Balance due', avant: (d) => 'before ' + d, articles: (n) => n + ' item(s)', nonFiscal: 'This receipt is not a tax invoice', note: 'Note', remarque: 'Note',
+      lettres: { facture: 'This invoice amounts to: ', devis: 'This quotation amounts to: ', bon_commande: 'This purchase order amounts to: ', ticket: 'Amount in words: ' },
+      valable: (d) => 'Offer valid until ' + d, sansEng: 'Non-binding offer', blInfo: 'Goods delivered — please check the quantities on receipt', bcInfo: 'Order to prepare / deliver',
+      nonPayee: '⚠ UNPAID — balance due: ', partiel: (p, r) => '◐ PARTLY PAID — paid: ' + p + ' — balance: ' + r, payee: '✓ PAID IN FULL',
+      merci: 'Thank you for your trust, see you soon!', sign: 'Signature / stamp', livreur: 'Delivered by / stamp', accord: 'Approved by (customer)', recu: 'Received in good condition (customer name + signature)', blCheck: 'Please check the quantities on receipt.' },
+    ar: { facture: 'فاتورة', devis: 'عرض سعر', bon_commande: 'طلب شراء', bon_livraison: 'وصل تسليم', ticket: 'إيصال', num: 'رقم', date: 'التاريخ', client: 'الزبون', tel: 'الهاتف', fiscal: 'الرقم الضريبي', vendeur: 'البائع',
+      ref: 'المرجع', des: 'البيان', qte: 'الكمية', unite: 'الوحدة', prix: 'السعر', total: 'المجموع', totalTTC: 'المجموع شامل الضريبة', sous: 'المجموع الفرعي', remise: 'الخصم', ht: 'المبلغ دون الضريبة', tva: 'ضريبة القيمة المضافة', dontTva: 'منها ضريبة القيمة المضافة',
+      paye: 'المدفوع', reste: 'المتبقي للدفع', avant: (d) => 'قبل ' + d, articles: (n) => 'عدد القطع: ' + n, nonFiscal: 'هذا الإيصال ليس فاتورة ضريبية', note: 'ملاحظة', remarque: 'ملاحظة',
+      lettres: { facture: 'المبلغ بالحروف: ', devis: 'المبلغ بالحروف: ', bon_commande: 'المبلغ بالحروف: ', ticket: 'المبلغ بالحروف: ' },
+      valable: (d) => 'العرض صالح حتى ' + d, sansEng: 'عرض دون التزام', blInfo: 'تم تسليم البضاعة — يرجى التحقق من الكميات عند الاستلام', bcInfo: 'طلبية للتحضير / التسليم',
+      nonPayee: '⚠ غير مدفوعة — المتبقي: ', partiel: (p, r) => '◐ مدفوعة جزئياً — المدفوع: ' + p + ' — المتبقي: ' + r, payee: '✓ مدفوعة بالكامل',
+      merci: 'شكراً لثقتكم، إلى اللقاء!', sign: 'التوقيع / الختم', livreur: 'المُسلِّم / الختم', accord: 'موافقة الزبون', recu: 'استُلمت في حالة جيدة (اسم وتوقيع الزبون)', blCheck: 'يرجى التحقق من الكميات عند الاستلام.' },
+  };
+  function invT(lang) { return INV_TXT[lang] || INV_TXT.fr; }
+  // En arabe (écriture de droite à gauche), on isole les nombres pour qu'ils restent dans le bon ordre
+  const bidiIso = (s, lang) => (lang === 'ar' ? '⁦' + s + '⁩' : s);
+  const invNum = (n, lang) => bidiIso(Math.round(Number(n) || 0).toLocaleString('fr-FR').replace(/[  ]/g, ' '), lang);
+  const invMoney = (n, lang) => bidiIso(Math.round(Number(n) || 0).toLocaleString('fr-FR').replace(/[  ]/g, ' ') + ' ' + curSym(), lang);
   const frDate = (d) => String(d || '').split('-').reverse().join('/');
 
   // Ticket en texte (WhatsApp)
@@ -3711,29 +3829,31 @@
     const dateTxt = (inv.date ? inv.date.split('-').reverse().join('/') : dt.toLocaleDateString('fr-FR')) + ' ' + dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     const n0 = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR').replace(/[  ]/g, ' ');
     const L = [];
+    const lg = invLang(), X = invT(lg), sp = lg === 'fr' ? ' : ' : ': ', m0 = (n) => invMoney(n, lg);
+    const nn = (n) => invNum(n, lg);
     L.push('🧾 *' + (c.nom || 'StockFlow Pro') + '*');
     if (c.adresse) L.push(c.adresse);
-    if (c.telephone) L.push('Tél : ' + c.telephone);
+    if (c.telephone) L.push(X.tel + sp + bidiIso(c.telephone, lg));
     L.push('─────────────');
-    L.push('Ticket ' + num + ' — ' + dateTxt);
-    if (inv.client) L.push('Client : ' + inv.client);
+    L.push(X.ticket + ' ' + bidiIso(num, lg) + ' — ' + bidiIso(dateTxt, lg));
+    if (inv.client) L.push(X.client + sp + inv.client);
     L.push('─────────────');
     (inv.lignes || []).forEach(l => {
       const q = Number(l.qte) || 0, pr = Number(l.prix) || 0;
-      L.push('• ' + l.nom + '\n   ' + q + (l.unite ? ' ' + l.unite : '') + ' × ' + n0(pr) + ' = ' + n0(q * pr));
+      L.push('• ' + l.nom + '\n   ' + bidiIso(q + (l.unite ? ' ' + l.unite : '') + ' × ' + n0(pr) + ' = ' + n0(q * pr), lg));
     });
     L.push('─────────────');
     const rem = Number(inv.remise) || 0, tm = inv.tvaMode || 'none', tv = Number(inv.tvaMontant) || 0, tx = Number(inv.tvaTaux) || 0;
-    if (rem > 0) L.push('Remise : - ' + n0(rem));
-    if (tm === 'add') L.push('TVA ' + tx + '% : + ' + n0(tv)); else if (tm === 'incl') L.push('dont TVA ' + tx + '% : ' + n0(tv));
+    if (rem > 0) L.push(X.remise + sp + bidiIso('- ' + n0(rem), lg));
+    if (tm === 'add') L.push(X.tva + ' ' + bidiIso(tx + '%', lg) + sp + bidiIso('+ ' + n0(tv), lg)); else if (tm === 'incl') L.push(X.dontTva + ' ' + bidiIso(tx + '%', lg) + sp + nn(tv));
     const total = Number(inv.total) || 0, paye = Number(inv.montantPaye) || 0, reste = Math.max(0, total - paye);
-    L.push('*TOTAL : ' + n0(total) + ' FCFA*');
-    L.push('_' + fcfaEnLettres(total) + '_');
-    L.push('Payé : ' + n0(paye) + ' FCFA');
-    if (reste > 0) L.push('⚠️ *Reste à payer : ' + n0(reste) + ' FCFA*' + (inv.echeance ? ' avant le ' + frDate(inv.echeance) : ''));
+    L.push('*' + X.total.toUpperCase() + sp + m0(total) + '*');
+    L.push('_' + montantEnLettres(total, lg) + '_');
+    L.push(X.paye + sp + m0(paye));
+    if (reste > 0) L.push('⚠️ *' + X.reste + sp + m0(reste) + '*' + (inv.echeance ? ' ' + X.avant(bidiIso(frDate(inv.echeance), lg)) : ''));
     if (inv.remarque) L.push('📝 ' + inv.remarque);
     L.push('');
-    L.push(c.messageFacture || 'Merci pour votre confiance, à bientôt !');
+    L.push(c.messageFacture || X.merci);
     return L.join('\n');
   }
   function sendTicketWhatsApp(inv, askIfMissing, text) {
@@ -3761,47 +3881,49 @@
     const num = 'FAC-' + String(inv.num).padStart(4, '0');
     const dt = inv.createdAt ? new Date(inv.createdAt) : new Date();
     const dateTxt = (inv.date ? inv.date.split('-').reverse().join('/') : dt.toLocaleDateString('fr-FR')) + ' ' + dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    const num0 = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR');
+    const lg = invLang(), X = invT(lg), sp = lg === 'fr' ? ' : ' : ': ';
+    const num0 = (n) => invNum(n, lg), iso = (s) => bidiIso(s, lg);
     const lignes = (inv.lignes || []).map(l => {
       const q = Number(l.qte) || 0, pr = Number(l.prix) || 0;
-      return `<div class="tk-item"><div class="tk-name">${escapeHtml(l.nom)}</div><div class="tk-row"><span>${escapeHtml(String(q))}${l.unite ? ' ' + escapeHtml(l.unite) : ''} × ${num0(pr)}</span><span>${num0(q * pr)}</span></div></div>`;
+      return `<div class="tk-item"><div class="tk-name">${escapeHtml(l.nom)}</div><div class="tk-row"><span>${iso(escapeHtml(String(q)) + (l.unite ? ' ' + escapeHtml(l.unite) : '') + ' × ' + num0(pr))}</span><span>${num0(q * pr)}</span></div></div>`;
     }).join('');
     const rem = Number(inv.remise) || 0, tm = inv.tvaMode || 'none', tv = Number(inv.tvaMontant) || 0, tx = Number(inv.tvaTaux) || 0;
     const sub = Number(inv.sousTotal) || (inv.lignes || []).reduce((t, l) => t + (Number(l.prix) || 0) * (Number(l.qte) || 0), 0);
     const extra = [];
     if (rem > 0 || tm !== 'none') {
-      extra.push(['Sous-total', num0(sub)]);
-      if (rem > 0) extra.push(['Remise', '- ' + num0(rem)]);
-      if (tm === 'add') { extra.push(['Montant HT', num0(sub - rem)]); extra.push([`TVA ${tx}%`, '+ ' + num0(tv)]); }
-      else if (tm === 'incl') extra.push([`dont TVA ${tx}%`, num0(tv)]);
+      extra.push([X.sous, num0(sub)]);
+      if (rem > 0) extra.push([X.remise, iso('- ' + num0(rem))]);
+      if (tm === 'add') { extra.push([X.ht, num0(sub - rem)]); extra.push([X.tva + ' ' + iso(tx + '%'), iso('+ ' + num0(tv))]); }
+      else if (tm === 'incl') extra.push([X.dontTva + ' ' + iso(tx + '%'), num0(tv)]);
     }
     const paye = Number(inv.montantPaye) || 0, total = Number(inv.total) || 0, reste = Math.max(0, total - paye);
     const logo = isImageData(c.logoUrl) ? `<img class="tk-logo" src="${c.logoUrl}" alt="">` : '';
     const nbArt = (inv.lignes || []).reduce((t, l) => t + (Number(l.qte) || 0), 0);
     document.getElementById('printTicket').innerHTML = `
       <div class="tk-center">${logo}<div class="tk-shop">${escapeHtml(c.nom || 'StockFlow Pro')}</div>
-        ${c.adresse ? `<div>${escapeHtml(c.adresse)}</div>` : ''}${c.telephone ? `<div>Tél : ${escapeHtml(c.telephone)}</div>` : ''}${c.numeroFiscal ? `<div>N° fiscal : ${escapeHtml(c.numeroFiscal)}</div>` : ''}</div>
+        ${c.adresse ? `<div>${escapeHtml(c.adresse)}</div>` : ''}${c.telephone ? `<div>${X.tel}${sp}${iso(escapeHtml(c.telephone))}</div>` : ''}${c.numeroFiscal ? `<div>${X.fiscal}${sp}${iso(escapeHtml(c.numeroFiscal))}</div>` : ''}</div>
       <div class="tk-sep"></div>
-      <div class="tk-row"><span>Ticket ${num}</span><span>${escapeHtml(dateTxt)}</span></div>
-      ${inv.operateur ? `<div>Vendeur : ${escapeHtml(String(inv.operateur).replace(/\s*\(.*\)$/, ''))}</div>` : ''}
-      ${inv.client ? `<div>Client : ${escapeHtml(inv.client)}</div>` : ''}
+      <div class="tk-row"><span>${X.ticket} ${iso(num)}</span><span>${iso(escapeHtml(dateTxt))}</span></div>
+      ${inv.operateur ? `<div>${X.vendeur}${sp}${escapeHtml(String(inv.operateur).replace(/\s*\(.*\)$/, ''))}</div>` : ''}
+      ${inv.client ? `<div>${X.client}${sp}${escapeHtml(inv.client)}</div>` : ''}
       <div class="tk-sep"></div>
       ${lignes}
       <div class="tk-sep"></div>
       ${extra.map(r => `<div class="tk-row"><span>${escapeHtml(r[0])}</span><span>${escapeHtml(r[1])}</span></div>`).join('')}
-      <div class="tk-row tk-total"><span>TOTAL</span><span>${num0(total)} FCFA</span></div>
-      <div class="tk-row"><span>Payé</span><span>${num0(paye)}</span></div>
-      ${reste > 0 ? `<div class="tk-row tk-reste"><span>RESTE À PAYER</span><span>${num0(reste)}</span></div>` : ''}
-      ${reste > 0 && inv.echeance ? `<div class="tk-small">À payer avant le ${escapeHtml(frDate(inv.echeance))}</div>` : ''}
-      <div class="tk-small">${nbArt} article(s)</div>
-      <div class="tk-small">Arrêté à la somme de : ${escapeHtml(fcfaEnLettres(total))}</div>
-      ${inv.remarque ? `<div class="tk-small">Note : ${escapeHtml(inv.remarque)}</div>` : ''}
+      <div class="tk-row tk-total"><span>${X.total.toUpperCase()}</span><span>${invMoney(total, lg)}</span></div>
+      <div class="tk-row"><span>${X.paye}</span><span>${num0(paye)}</span></div>
+      ${reste > 0 ? `<div class="tk-row tk-reste"><span>${X.reste.toUpperCase()}</span><span>${num0(reste)}</span></div>` : ''}
+      ${reste > 0 && inv.echeance ? `<div class="tk-small">${X.reste} ${escapeHtml(X.avant(iso(frDate(inv.echeance))))}</div>` : ''}
+      <div class="tk-small">${escapeHtml(X.articles(iso(String(nbArt))))}</div>
+      <div class="tk-small">${X.lettres.ticket}${escapeHtml(montantEnLettres(total, lg))}</div>
+      ${inv.remarque ? `<div class="tk-small">${X.note}${sp}${escapeHtml(inv.remarque)}</div>` : ''}
       <div class="tk-sep"></div>
-      <div class="tk-center tk-thanks">${escapeHtml(c.messageFacture || 'Merci pour votre confiance, à bientôt !')}</div>
-      <div class="tk-center tk-small">Ticket non valable comme facture fiscale</div>
+      <div class="tk-center tk-thanks">${escapeHtml(c.messageFacture || X.merci)}</div>
+      <div class="tk-center tk-small">${X.nonFiscal}</div>
       <div class="tk-cut">.</div>`;
     const pt = document.getElementById('printTicket');
     pt.className = 'tk-w' + w;
+    pt.dir = lg === 'ar' ? 'rtl' : 'ltr';
     const page = document.createElement('style'); page.id = 'ticket-page';
     page.textContent = `@page { size: ${w}mm auto; margin: 0; }`;
     document.head.appendChild(page);
@@ -3814,16 +3936,21 @@
   function printInvoice(inv, kind) {
     kind = kind || 'facture';
     const isBL = kind === 'bon_livraison';
-    document.getElementById('printArea').classList.toggle('pi-bl', isBL);
-    document.getElementById('pi-client-sign-label').textContent = isBL ? 'Reçu en bon état (nom + signature du client)' : 'Bon pour accord (client)';
-    document.getElementById('pi-signature-label').textContent = isBL ? 'Le livreur / cachet' : 'Signature / cachet';
-    document.getElementById('pi-title').textContent = kind === 'devis' ? 'Devis' : (kind === 'bon_commande' ? 'Bon de commande' : (isBL ? 'Bon de livraison' : 'Facture'));
+    const lg = invLang(), X = invT(lg), sp = lg === 'fr' ? ' : ' : ': ', iso = (s) => bidiIso(s, lg), mny = (n) => invMoney(n, lg);
+    const pa = document.getElementById('printArea');
+    pa.classList.toggle('pi-bl', isBL);
+    pa.dir = lg === 'ar' ? 'rtl' : 'ltr'; pa.lang = lg;
+    ['ref', 'des', 'qte', 'unite', 'prix', 'total'].forEach((k, i) => { const th = pa.querySelectorAll('.pi-table thead th')[i]; if (th) th.textContent = X[k]; });
+    document.getElementById('pi-client-lbl').textContent = X.client + sp;
+    document.getElementById('pi-client-sign-label').textContent = isBL ? X.recu : X.accord;
+    document.getElementById('pi-signature-label').textContent = isBL ? X.livreur : X.sign;
+    document.getElementById('pi-title').textContent = X[kind] || X.facture;
     document.getElementById('pi-client-sign').style.display = kind === 'facture' ? 'none' : '';
     const numPrefix = kind === 'devis' ? 'DEV' : (kind === 'bon_commande' ? 'BC' : (isBL ? 'BL' : 'FAC'));
-    document.getElementById('pi-num').textContent = 'N° ' + numPrefix + '-' + String(inv.num).padStart(4, '0');
-    document.getElementById('pi-date').textContent = inv.date || '';
+    document.getElementById('pi-num').textContent = X.num + ' ' + iso(numPrefix + '-' + String(inv.num).padStart(4, '0'));
+    document.getElementById('pi-date').textContent = inv.date ? X.date + sp + iso(frDate(inv.date)) : '';
     document.getElementById('pi-commerce-nom').textContent = (state.commerce && state.commerce.nom) || 'StockFlow Pro';
-    document.getElementById('pi-commerce-adresse').textContent = state.commerce ? [state.commerce.adresse, state.commerce.telephone].filter(Boolean).join(' · ') : '';
+    document.getElementById('pi-commerce-adresse').textContent = state.commerce ? [state.commerce.adresse, state.commerce.telephone && iso(state.commerce.telephone), state.commerce.numeroFiscal && (X.fiscal + sp + iso(state.commerce.numeroFiscal))].filter(Boolean).join(' · ') : '';
     document.getElementById('pi-client').textContent = inv.client || '—';
     // Logo, message de remerciement et signature (réglés dans Données > Mon commerce)
     const logoEl = document.getElementById('pi-logo');
@@ -3832,45 +3959,45 @@
     const sigEl = document.getElementById('pi-signature');
     const sigSrc = state.commerce && state.commerce.signatureUrl;
     if (isImageData(sigSrc)) { sigEl.src = sigSrc; document.getElementById('pi-signature-box').style.display = ''; } else { sigEl.removeAttribute('src'); document.getElementById('pi-signature-box').style.display = 'none'; }
-    document.getElementById('pi-message').textContent = (state.commerce && state.commerce.messageFacture) || 'Merci pour votre confiance, à bientôt !';
+    document.getElementById('pi-message').textContent = (state.commerce && state.commerce.messageFacture) || X.merci;
     document.getElementById('pi-lines').innerHTML = (inv.lignes || []).map(l => `
-      <tr><td>${escapeHtml(l.ref || '—')}</td><td>${escapeHtml(l.nom)}</td><td class="num-cell">${escapeHtml(String(l.qte))}</td><td>${escapeHtml(l.unite || '')}</td><td class="num-cell">${euros(l.prix)}</td><td class="num-cell">${euros((Number(l.prix) || 0) * (Number(l.qte) || 0))}</td></tr>
+      <tr><td>${escapeHtml(l.ref || '—')}</td><td>${escapeHtml(l.nom)}</td><td class="num-cell">${iso(escapeHtml(String(l.qte)))}</td><td>${escapeHtml(l.unite || '')}</td><td class="num-cell">${mny(l.prix)}</td><td class="num-cell">${mny((Number(l.prix) || 0) * (Number(l.qte) || 0))}</td></tr>
     `).join('');
     {
       const rem = Number(inv.remise) || 0, tm = inv.tvaMode || 'none', tv = Number(inv.tvaMontant) || 0, tx = Number(inv.tvaTaux) || 0;
       const rows = [];
       if (kind !== 'bon_livraison' && (rem > 0 || tm !== 'none')) {
         const sub = Number(inv.sousTotal) || (inv.lignes || []).reduce((s, l) => s + (Number(l.prix) || 0) * (Number(l.qte) || 0), 0);
-        rows.push(['Sous-total', euros(sub)]);
-        if (rem > 0) rows.push(['Remise', '− ' + euros(rem)]);
-        if (tm === 'add') { rows.push(['Montant HT', euros(sub - rem)]); rows.push([`TVA (${tx} %)`, '+ ' + euros(tv)]); }
-        else if (tm === 'incl') rows.push([`Dont TVA (${tx} %)`, euros(tv)]);
+        rows.push([X.sous, mny(sub)]);
+        if (rem > 0) rows.push([X.remise, iso('− ' + mny(rem))]);
+        if (tm === 'add') { rows.push([X.ht, mny(sub - rem)]); rows.push([X.tva + ' ' + iso('(' + tx + ' %)'), iso('+ ' + mny(tv))]); }
+        else if (tm === 'incl') rows.push([X.dontTva + ' ' + iso('(' + tx + ' %)'), mny(tv)]);
       }
       document.getElementById('pi-breakdown').innerHTML = rows.map(r => `<div><span>${escapeHtml(r[0])}</span><span>${escapeHtml(r[1])}</span></div>`).join('');
-      document.getElementById('pi-total-lbl').textContent = (kind !== 'bon_livraison' && tm !== 'none') ? 'Total TTC' : 'Total';
+      document.getElementById('pi-total-lbl').textContent = (kind !== 'bon_livraison' && tm !== 'none') ? X.totalTTC : X.total;
     }
-    document.getElementById('pi-total').textContent = euros(inv.total);
+    document.getElementById('pi-total').textContent = mny(inv.total);
     {
       const lt = document.getElementById('pi-lettres');
-      const pre = kind === 'devis' ? 'Arrêté le présent devis' : (kind === 'bon_commande' ? 'Arrêté le présent bon de commande' : 'Arrêtée la présente facture');
-      lt.textContent = isBL ? '' : pre + ' à la somme de : ' + fcfaEnLettres(inv.total);
+      lt.textContent = isBL ? '' : (X.lettres[kind] || X.lettres.facture) + montantEnLettres(inv.total, lg);
       const rm = document.getElementById('pi-remarque');
-      if (inv.remarque) { rm.style.display = ''; rm.textContent = 'Remarque : ' + inv.remarque; } else { rm.style.display = 'none'; rm.textContent = ''; }
+      if (inv.remarque) { rm.style.display = ''; rm.textContent = X.remarque + sp + inv.remarque; } else { rm.style.display = 'none'; rm.textContent = ''; }
     }
     const paye = Number(inv.montantPaye) || 0;
     const reste = Math.max(0, Number(inv.total || 0) - paye);
     const statutEl = document.getElementById('pi-statut');
+    const ech = inv.echeance ? ' ' + X.avant(iso(frDate(inv.echeance))) : '';
     if (kind !== 'facture') {
-      statutEl.textContent = kind === 'devis' ? (inv.validite ? "Offre valable jusqu'au " + inv.validite : 'Offre sans engagement') : (isBL ? 'Marchandises livrées — merci de vérifier la quantité à la réception' : 'Commande à préparer / livrer');
+      statutEl.textContent = kind === 'devis' ? (inv.validite ? X.valable(iso(frDate(inv.validite))) : X.sansEng) : (isBL ? X.blInfo : X.bcInfo);
       statutEl.style.background = '#e0e7ff'; statutEl.style.color = '#3730a3';
     } else if (paye <= 0) {
-      statutEl.textContent = '⚠ NON PAYÉE — reste à payer : ' + euros(reste) + (inv.echeance ? ' avant le ' + frDate(inv.echeance) : '');
+      statutEl.textContent = X.nonPayee + mny(reste) + ech;
       statutEl.style.background = '#fee2e2'; statutEl.style.color = '#991b1b';
     } else if (reste > 0) {
-      statutEl.textContent = '◐ PAYÉE PARTIELLEMENT — payé : ' + euros(paye) + ' — reste : ' + euros(reste) + (inv.echeance ? ' avant le ' + frDate(inv.echeance) : '');
+      statutEl.textContent = X.partiel(mny(paye), mny(reste)) + ech;
       statutEl.style.background = '#fef3c7'; statutEl.style.color = '#92400e';
     } else {
-      statutEl.textContent = '✓ PAYÉE INTÉGRALEMENT';
+      statutEl.textContent = X.payee;
       statutEl.style.background = '#dcfce7'; statutEl.style.color = '#166534';
     }
     if (isBL) document.getElementById('pi-signature-box').style.display = '';
@@ -4069,7 +4196,7 @@
     document.querySelectorAll('.st-btn').forEach(b => b.classList.toggle('on', b.dataset.st === t));
     document.getElementById('f-echeance-wrap').style.display = t === 'credit' ? '' : 'none';
     const lab = document.querySelector('#f-paye-wrap label'), inp = document.getElementById('f-paye');
-    if (lab) lab.textContent = t === 'credit' ? 'Acompte versé maintenant (FCFA) — facultatif' : 'Montant payé par le client (FCFA)';
+    if (lab) lab.textContent = t === 'credit' ? 'Acompte versé maintenant (' + curSym() + ') — facultatif' : 'Montant payé par le client (' + curSym() + ')';
     inp.placeholder = t === 'credit' ? 'Vide = rien payé maintenant' : 'Laisse vide si le client paie tout';
     if (t === 'credit' && !document.getElementById('f-echeance').value) { const d = new Date(Date.now() + 7 * 86400000); document.getElementById('f-echeance').value = d.toISOString().slice(0, 10); }
     updateGrandTotal();
@@ -4323,31 +4450,32 @@
     const isBL = d.type === 'bon_livraison';
     const n0 = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR').replace(/[  ]/g, ' ');
     const icon = d.type === 'devis' ? '📋' : (isBL ? '🚚' : '📦');
+    const lg = invLang(), X = invT(lg), sp = lg === 'fr' ? ' : ' : ': ', iso = (s) => bidiIso(s, lg);
     const L = [];
     L.push(icon + ' *' + (c.nom || 'StockFlow Pro') + '*');
     if (c.adresse) L.push(c.adresse);
-    if (c.telephone) L.push('Tél : ' + c.telephone);
+    if (c.telephone) L.push(X.tel + sp + iso(c.telephone));
     L.push('─────────────');
-    L.push('*' + (DOC_LABELS[d.type] || 'Document') + ' ' + docNumLabel(d) + '*' + (d.date ? ' — ' + d.date.split('-').reverse().join('/') : ''));
-    if (d.client) L.push('Client : ' + d.client);
+    L.push('*' + (X[d.type] || 'Document') + ' ' + iso(docNumLabel(d)) + '*' + (d.date ? ' — ' + iso(frDate(d.date)) : ''));
+    if (d.client) L.push(X.client + sp + d.client);
     L.push('─────────────');
     (d.lignes || []).forEach(l => {
       const q = Number(l.qte) || 0, pr = Number(l.prix) || 0, u = l.unite ? ' ' + l.unite : '';
-      L.push(isBL ? ('• ' + l.nom + ' : ' + q + u) : ('• ' + l.nom + '\n   ' + q + u + ' × ' + n0(pr) + ' = ' + n0(q * pr)));
+      L.push(isBL ? ('• ' + l.nom + sp + iso(q + u)) : ('• ' + l.nom + '\n   ' + iso(q + u + ' × ' + n0(pr) + ' = ' + n0(q * pr))));
     });
     L.push('─────────────');
     if (isBL) {
-      L.push('Merci de vérifier les quantités à la réception.');
+      L.push(X.blCheck);
     } else {
       const rem = Number(d.remise) || 0, tm = d.tvaMode || 'none', tv = Number(d.tvaMontant) || 0, tx = Number(d.tvaTaux) || 0;
-      if (rem > 0) L.push('Remise : - ' + n0(rem));
-      if (tm === 'add') L.push('TVA ' + tx + '% : + ' + n0(tv)); else if (tm === 'incl') L.push('dont TVA ' + tx + '% : ' + n0(tv));
-      L.push('*TOTAL : ' + n0(d.total) + ' FCFA*');
-      L.push('_' + fcfaEnLettres(Number(d.total) || 0) + '_');
-      if (d.type === 'devis') L.push(d.validite ? "Offre valable jusqu'au " + d.validite.split('-').reverse().join('/') : 'Offre sans engagement');
+      if (rem > 0) L.push(X.remise + sp + iso('- ' + n0(rem)));
+      if (tm === 'add') L.push(X.tva + ' ' + iso(tx + '%') + sp + iso('+ ' + n0(tv))); else if (tm === 'incl') L.push(X.dontTva + ' ' + iso(tx + '%') + sp + iso(n0(tv)));
+      L.push('*' + X.total.toUpperCase() + sp + invMoney(d.total, lg) + '*');
+      L.push('_' + montantEnLettres(Number(d.total) || 0, lg) + '_');
+      if (d.type === 'devis') L.push(d.validite ? X.valable(iso(frDate(d.validite))) : X.sansEng);
     }
     L.push('');
-    L.push(c.messageFacture || 'Merci pour votre confiance, à bientôt !');
+    L.push(c.messageFacture || X.merci);
     return L.join('\n');
   }
 
@@ -6211,7 +6339,7 @@
     mouvements: { productId: 'product_id', ancienStock: 'ancien_stock', nouveauStock: 'nouveau_stock', createdAt: 'created_at' },
     fournisseurs: { createdAt: 'created_at' },
     commandes_fournisseurs: { fournisseurId: 'fournisseur_id', fournisseurNom: 'fournisseur_nom', montantCommande: 'montant_commande', montantPaye: 'montant_paye', createdAt: 'created_at' },
-    commerces: { logoUrl: 'logo_url', signatureUrl: 'signature_url', messageFacture: 'message_facture', numeroFiscal: 'numero_fiscal', inviteCode: 'invite_code', createdAt: 'created_at' },
+    commerces: { logoUrl: 'logo_url', signatureUrl: 'signature_url', messageFacture: 'message_facture', numeroFiscal: 'numero_fiscal', inviteCode: 'invite_code', createdAt: 'created_at', langueFacture: 'langue_facture' },
     clients: { createdAt: 'created_at' },
     paiements: { factureId: 'facture_id', clientId: 'client_id', createdAt: 'created_at' },
     depenses: { createdAt: 'created_at' },
