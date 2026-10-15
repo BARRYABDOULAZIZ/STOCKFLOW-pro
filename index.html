@@ -2493,6 +2493,7 @@
 
   function showAuthError(msg) {
     const el = document.getElementById('loginError');
+    el.style.color = '#dc2626';
     el.textContent = msg;
     el.style.display = 'block';
   }
@@ -2515,9 +2516,10 @@
     if (!commerceNom || !nom || !email || !password) { showAuthError('Remplis tous les champs.'); return; }
     if (password.length < 8) { showAuthError('Le mot de passe doit faire au moins 8 caractères.'); return; }
     state.signupInProgress = true;
-    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+    // Les infos du commerce sont gardées avec le compte : si l'e-mail doit d'abord être confirmé, le commerce est créé à la première connexion.
+    const { data, error } = await supabaseClient.auth.signUp({ email, password, options: { emailRedirectTo: location.origin, data: { sf_action: 'create', sf_commerce: commerceNom, sf_nom: nom } } });
     if (error) { state.signupInProgress = false; showAuthError(error.message); return; }
-    if (!data.session) { state.signupInProgress = false; showAuthError('Compte créé. Vérifie ta boîte mail pour confirmer, puis reviens te connecter.'); showAuthTab('login'); return; }
+    if (!data.session) { state.signupInProgress = false; showConfirmEmailInfo(email); return; }
     const { error: rpcErr } = await supabaseClient.rpc('create_commerce_and_owner', { p_commerce_nom: commerceNom, p_user_nom: nom });
     if (rpcErr) { await abortSignup("Compte créé mais erreur lors de la création du commerce : " + rpcErr.message); return; }
     await finishSignup(data.session.user);
@@ -2533,9 +2535,9 @@
     if (!code || !nom || !email || !password) { showAuthError('Remplis tous les champs.'); return; }
     if (password.length < 8) { showAuthError('Le mot de passe doit faire au moins 8 caractères.'); return; }
     state.signupInProgress = true;
-    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+    const { data, error } = await supabaseClient.auth.signUp({ email, password, options: { emailRedirectTo: location.origin, data: { sf_action: 'join', sf_code: code, sf_nom: nom } } });
     if (error) { state.signupInProgress = false; showAuthError(error.message); return; }
-    if (!data.session) { state.signupInProgress = false; showAuthError('Compte créé. Vérifie ta boîte mail pour confirmer, puis reviens te connecter.'); showAuthTab('login'); return; }
+    if (!data.session) { state.signupInProgress = false; showConfirmEmailInfo(email); return; }
     const { error: rpcErr } = await supabaseClient.rpc('join_commerce', { p_invite_code: code, p_user_nom: nom, p_role: role });
     if (rpcErr) { await abortSignup(rpcErr.message.includes('invalide') ? 'Code invitation invalide.' : rpcErr.message); return; }
     await finishSignup(data.session.user);
@@ -2547,6 +2549,26 @@
   });
 
   // Fin d'inscription : le profil existe maintenant, on peut le charger (l'écouteur d'auth l'ignorait pendant l'inscription)
+  // Confirmation de l'e-mail : message clair après l'inscription
+  function showConfirmEmailInfo(email) {
+    showAuthTab('login');
+    const le = document.getElementById('login-email'); if (le) le.value = email;
+    showAuthError('📧 Compte créé ! Ouvre l\'e-mail envoyé à ' + email + ' et clique sur le lien de confirmation (regarde aussi dans les spams). Ensuite, reviens ici et connecte-toi.');
+    const el = document.getElementById('loginError'); if (el) el.style.color = '#15803d';
+  }
+  // Première connexion après confirmation de l'e-mail : on termine la création du commerce (ou l'arrivée dans l'équipe)
+  async function completePendingSignup(user) {
+    const m = (user && user.user_metadata) || {};
+    if (m.sf_action === 'create' && m.sf_commerce && m.sf_nom) {
+      const { error } = await supabaseClient.rpc('create_commerce_and_owner', { p_commerce_nom: m.sf_commerce, p_user_nom: m.sf_nom });
+      return error ? error.message : true;
+    }
+    if (m.sf_action === 'join' && m.sf_code && m.sf_nom) {
+      const { error } = await supabaseClient.rpc('join_commerce', { p_invite_code: m.sf_code, p_user_nom: m.sf_nom, p_role: 'caissier' });
+      return error ? (/invalide/i.test(error.message) ? 'Code invitation invalide : demande un nouveau code à ton propriétaire.' : error.message) : true;
+    }
+    return false;
+  }
   async function finishSignup(user) {
     state.signupInProgress = false;
     await loadProfileAndCommerce(user);
@@ -2683,6 +2705,11 @@
       }
       if (pErr && isNetErr(pErr)) { if (!applied) noNet(); return; }
       if (pErr && pErr.code !== 'PGRST116' && applied) return;   // autre problème temporaire : on garde la copie locale
+      if ((!profile && (!pErr || pErr.code === 'PGRST116')) && !loadProfileAndCommerce._pending) {
+        const done = await completePendingSignup(user);
+        if (done === true) { loadProfileAndCommerce._pending = true; try { await loadProfileAndCommerce(user); } finally { loadProfileAndCommerce._pending = false; } return; }
+        if (typeof done === 'string') { showAuthError(done); await supabaseClient.auth.signOut(); return; }
+      }
       if (pErr || !profile) {
         showAuthError("Profil introuvable — détail technique : " + (pErr ? (pErr.message + (pErr.code ? ' [' + pErr.code + ']' : '')) : 'aucune ligne trouvée pour cet utilisateur'));
         await forgetLocal(user.id, CURRENT_COMMERCE_ID);
