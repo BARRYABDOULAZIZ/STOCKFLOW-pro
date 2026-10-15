@@ -1302,7 +1302,7 @@
         <button class="ghost" id="clReset" type="button">Remettre le comptage à zéro</button>
       </div>
       <div id="clHistory"></div>
-      <p class="hint-text" style="margin-bottom:0;">Les clôtures enregistrées sont gardées <b>sur cet appareil</b> (pas dans la base). Pour un historique partagé, imprime le rapport ou fais une capture.</p>
+      <p class="hint-text" style="margin-bottom:0;">Chaque clôture enregistrée est aussi notée dans le <b>Journal des actions</b> (onglet Données) : tu la retrouves depuis n'importe quel appareil.</p>
     </div>
 
     <div class="card">
@@ -2189,6 +2189,12 @@
     h.unshift({ date: todayStr(), attendu: S.attendu, compte: S.compte, ecart: S.ecart, by: S.by });
     clStore('sf_clotures', h.slice(0, 30)); clStore('sf_last_close', todayStr());
     try { localStorage.setItem('sf_last_close', todayStr()); } catch (e) {}
+    // Aussi notée dans le Journal des actions (en base) : visible par le propriétaire depuis n'importe quel appareil
+    try {
+      const n0 = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR');
+      const ec = S.ecart === 0 ? 'caisse juste' : 'écart ' + (S.ecart > 0 ? '+' : '−') + n0(Math.abs(S.ecart)) + ' FCFA';
+      logAction('CLOTURE_CAISSE', `Clôture du ${todayStr().split('-').reverse().join('/')} : attendu ${n0(S.attendu)} · compté ${n0(S.compte)} · ${ec} (${S.T.nb} vente(s))`);
+    } catch (e) { console.error(e); }
     toast(S.ecart === 0 ? 'Clôture enregistrée : caisse juste ✓' : `Clôture enregistrée (écart ${S.ecart > 0 ? '+' : '−'}${euros(Math.abs(S.ecart))}).`);
     renderCloture();
   });
@@ -4553,8 +4559,8 @@
     const { data, error } = await supabaseClient.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100);
     if (error) { tbody.innerHTML = '<tr><td colspan="4" style="padding:12px; text-align:center;" class="muted">Journal indisponible.</td></tr>'; return; }
     if (!data.length) { tbody.innerHTML = '<tr><td colspan="4" style="padding:12px; text-align:center;" class="muted">Aucune action enregistrée.</td></tr>'; return; }
-    const colors = { ANNULATION_FACTURE: '#dc2626', TENTATIVE_ANNULATION: '#b91c1c', PERTE_STOCK: '#d97706', SUPPRESSION_PRODUIT: '#d97706', SUPPRESSION_DOCUMENT: '#d97706', REINITIALISATION_MDP: '#2563eb', INVENTAIRE: '#7c3aed' };
-    const labels = { ANNULATION_FACTURE: 'Annulation facture', TENTATIVE_ANNULATION: 'Tentative refusée', PERTE_STOCK: 'Perte / casse', SUPPRESSION_PRODUIT: 'Produit supprimé', SUPPRESSION_DOCUMENT: 'Document supprimé', REINITIALISATION_MDP: 'Mot de passe réinitialisé', INVENTAIRE: 'Inventaire validé' };
+    const colors = { ANNULATION_FACTURE: '#dc2626', TENTATIVE_ANNULATION: '#b91c1c', PERTE_STOCK: '#d97706', SUPPRESSION_PRODUIT: '#d97706', SUPPRESSION_DOCUMENT: '#d97706', REINITIALISATION_MDP: '#2563eb', INVENTAIRE: '#7c3aed', CLOTURE_CAISSE: '#059669' };
+    const labels = { CLOTURE_CAISSE: 'Clôture de caisse', ANNULATION_FACTURE: 'Annulation facture', TENTATIVE_ANNULATION: 'Tentative refusée', PERTE_STOCK: 'Perte / casse', SUPPRESSION_PRODUIT: 'Produit supprimé', SUPPRESSION_DOCUMENT: 'Document supprimé', REINITIALISATION_MDP: 'Mot de passe réinitialisé', INVENTAIRE: 'Inventaire validé' };
     tbody.innerHTML = data.map(l => `
       <tr style="border-bottom:1px solid var(--line);">
         <td style="padding:8px; white-space:nowrap;">${escapeHtml(new Date(l.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }))}</td>
