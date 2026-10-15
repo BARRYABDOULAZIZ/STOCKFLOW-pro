@@ -2621,7 +2621,9 @@
         try { const j = await error.context.json(); if (j && j.error) msg = j.error; } catch (e) {}
         out.textContent = '⚠ ' + msg; return;
       }
-      out.textContent = (data && data.reponse) || '⚠ Pas de réponse.';
+      const rep = (data && data.reponse) || '⚠ Pas de réponse.';
+      // Mise en forme simple : **gras** → gras (le texte est d'abord échappé, aucun HTML de l'IA n'est exécuté)
+      out.innerHTML = escapeHtml(rep).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/^\s*[-*] /gm, '• ');
     } catch (e) {
       out.textContent = '⚠ ' + (isNetErr(e) ? 'Pas de connexion internet.' : ((e && e.message) || 'Erreur'));
     } finally { btn.disabled = false; }

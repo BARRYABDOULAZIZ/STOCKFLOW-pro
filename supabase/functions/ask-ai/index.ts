@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: SYSTEM }] },
         contents: [{ role: "user", parts: [{ text: `DONNÉES DE LA BOUTIQUE :\n${contexte}\n\nQUESTION DU COMMERÇANT : ${question}` }] }],
-        generationConfig: { maxOutputTokens: 800, temperature: 0.3 },
+        generationConfig: { maxOutputTokens: 4096, temperature: 0.3 },
       }),
     });
     if (r.status === 429) return json({ error: "Trop de questions en ce moment. Réessaie dans une minute." }, 429);
