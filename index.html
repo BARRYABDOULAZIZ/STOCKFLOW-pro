@@ -586,17 +586,68 @@
       <div id="aiHead"></div>
       <div id="aiInsights"></div>
       <div id="aiAsk" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--line);">
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-          <div style="font-weight:700; flex:1;">🤖 Ton conseiller IA <span class="muted" style="font-weight:400; font-size:12px;">(test)</span></div>
-          <button type="button" class="ghost" id="aiAskReset" style="display:none; padding:3px 9px; font-size:12px;">🗑 Nouvelle conversation</button>
+        <style>
+          #aiAsk .bel-head { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+          #aiAsk .bel-name { font-weight:800; font-size:20px; line-height:1.1; }
+          #aiAsk .bel-sub { font-size:12px; opacity:.75; }
+          #aiAsk .bel-say { position:relative; flex:1; background:linear-gradient(135deg, rgba(245,158,11,.16), rgba(16,185,129,.12)); border-radius:14px; padding:8px 12px; font-size:14px; }
+          #aiAsk .bel-iconbtn { width:44px; height:44px; border-radius:50%; font-size:20px; padding:0; display:inline-flex; align-items:center; justify-content:center; flex:none; }
+          #aiAsk .bel-tiles { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:10px; }
+          #aiAsk .bel-tile { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; min-height:84px; padding:8px 4px; border-radius:16px; border:2px solid var(--line); background:var(--paper, #fff); color:inherit; cursor:pointer; font-weight:700; font-size:12.5px; line-height:1.15; text-align:center; transition:transform .12s, box-shadow .12s, border-color .12s; }
+          #aiAsk .bel-tile .e { font-size:34px; line-height:1; }
+          #aiAsk .bel-tile:hover, #aiAsk .bel-tile:focus-visible { transform:translateY(-2px); border-color:#f59e0b; box-shadow:0 6px 16px rgba(245,158,11,.25); }
+          #aiAsk .bel-tile:active { transform:scale(.96); }
+          #aiAsk .bel-tile[disabled] { opacity:.5; cursor:wait; }
+          #aiAskAnswer { display:none; margin-bottom:10px; max-height:560px; overflow:auto; line-height:1.55; }
+          #aiAsk .bel-row { display:flex; gap:8px; align-items:flex-end; margin:8px 0; }
+          #aiAsk .bel-row.me { justify-content:flex-end; }
+          #aiAsk .bel-bub { max-width:88%; padding:10px 12px; border-radius:16px; font-size:14.5px; }
+          #aiAsk .me .bel-bub { background:#2563eb; color:#fff; border-bottom-right-radius:4px; font-weight:600; }
+          #aiAsk .bot .bel-bub { background:rgba(127,127,127,.10); border-bottom-left-radius:4px; }
+          #aiAsk .bel-bub.err { background:rgba(220,38,38,.10); }
+          #aiAsk .bel-speak { margin-top:8px; padding:6px 12px; border-radius:20px; font-size:15px; }
+          #aiAsk .bel-dots span { display:inline-block; width:8px; height:8px; margin:0 2px; border-radius:50%; background:#f59e0b; animation:belDot 1s infinite ease-in-out; }
+          #aiAsk .bel-dots span:nth-child(2) { animation-delay:.15s; } #aiAsk .bel-dots span:nth-child(3) { animation-delay:.3s; }
+          @keyframes belDot { 0%,80%,100% { transform:translateY(0); opacity:.4; } 40% { transform:translateY(-6px); opacity:1; } }
+          /* Avatar de Bel */
+          .bel-av { flex:none; display:inline-block; }
+          .bel-av svg { display:block; overflow:visible; }
+          .bel-av .bel-body { animation:belFloat 3.2s ease-in-out infinite; transform-origin:50% 100%; }
+          .bel-av .bel-lids { animation:belBlink 4.5s infinite; transform-origin:50% 44%; transform-box:view-box; }
+          .bel-av .bel-bulb { animation:belGlow 2.4s ease-in-out infinite; }
+          .bel-av .smile-big, .bel-av .mouth-o { display:none; }
+          .bel-av[data-mood="happy"] .smile { display:none; } .bel-av[data-mood="happy"] .smile-big { display:inline; }
+          .bel-av[data-mood="happy"] .bel-body { animation:belJump .6s ease-out 2, belFloat 3.2s ease-in-out .6s infinite; }
+          .bel-av[data-mood="think"] .smile { display:none; } .bel-av[data-mood="think"] .mouth-o { display:inline; }
+          .bel-av[data-mood="think"] .bel-pupils { animation:belLook 1.6s ease-in-out infinite; }
+          .bel-av[data-mood="think"] .bel-bulb { animation:belGlow .6s ease-in-out infinite; }
+          .bel-av[data-mood="sad"] .smile { transform:scaleY(-1); transform-origin:50% 66%; transform-box:view-box; }
+          @keyframes belFloat { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-3px); } }
+          @keyframes belJump { 0% { transform:translateY(0) scale(1); } 40% { transform:translateY(-8px) scale(1.05); } 100% { transform:translateY(0) scale(1); } }
+          @keyframes belBlink { 0%,92%,100% { transform:scaleY(0); } 95% { transform:scaleY(1); } }
+          @keyframes belLook { 0%,100% { transform:translateX(0); } 30% { transform:translateX(-2.5px) translateY(-1.5px); } 70% { transform:translateX(2.5px) translateY(-1.5px); } }
+          @keyframes belGlow { 0%,100% { opacity:.55; } 50% { opacity:1; } }
+          @media (prefers-reduced-motion: reduce) { .bel-av *, #aiAsk .bel-dots span { animation:none !important; } }
+          @media (max-width: 420px) { #aiAsk .bel-tile { min-height:78px; } #aiAsk .bel-tile .e { font-size:30px; } }
+        </style>
+        <div class="bel-head">
+          <span class="bel-av" id="belFace" data-mood="idle"></span>
+          <div style="flex:1; min-width:0;">
+            <div class="bel-name">Bel <span class="muted" style="font-weight:400; font-size:11px;">(test)</span></div>
+            <div class="bel-sub">🧠 Ton assistant boutique</div>
+          </div>
+          <button type="button" class="ghost bel-iconbtn" id="belVoiceToggle" title="Lecture à voix haute automatique">🔇</button>
+          <button type="button" class="ghost bel-iconbtn" id="aiAskReset" title="Nouvelle conversation" style="display:none;">🗑</button>
         </div>
-        <div id="aiAskChips" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;"></div>
-        <div id="aiAskAnswer" style="display:none; margin-bottom:10px; max-height:520px; overflow:auto; line-height:1.5; padding:10px 12px; border-radius:10px; background:rgba(127,127,127,.08);"></div>
-        <div style="display:flex; gap:6px;">
-          <input id="aiAskInput" type="text" maxlength="1000" placeholder="Pose ta question… ex : fais-moi le bilan du mois" style="flex:1; min-width:0;">
-          <button id="aiAskBtn" type="button">Demander</button>
+        <div class="bel-say" id="belSay" style="margin-bottom:10px;">👋 Salut ! Moi c'est <b>Bel</b>. Touche une image 👇 ou parle-moi 🎤</div>
+        <div class="bel-tiles" id="aiAskChips"></div>
+        <div id="aiAskAnswer"></div>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button type="button" class="ghost bel-iconbtn" id="belMic" title="Parler à Bel" style="display:none;">🎤</button>
+          <input id="aiAskInput" type="text" maxlength="1000" placeholder="✍️ Écris ta question…" style="flex:1; min-width:0; min-height:44px;">
+          <button id="aiAskBtn" type="button" class="primary bel-iconbtn" title="Envoyer">➤</button>
         </div>
-        <div class="muted" style="font-size:11px; margin-top:6px;">L'IA peut se tromper : vérifie les chiffres importants. Elle ne modifie rien dans l'appli.</div>
+        <div class="muted" style="font-size:11px; margin-top:6px;">⚠️ Bel peut se tromper : vérifie les gros montants. Bel ne change rien dans l'appli.</div>
       </div>
     </div>
 
@@ -2615,18 +2666,34 @@
       if (error || !data || !data.actif) return;
       aiAskOk = true;
       box.style.display = '';
+      const face = document.getElementById('belFace'); if (face && !face.innerHTML) face.innerHTML = belAvatarSvg(56);
       if (aiAskReady) return; aiAskReady = true;
-      const chips = ['📊 Fais-moi le bilan complet du mois', '💸 Prépare les relances WhatsApp des clients qui me doivent', '📦 Prépare ma commande fournisseur', '💰 Quel est mon vrai bénéfice ce mois-ci ?', '⚠️ Qu\'est-ce qui me fait perdre de l\'argent ?', '📅 Quels sont mes meilleurs jours et heures de vente ?'];
+      // Grandes images-boutons : compréhensibles sans savoir lire
+      const tiles = [
+        { e: '💰', l: 'Mes ventes', q: "💰 Comment vont mes ventes aujourd'hui et cette semaine ?" },
+        { e: '💸', l: 'Qui me doit ?', q: "💸 Qui me doit de l'argent ? Prépare les relances WhatsApp." },
+        { e: '📦', l: 'Quoi racheter ?', q: "📦 Quels produits je dois racheter maintenant ? Prépare la commande au fournisseur." },
+        { e: '🧾', l: 'Ma caisse', q: "🧾 Combien j'ai encaissé aujourd'hui, en espèces et en Mobile Money ?" },
+        { e: '💵', l: 'Mon bénéfice', q: "💵 Quel est mon vrai bénéfice ce mois-ci ?" },
+        { e: '🏆', l: 'Top produits', q: "🏆 Quels sont mes produits stars et ceux qui ne se vendent pas ?" },
+        { e: '📊', l: 'Bilan du mois', q: "📊 Fais-moi le bilan complet du mois." },
+        { e: '⚠️', l: 'Problèmes', q: "⚠️ Qu'est-ce qui me fait perdre de l'argent ?" },
+        { e: '📅', l: 'Bons jours', q: "📅 Quels sont mes meilleurs jours et heures de vente ?" },
+      ];
       const cBox = document.getElementById('aiAskChips');
-      cBox.innerHTML = chips.map(q => `<button type="button" class="ghost" data-aiq="${escapeHtml(q)}" style="padding:4px 10px; font-size:12px;">${escapeHtml(q)}</button>`).join('');
-      cBox.querySelectorAll('[data-aiq]').forEach(b => b.addEventListener('click', () => { document.getElementById('aiAskInput').value = b.dataset.aiq; aiAsk(); }));
+      cBox.innerHTML = tiles.map((t, i) => `<button type="button" class="bel-tile" data-belt="${i}" aria-label="${escapeHtml(t.l)}"><span class="e">${t.e}</span><span>${escapeHtml(t.l)}</span></button>`).join('');
+      cBox.querySelectorAll('[data-belt]').forEach(b => b.addEventListener('click', () => { const t = tiles[Number(b.dataset.belt)]; document.getElementById('aiAskInput').value = t.q; aiAsk(); }));
       document.getElementById('aiAskBtn').addEventListener('click', aiAsk);
-      document.getElementById('aiAskReset').addEventListener('click', () => { aiHistory = []; aiRender(); });
+      document.getElementById('aiAskReset').addEventListener('click', () => { belStop(); aiHistory = []; aiRender(); belMood('idle'); });
       document.getElementById('aiAskAnswer').addEventListener('click', (e) => {
+        const sp = e.target.closest('[data-belspeak]'); if (sp) { const h = aiHistory[Number(sp.dataset.belspeak)]; if (h) belSpeak(h.a); return; }
         const b = e.target.closest('[data-aiwa]'); if (!b) return;
         const a = aiWaActions[Number(b.dataset.aiwa)]; if (!a) return;
         aiOpenWa(aiPhoneOf(a.nom), a.msg, a.nom);
       });
+      document.getElementById('belVoiceToggle').addEventListener('click', () => { belVoiceOn = !belVoiceOn; try { localStorage.setItem('sf_bel_voice', belVoiceOn ? '1' : '0'); } catch (e) {} belVoiceUi(); if (!belVoiceOn) belStop(); else belSpeak("D'accord, je te lis mes réponses à voix haute."); });
+      belVoiceUi();
+      belMicInit();
       document.getElementById('aiAskInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') aiAsk(); });
     } catch (e) { /* IA indisponible : on n'affiche rien */ }
   }
@@ -2726,6 +2793,63 @@
   }
   // Conversation (gardée seulement dans cette page) + messages WhatsApp proposés par l'IA
   let aiHistory = [], aiWaActions = [], aiBusy = false;
+  // ----- Bel : avatar animé -----
+  function belAvatarSvg(size) {
+    return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" aria-hidden="true">
+      <defs><radialGradient id="belG" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#ffd166"/><stop offset=".65" stop-color="#f59e0b"/><stop offset="1" stop-color="#d97706"/></radialGradient></defs>
+      <g class="bel-body">
+        <line x1="50" y1="16" x2="50" y2="6" stroke="#0f766e" stroke-width="3" stroke-linecap="round"/>
+        <circle class="bel-bulb" cx="50" cy="6" r="5" fill="#34d399"/>
+        <circle cx="50" cy="54" r="38" fill="url(#belG)"/>
+        <path d="M18 44 Q50 10 82 44 Q66 30 50 30 Q34 30 18 44Z" fill="#0f766e"/>
+        <circle cx="30" cy="62" r="6" fill="#fb7185" opacity=".55"/><circle cx="70" cy="62" r="6" fill="#fb7185" opacity=".55"/>
+        <ellipse cx="38" cy="50" rx="8" ry="9.5" fill="#fff"/><ellipse cx="62" cy="50" rx="8" ry="9.5" fill="#fff"/>
+        <g class="bel-pupils"><circle cx="39.5" cy="51.5" r="4.6" fill="#1f2937"/><circle cx="63.5" cy="51.5" r="4.6" fill="#1f2937"/><circle cx="41" cy="49.5" r="1.6" fill="#fff"/><circle cx="65" cy="49.5" r="1.6" fill="#fff"/></g>
+        <g class="bel-lids"><ellipse cx="38" cy="50" rx="8.6" ry="10" fill="#f59e0b"/><ellipse cx="62" cy="50" rx="8.6" ry="10" fill="#f59e0b"/></g>
+        <path class="smile" d="M38 68 Q50 77 62 68" stroke="#7c2d12" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+        <path class="smile-big" d="M36 66 Q50 84 64 66 Z" fill="#7c2d12"/>
+        <ellipse class="mouth-o" cx="50" cy="70" rx="4" ry="4.5" fill="#7c2d12"/>
+      </g></svg>`;
+  }
+  function belMood(m) { const f = document.getElementById('belFace'); if (f) f.dataset.mood = m; document.querySelectorAll('#aiAskAnswer .bel-av.live').forEach(a => a.dataset.mood = m); }
+  // ----- Bel : voix (lecture à voix haute + micro), pour les commerçants qui ne lisent pas -----
+  let belVoiceOn = false; try { belVoiceOn = localStorage.getItem('sf_bel_voice') === '1'; } catch (e) {}
+  function belVoiceUi() { const b = document.getElementById('belVoiceToggle'); if (!b) return; if (!('speechSynthesis' in window)) { b.style.display = 'none'; return; } b.textContent = belVoiceOn ? '🔊' : '🔇'; b.classList.toggle('primary', belVoiceOn); }
+  function belPlain(t) {
+    return String(t || '')
+      .replace(/\[\[WHATSAPP\|([^|\]]+)\|[^\]]*\]\]/g, (m, nom) => 'Je t\'ai préparé un message WhatsApp pour ' + nom + '.')
+      .replace(/\*\*/g, '').replace(/^#{1,4}\s*/gm, '').replace(/^\s*[-*•]\s*/gm, '')
+      .replace(/\bFCFA\b/g, 'francs').replace(/(\d)\s(?=\d{3}\b)/g, '$1')
+      .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu, '')
+      .replace(/\s{2,}/g, ' ').trim();
+  }
+  function belStop() { try { if ('speechSynthesis' in window) speechSynthesis.cancel(); } catch (e) {} }
+  function belSpeak(t) {
+    if (!('speechSynthesis' in window)) { toast('🔇 La lecture à voix haute n\'est pas disponible sur cet appareil.'); return; }
+    belStop();
+    const u = new SpeechSynthesisUtterance(belPlain(t).slice(0, 3000));
+    u.lang = 'fr-FR'; u.rate = 0.95;
+    const v = speechSynthesis.getVoices().find(x => /^fr/i.test(x.lang)); if (v) u.voice = v;
+    u.onstart = () => belMood('happy'); u.onend = () => belMood('idle');
+    speechSynthesis.speak(u);
+  }
+  function belMicInit() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const mic = document.getElementById('belMic'); if (!SR || !mic) return;
+    mic.style.display = '';
+    let rec = null;
+    mic.addEventListener('click', () => {
+      if (rec) { try { rec.stop(); } catch (e) {} return; }
+      belStop();
+      rec = new SR(); rec.lang = 'fr-FR'; rec.interimResults = false; rec.maxAlternatives = 1;
+      mic.textContent = '⏺'; mic.classList.add('primary'); belMood('think');
+      document.getElementById('belSay').innerHTML = '🎤 Je t\'écoute… parle maintenant.';
+      rec.onresult = (ev) => { const txt = ev.results[0][0].transcript; document.getElementById('aiAskInput').value = '🎤 ' + txt; aiAsk(); };
+      rec.onerror = () => { document.getElementById('belSay').innerHTML = '🙉 Je n\'ai pas entendu. Touche 🎤 et réessaie.'; belMood('sad'); };
+      rec.onend = () => { rec = null; mic.textContent = '🎤'; mic.classList.remove('primary'); if (!aiBusy) belMood('idle'); };
+      try { rec.start(); } catch (e) { rec = null; }
+    });
+  }
   function aiPhoneOf(nom) {
     const k = String(nom || '').trim().toLowerCase();
     const cl = (state.clients || []).find(x => (x.nom || '').trim().toLowerCase() === k);
@@ -2748,11 +2872,16 @@
   function aiRender(pendingQ) {
     const out = document.getElementById('aiAskAnswer');
     aiWaActions = [];
-    const parts = aiHistory.map(h => `<div style="margin:4px 0 6px; font-weight:700;">🧑 ${escapeHtml(h.q)}</div><div style="margin-bottom:14px;">${h.err ? '⚠ ' + escapeHtml(h.a) : aiFormat(h.a)}</div>`);
-    if (pendingQ) parts.push(`<div style="margin:4px 0 6px; font-weight:700;">🧑 ${escapeHtml(pendingQ)}</div><div class="muted">⏳ J'analyse tous tes chiffres… (jusqu'à 30 secondes pour une analyse complète)</div>`);
+    const me = (q) => `<div class="bel-row me"><div class="bel-bub">${escapeHtml(q)}</div></div>`;
+    const bot = (inner, cls, live) => `<div class="bel-row bot"><span class="bel-av${live ? ' live' : ''}" data-mood="${live ? 'think' : 'idle'}">${belAvatarSvg(30)}</span><div class="bel-bub ${cls || ''}">${inner}</div></div>`;
+    const parts = aiHistory.map((h, i) => me(h.q) + (h.err
+      ? bot('😕 ' + escapeHtml(h.a), 'err')
+      : bot(aiFormat(h.a) + `<div><button type="button" class="ghost bel-speak" data-belspeak="${i}" aria-label="Écouter">🔊 Écouter</button></div>`)));
+    if (pendingQ) parts.push(me(pendingQ) + bot('<span class="bel-dots"><span></span><span></span><span></span></span> <span class="muted" style="font-size:12.5px;">🧠 Je regarde tes chiffres…</span>', '', true));
     out.innerHTML = parts.join('');
-    out.style.display = parts.length ? '' : 'none';
+    out.style.display = parts.length ? 'block' : 'none';
     document.getElementById('aiAskReset').style.display = aiHistory.length ? '' : 'none';
+    document.getElementById('belSay').style.display = parts.length ? 'none' : '';
     out.scrollTop = out.scrollHeight;
   }
   async function aiAsk() {
@@ -2762,6 +2891,8 @@
     if (!q) { input.focus(); return; }
     if (!needOnline('l\'IA')) return;
     aiBusy = true; btn.disabled = true; input.value = '';
+    belStop(); belMood('think');
+    document.querySelectorAll('#aiAskChips .bel-tile').forEach(b => b.disabled = true);
     aiRender(q);
     const history = aiHistory.filter(h => !h.err).slice(-6).map(h => ({ q: h.q, a: h.a }));
     try {
@@ -2778,6 +2909,11 @@
     } finally {
       aiHistory = aiHistory.slice(-10);
       aiBusy = false; btn.disabled = false; aiRender();
+      document.querySelectorAll('#aiAskChips .bel-tile').forEach(b => b.disabled = false);
+      const last = aiHistory[aiHistory.length - 1];
+      belMood(last && last.err ? 'sad' : 'happy');
+      setTimeout(() => { if (!aiBusy) belMood('idle'); }, 2500);
+      if (last && !last.err && belVoiceOn) belSpeak(last.a);
     }
   }
   async function forgetLocal(userId, commerceId) {
