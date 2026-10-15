@@ -95,8 +95,12 @@ Deno.serve(async (req) => {
       if (!texte) return json({ error: "Texte vide" }, 400);
       const k = Deno.env.get("GEMINI_API_KEY");
       if (!k) return json({ error: "Clé Gemini manquante dans les Secrets Supabase" }, 500);
-      const consigne = "Lis ce texte en français, d'une voix chaleureuse, souriante et naturelle, à un rythme calme, " +
-        "comme un grand frère bienveillant qui conseille un commerçant au Sénégal :\n\n" + texte;
+      const lang = body.lang === "en" || body.lang === "ar" ? body.lang : "fr";
+      const consigne = ({
+        fr: "Lis ce texte en français, d'une voix chaleureuse, souriante et naturelle, à un rythme calme, comme un grand frère bienveillant qui conseille un commerçant au Sénégal :",
+        en: "Read this text in English, with a warm, smiling and natural voice, at a calm pace, like a kind big brother advising a shopkeeper in West Africa:",
+        ar: "اقرأ هذا النص بالعربية بصوت دافئ ومبتسم وطبيعي وبإيقاع هادئ، مثل أخ أكبر لطيف ينصح تاجراً في غرب إفريقيا:",
+      } as Record<string, string>)[lang] + "\n\n" + texte;
       const ttsBody = (voice: string) => JSON.stringify({
         contents: [{ parts: [{ text: consigne }] }],
         generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } } },
