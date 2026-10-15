@@ -586,13 +586,16 @@
       <div id="aiHead"></div>
       <div id="aiInsights"></div>
       <div id="aiAsk" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--line);">
-        <div style="font-weight:700; margin-bottom:6px;">🤖 Pose une question à ta boutique <span class="muted" style="font-weight:400; font-size:12px;">(test)</span></div>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <div style="font-weight:700; flex:1;">🤖 Ton conseiller IA <span class="muted" style="font-weight:400; font-size:12px;">(test)</span></div>
+          <button type="button" class="ghost" id="aiAskReset" style="display:none; padding:3px 9px; font-size:12px;">🗑 Nouvelle conversation</button>
+        </div>
         <div id="aiAskChips" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;"></div>
+        <div id="aiAskAnswer" style="display:none; margin-bottom:10px; max-height:520px; overflow:auto; line-height:1.5; padding:10px 12px; border-radius:10px; background:rgba(127,127,127,.08);"></div>
         <div style="display:flex; gap:6px;">
-          <input id="aiAskInput" type="text" maxlength="500" placeholder="Ex : qu'est-ce qui s'est le moins vendu ce mois-ci ?" style="flex:1; min-width:0;">
+          <input id="aiAskInput" type="text" maxlength="1000" placeholder="Pose ta question… ex : fais-moi le bilan du mois" style="flex:1; min-width:0;">
           <button id="aiAskBtn" type="button">Demander</button>
         </div>
-        <div id="aiAskAnswer" style="display:none; margin-top:10px; white-space:pre-wrap; line-height:1.45; padding:10px 12px; border-radius:10px; background:rgba(127,127,127,.08);"></div>
         <div class="muted" style="font-size:11px; margin-top:6px;">L'IA peut se tromper : vérifie les chiffres importants. Elle ne modifie rien dans l'appli.</div>
       </div>
     </div>
@@ -2613,73 +2616,169 @@
       aiAskOk = true;
       box.style.display = '';
       if (aiAskReady) return; aiAskReady = true;
-      const chips = ["Qu'est-ce qui s'est le moins vendu ce mois-ci ?", 'Quels clients me doivent de l\'argent ?', 'Quels produits dois-je racheter au fournisseur ?', 'Comment se passe ma semaine ?'];
+      const chips = ['📊 Fais-moi le bilan complet du mois', '💸 Prépare les relances WhatsApp des clients qui me doivent', '📦 Prépare ma commande fournisseur', '💰 Quel est mon vrai bénéfice ce mois-ci ?', '⚠️ Qu\'est-ce qui me fait perdre de l\'argent ?', '📅 Quels sont mes meilleurs jours et heures de vente ?'];
       const cBox = document.getElementById('aiAskChips');
       cBox.innerHTML = chips.map(q => `<button type="button" class="ghost" data-aiq="${escapeHtml(q)}" style="padding:4px 10px; font-size:12px;">${escapeHtml(q)}</button>`).join('');
       cBox.querySelectorAll('[data-aiq]').forEach(b => b.addEventListener('click', () => { document.getElementById('aiAskInput').value = b.dataset.aiq; aiAsk(); }));
       document.getElementById('aiAskBtn').addEventListener('click', aiAsk);
+      document.getElementById('aiAskReset').addEventListener('click', () => { aiHistory = []; aiRender(); });
+      document.getElementById('aiAskAnswer').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-aiwa]'); if (!b) return;
+        const a = aiWaActions[Number(b.dataset.aiwa)]; if (!a) return;
+        aiOpenWa(aiPhoneOf(a.nom), a.msg, a.nom);
+      });
       document.getElementById('aiAskInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') aiAsk(); });
     } catch (e) { /* IA indisponible : on n'affiche rien */ }
   }
+  // Toutes les données utiles de la boutique, en texte compact (l'IA ne voit que ce résumé, rien d'autre)
   function aiContexte() {
     const c = state.commerce || {};
     const n0 = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR').replace(/[  ]/g, ' ');
     const today = todayStr();
     const dayMs = 86400000, since = (d) => new Date(Date.now() - d * dayMs).toISOString().slice(0, 10);
-    const d30 = since(30), d7 = since(7);
-    const invs = (state.invoices || []).filter(i => !i.annulee);
+    const d90 = since(90), d30 = since(30), d7 = since(7);
+    const sum = (arr) => arr.reduce((t, x) => t + (Number(x) || 0), 0);
+    const JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+    const allInv = state.invoices || [];
+    const invs = allInv.filter(i => !i.annulee);
     const L = [];
-    L.push('Boutique : ' + (c.nom || '?') + ' — date du jour : ' + today);
-    // Produits
-    const prods = (state.products || []).slice(0, 400);
-    L.push('\nPRODUITS (nom | stock | seuil d\'alerte | prix de vente) — ' + (state.products || []).length + ' au total');
-    prods.forEach(p => L.push('- ' + p.nom + ' | ' + (Number(p.stock) || 0) + (p.unite ? ' ' + p.unite : '') + ' | ' + (p.seuil != null && p.seuil !== '' ? p.seuil : '-') + ' | ' + n0(p.prixVente)));
-    // Ventes 30 jours
-    const recent = invs.filter(i => (i.date || '') >= d30);
-    const perDay = {}; const perProd = {};
+    L.push('Boutique : ' + (c.nom || '?') + (c.adresse ? ' — ' + c.adresse : '') + ' — date du jour : ' + today + ' (' + JOURS[new Date().getDay()] + ')');
+    L.push('Utilisateur : ' + (state.currentUser ? state.currentUser.nom + ' (' + state.currentUser.role + ')' : '?'));
+    // ---- Produits (avec prix d'achat si connu → marges)
+    const prods = state.products || [];
+    const cost = {}; prods.forEach(p => { if (Number(p.prixAchat) > 0) cost[p.nom] = Number(p.prixAchat); });
+    L.push('\n## PRODUITS (' + prods.length + ') — nom | réf | catégorie | stock | seuil alerte | prix vente | prix achat | fournisseur');
+    prods.slice(0, 1500).forEach(p => L.push('- ' + p.nom + ' | ' + (p.ref || '-') + ' | ' + (p.categorie || '-') + ' | ' + (Number(p.stock) || 0) + (p.unite ? ' ' + p.unite : '') + ' | ' + (p.seuil != null && p.seuil !== '' ? p.seuil : '-') + ' | ' + n0(p.prixVente) + ' | ' + (Number(p.prixAchat) > 0 ? n0(p.prixAchat) : '?') + ' | ' + (p.fournisseur || '-')));
+    const valStock = sum(prods.map(p => (Number(p.stock) || 0) * (Number(p.prixAchat) || 0)));
+    if (valStock) L.push('Valeur du stock au prix d\'achat : ' + n0(valStock) + ' FCFA');
+    // ---- Ventes : agrégats 90 jours
+    const recent = invs.filter(i => (i.date || '') >= d90);
+    const perDay = {}, perProd = {}, perWd = {}, perHour = {}, perSeller = {}, perClient = {};
     recent.forEach(i => {
-      perDay[i.date] = (perDay[i.date] || 0) + (Number(i.total) || 0);
-      (i.lignes || []).forEach(l => { const k = l.nom || '?'; const o = perProd[k] || (perProd[k] = { q: 0, m: 0 }); o.q += Number(l.qte) || 0; o.m += (Number(l.qte) || 0) * (Number(l.prix) || 0); });
+      const t = Number(i.total) || 0;
+      perDay[i.date] = (perDay[i.date] || 0) + t;
+      const dt = i.createdAt ? new Date(i.createdAt) : new Date(i.date);
+      const wd = JOURS[dt.getDay()]; perWd[wd] = perWd[wd] || { n: 0, m: 0 }; perWd[wd].n++; perWd[wd].m += t;
+      if (i.createdAt) { const h = dt.getHours() + 'h'; perHour[h] = perHour[h] || { n: 0, m: 0 }; perHour[h].n++; perHour[h].m += t; }
+      const sl = (i.operateur || '?').replace(/\s*\(.*\)$/, ''); perSeller[sl] = perSeller[sl] || { n: 0, m: 0 }; perSeller[sl].n++; perSeller[sl].m += t;
+      const cl = i.client || 'Client de passage'; perClient[cl] = perClient[cl] || { n: 0, m: 0, last: '' }; perClient[cl].n++; perClient[cl].m += t; if ((i.date || '') > perClient[cl].last) perClient[cl].last = i.date;
+      (i.lignes || []).forEach(l => {
+        const k = l.nom || '?'; const o = perProd[k] || (perProd[k] = { q: 0, m: 0, marge: 0, margeConnue: true, last: '' });
+        const q = Number(l.qte) || 0, pr = Number(l.prix) || 0;
+        o.q += q; o.m += q * pr; if (cost[k] != null) o.marge += q * (pr - cost[k]); else o.margeConnue = false; if ((i.date || '') > o.last) o.last = i.date;
+      });
     });
-    const sum = (arr) => arr.reduce((t, x) => t + x, 0);
-    L.push('\nVENTES : ' + recent.length + ' factures sur 30 jours, total ' + n0(sum(Object.values(perDay))) + ' FCFA ; 7 derniers jours : ' + n0(sum(Object.entries(perDay).filter(([d]) => d >= d7).map(([, v]) => v))) + ' FCFA');
-    L.push('Chiffre par jour (30 j) : ' + Object.keys(perDay).sort().map(d => d.slice(5).split('-').reverse().join('/') + '=' + n0(perDay[d])).join(', '));
-    const ranked = Object.entries(perProd).sort((a, b) => b[1].m - a[1].m);
-    L.push('Produits vendus sur 30 jours (nom | quantité | montant) :');
-    ranked.slice(0, 60).forEach(([k, o]) => L.push('- ' + k + ' | ' + o.q + ' | ' + n0(o.m)));
-    const sold = new Set(Object.keys(perProd));
-    const unsold = (state.products || []).filter(p => !sold.has(p.nom)).map(p => p.nom);
-    if (unsold.length) L.push('Produits du catalogue NON vendus sur 30 jours (' + unsold.length + ') : ' + unsold.slice(0, 80).join(', '));
-    // Crédits clients
+    const per = (d) => sum(Object.entries(perDay).filter(([k]) => k >= d).map(([, v]) => v));
+    L.push('\n## VENTES (factures non annulées) — 7 j : ' + n0(per(d7)) + ' FCFA ; 30 j : ' + n0(per(d30)) + ' FCFA ; 90 j : ' + n0(per(d90)) + ' FCFA (' + recent.length + ' factures sur 90 j)');
+    L.push('Factures annulées sur 90 j : ' + allInv.filter(i => i.annulee && (i.date || '') >= d90).length);
+    L.push('Chiffre par jour (90 j) : ' + Object.keys(perDay).sort().map(d => d.split('-').reverse().slice(0, 2).join('/') + '=' + n0(perDay[d])).join(', '));
+    L.push('Par jour de la semaine (90 j) : ' + Object.entries(perWd).map(([k, o]) => k + ' ' + o.n + ' ventes / ' + n0(o.m)).join(' ; '));
+    if (Object.keys(perHour).length) L.push('Par heure (90 j) : ' + Object.keys(perHour).sort((a, b) => parseInt(a) - parseInt(b)).map(k => k + ' ' + perHour[k].n + ' ventes / ' + n0(perHour[k].m)).join(' ; '));
+    L.push('Par vendeur (90 j) : ' + Object.entries(perSeller).map(([k, o]) => k + ' ' + o.n + ' ventes / ' + n0(o.m)).join(' ; '));
+    L.push('\n## PRODUITS VENDUS (90 j) — nom | quantité | chiffre | marge brute (si prix d\'achat connu) | dernière vente');
+    Object.entries(perProd).sort((a, b) => b[1].m - a[1].m).slice(0, 400).forEach(([k, o]) => L.push('- ' + k + ' | ' + o.q + ' | ' + n0(o.m) + ' | ' + (o.margeConnue ? n0(o.marge) : '?') + ' | ' + o.last));
+    const unsold = prods.filter(p => !perProd[p.nom]).map(p => p.nom + ' (stock ' + (Number(p.stock) || 0) + ')');
+    if (unsold.length) L.push('Produits du catalogue NON vendus depuis 90 j (' + unsold.length + ') : ' + unsold.slice(0, 300).join(', '));
+    // ---- Détail des factures récentes
+    L.push('\n## DÉTAIL DES FACTURES (90 j, les plus récentes d\'abord) — date | n° | client | total | payé | type | articles');
+    recent.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 400).forEach(i => {
+      const art = (i.lignes || []).map(l => (l.nom || '?') + '×' + (Number(l.qte) || 0) + '@' + n0(l.prix)).join('; ');
+      L.push('- ' + i.date + ' | FAC-' + String(i.num).padStart(4, '0') + ' | ' + (i.client || 'passage') + ' | ' + n0(i.total) + ' | ' + n0(i.montantPaye) + ' | ' + ((Number(i.montantPaye) || 0) < (Number(i.total) || 0) ? 'crédit' : 'comptant') + ' | ' + art);
+    });
+    // ---- Paiements
+    const pays = (state.paiements || []).filter(p => (p.date || '') >= d90);
+    const perMode = {}; pays.forEach(p => { const m = p.mode || '?'; perMode[m] = (perMode[m] || 0) + (Number(p.montant) || 0); });
+    L.push('\n## ENCAISSEMENTS (90 j) par mode : ' + Object.entries(perMode).map(([k, v]) => k + ' ' + n0(v)).join(' ; '));
+    // ---- Crédits clients
+    const clients = state.clients || [];
+    const phoneOf = (nom) => { const cl = clients.find(x => (x.nom || '').trim().toLowerCase() === String(nom || '').trim().toLowerCase()); return cl && cl.telephone ? cl.telephone : ''; };
     const dettes = {};
-    invs.forEach(i => { const r = (Number(i.total) || 0) - (Number(i.montantPaye) || 0); if (r > 0.5) { const k = i.client || 'Client sans nom'; const o = dettes[k] || (dettes[k] = { r: 0, n: 0, plusAncienne: i.date, ech: '' }); o.r += r; o.n++; if ((i.date || '') < (o.plusAncienne || '9')) o.plusAncienne = i.date; if (i.echeance && (!o.ech || i.echeance < o.ech)) o.ech = i.echeance; } });
+    invs.forEach(i => { const r = (Number(i.total) || 0) - (Number(i.montantPaye) || 0); if (r > 0.5) { const k = i.client || 'Client sans nom'; const o = dettes[k] || (dettes[k] = { r: 0, n: 0, plusAncienne: i.date, ech: '', fac: [] }); o.r += r; o.n++; o.fac.push('FAC-' + String(i.num).padStart(4, '0')); if ((i.date || '') < (o.plusAncienne || '9')) o.plusAncienne = i.date; if (i.echeance && (!o.ech || i.echeance < o.ech)) o.ech = i.echeance; } });
     const dl = Object.entries(dettes).sort((a, b) => b[1].r - a[1].r);
-    L.push('\nCLIENTS QUI DOIVENT DE L\'ARGENT (client | reste dû | nb factures | plus ancienne | échéance) — total ' + n0(sum(dl.map(([, o]) => o.r))) + ' FCFA');
-    dl.slice(0, 50).forEach(([k, o]) => L.push('- ' + k + ' | ' + n0(o.r) + ' | ' + o.n + ' | ' + (o.plusAncienne || '-') + ' | ' + (o.ech || '-')));
-    // Dépenses
-    const dep = (state.depenses || []).filter(d => (d.date || '') >= d30);
-    if (dep.length) L.push('\nDÉPENSES sur 30 jours : ' + n0(sum(dep.map(d => Number(d.montant) || 0))) + ' FCFA (' + dep.length + ' dépenses)');
-    return L.join('\n').slice(0, 30000);
+    L.push('\n## CRÉDITS : CLIENTS QUI DOIVENT DE L\'ARGENT — total ' + n0(sum(dl.map(([, o]) => o.r))) + ' FCFA — client | reste dû | factures | plus ancienne | échéance | téléphone');
+    dl.slice(0, 200).forEach(([k, o]) => L.push('- ' + k + ' | ' + n0(o.r) + ' | ' + o.fac.join(',') + ' | ' + (o.plusAncienne || '-') + ' | ' + (o.ech || '-') + ' | ' + (phoneOf(k) ? 'oui' : 'non')));
+    // ---- Clients
+    L.push('\n## CLIENTS (' + clients.length + ') — nom | achats 90 j | nb factures | dernière visite');
+    Object.entries(perClient).sort((a, b) => b[1].m - a[1].m).slice(0, 200).forEach(([k, o]) => L.push('- ' + k + ' | ' + n0(o.m) + ' | ' + o.n + ' | ' + o.last));
+    // ---- Fournisseurs
+    const fours = state.fournisseurs || [];
+    if (fours.length) {
+      L.push('\n## FOURNISSEURS — nom | téléphone connu | produits liés');
+      fours.forEach(f => L.push('- ' + f.nom + ' | ' + (f.telephone ? 'oui' : 'non') + ' | ' + prods.filter(p => (p.fournisseur || '').trim().toLowerCase() === (f.nom || '').trim().toLowerCase()).map(p => p.nom).slice(0, 30).join(', ')));
+    }
+    const cmds = (state.commandes || []).filter(x => (x.date || '') >= d90);
+    if (cmds.length) L.push('Commandes fournisseurs (90 j) : ' + cmds.map(x => x.date + ' ' + (x.fournisseurNom || '?') + ' ' + n0(x.montantCommande) + ' (payé ' + n0(x.montantPaye) + ')').join(' ; '));
+    // ---- Dépenses
+    const dep = (state.depenses || []).filter(d => (d.date || '') >= d90);
+    if (dep.length) {
+      const pc = {}; dep.forEach(d => { const k = d.categorie || 'Autre'; pc[k] = (pc[k] || 0) + (Number(d.montant) || 0); });
+      L.push('\n## DÉPENSES (90 j) — total ' + n0(sum(dep.map(d => d.montant))) + ' FCFA ; 30 j : ' + n0(sum(dep.filter(d => d.date >= d30).map(d => d.montant))) + ' FCFA');
+      L.push('Par catégorie : ' + Object.entries(pc).map(([k, v]) => k + ' ' + n0(v)).join(' ; '));
+      dep.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 150).forEach(d => L.push('- ' + d.date + ' | ' + (d.categorie || '-') + ' | ' + n0(d.montant) + (d.note ? ' | ' + d.note : '')));
+    }
+    // ---- Pertes / casse / inventaires
+    const mv = (state.movements || []).filter(m => (m.date || '') >= d90 && (m.source === 'perte' || m.source === 'inventaire'));
+    if (mv.length) {
+      L.push('\n## PERTES ET AJUSTEMENTS D\'INVENTAIRE (90 j)');
+      mv.slice(0, 150).forEach(m => L.push('- ' + m.date + ' | ' + m.source + ' | ' + (m.nom || '?') + ' | ' + (m.quantite) + (m.unite ? ' ' + m.unite : '') + (m.raison ? ' | ' + m.raison : '')));
+    }
+    return L.join('\n').slice(0, 150000);
+  }
+  // Conversation (gardée seulement dans cette page) + messages WhatsApp proposés par l'IA
+  let aiHistory = [], aiWaActions = [], aiBusy = false;
+  function aiPhoneOf(nom) {
+    const k = String(nom || '').trim().toLowerCase();
+    const cl = (state.clients || []).find(x => (x.nom || '').trim().toLowerCase() === k);
+    if (cl && cl.telephone) return cl.telephone;
+    const f = (state.fournisseurs || []).find(x => (x.nom || '').trim().toLowerCase() === k);
+    return f && f.telephone ? f.telephone : '';
+  }
+  function aiFormat(txt) {
+    // Le texte de l'IA est d'abord échappé : aucun HTML venant de l'IA n'est exécuté
+    let h = escapeHtml(txt);
+    h = h.replace(/\[\[WHATSAPP\|([^|\]]{1,80})\|([^\]]{1,1000})\]\]/g, (m, nom, msg) => {
+      const i = aiWaActions.push({ nom: nom.trim().replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"'), msg: msg.trim().replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>') }) - 1;
+      return '<div style="margin:6px 0; padding:8px 10px; border:1px solid rgba(34,197,94,.45); border-radius:10px; background:rgba(34,197,94,.08);">'
+        + '<div style="font-size:12.5px; margin-bottom:6px;">💬 <b>' + nom.trim() + '</b> : ' + msg.trim() + '</div>'
+        + '<button type="button" class="primary" data-aiwa="' + i + '" style="padding:4px 10px; font-size:12px;">📱 Ouvrir dans WhatsApp</button></div>';
+    });
+    h = h.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/^#{1,4}\s*(.+)$/gm, '<b>$1</b>').replace(/^\s*[-*] /gm, '• ');
+    return h.replace(/\n/g, '<br>');
+  }
+  function aiRender(pendingQ) {
+    const out = document.getElementById('aiAskAnswer');
+    aiWaActions = [];
+    const parts = aiHistory.map(h => `<div style="margin:4px 0 6px; font-weight:700;">🧑 ${escapeHtml(h.q)}</div><div style="margin-bottom:14px;">${h.err ? '⚠ ' + escapeHtml(h.a) : aiFormat(h.a)}</div>`);
+    if (pendingQ) parts.push(`<div style="margin:4px 0 6px; font-weight:700;">🧑 ${escapeHtml(pendingQ)}</div><div class="muted">⏳ J'analyse tous tes chiffres… (jusqu'à 30 secondes pour une analyse complète)</div>`);
+    out.innerHTML = parts.join('');
+    out.style.display = parts.length ? '' : 'none';
+    document.getElementById('aiAskReset').style.display = aiHistory.length ? '' : 'none';
+    out.scrollTop = out.scrollHeight;
   }
   async function aiAsk() {
-    const input = document.getElementById('aiAskInput'), btn = document.getElementById('aiAskBtn'), out = document.getElementById('aiAskAnswer');
+    if (aiBusy) return;
+    const input = document.getElementById('aiAskInput'), btn = document.getElementById('aiAskBtn');
     const q = (input.value || '').trim();
     if (!q) { input.focus(); return; }
     if (!needOnline('l\'IA')) return;
-    btn.disabled = true; out.style.display = ''; out.textContent = '⏳ Je regarde tes chiffres…';
+    aiBusy = true; btn.disabled = true; input.value = '';
+    aiRender(q);
+    const history = aiHistory.filter(h => !h.err).slice(-6).map(h => ({ q: h.q, a: h.a }));
     try {
-      const { data, error } = await supabaseClient.functions.invoke('ask-ai', { body: { question: q, contexte: aiContexte() } });
+      const { data, error } = await supabaseClient.functions.invoke('ask-ai', { body: { question: q, contexte: aiContexte(), history } });
       if (error) {
         let msg = error.message || 'Erreur';
         try { const j = await error.context.json(); if (j && j.error) msg = j.error; } catch (e) {}
-        out.textContent = '⚠ ' + msg; return;
+        aiHistory.push({ q, a: msg, err: true });
+      } else {
+        aiHistory.push({ q, a: (data && data.reponse) || 'Pas de réponse.' });
       }
-      const rep = (data && data.reponse) || '⚠ Pas de réponse.';
-      // Mise en forme simple : **gras** → gras (le texte est d'abord échappé, aucun HTML de l'IA n'est exécuté)
-      out.innerHTML = escapeHtml(rep).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/^\s*[-*] /gm, '• ');
     } catch (e) {
-      out.textContent = '⚠ ' + (isNetErr(e) ? 'Pas de connexion internet.' : ((e && e.message) || 'Erreur'));
-    } finally { btn.disabled = false; }
+      aiHistory.push({ q, a: isNetErr(e) ? 'Pas de connexion internet.' : ((e && e.message) || 'Erreur'), err: true });
+    } finally {
+      aiHistory = aiHistory.slice(-10);
+      aiBusy = false; btn.disabled = false; aiRender();
+    }
   }
   async function forgetLocal(userId, commerceId) {
     try { localStorage.removeItem('sf_last_user'); } catch (e) {}
