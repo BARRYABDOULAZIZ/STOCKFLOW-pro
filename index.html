@@ -274,17 +274,11 @@
 
       <!-- Rejoindre un commerce (Caissier/Employé) -->
       <div id="authPaneJoin" style="display:none;">
-        <p class="hint-text" style="margin-top:0;">Ton Propriétaire ou Admin te donne un code d'invitation (onglet Données).</p>
+        <p class="hint-text" style="margin-top:0;">Ton Propriétaire ou Admin te donne un code d'invitation (onglet Données). Tu rejoins en tant que <b>Caissier</b> ; il pourra changer ton rôle ensuite.</p>
         <div class="field-grid">
           <div><label>Code d'invitation</label><input id="join-code" placeholder="ex : 3f9a1c7e5b2d4a60" style="text-transform:lowercase;"></div>
           <div><label>Ton nom</label><input id="join-nom" placeholder="Ton prénom"></div>
-          <div>
-            <label>Rôle</label>
-            <select id="join-role">
-              <option value="caissier">Caissier</option>
-              <option value="employe">Employé</option>
-            </select>
-          </div>
+          <input type="hidden" id="join-role" value="caissier">
           <div><label>Email</label><input id="join-email" type="email" placeholder="toi@exemple.com" autocomplete="username"></div>
           <div><label>Mot de passe</label><input id="join-password" type="password" placeholder="8 caractères min." autocomplete="new-password"></div>
         </div>
@@ -549,6 +543,12 @@
 
   <!-- DASHBOARD -->
   <section class="panel active" id="panel-dashboard">
+
+    <div id="backupReminder" style="display:none; margin-bottom:12px; padding:10px 14px; border-radius:12px; background:rgba(234,179,8,.14); border:1px solid rgba(234,179,8,.45); align-items:center; gap:10px; flex-wrap:wrap;">
+      <span style="flex:1; min-width:200px;">💾 <b>Copie de secours</b> — <span id="backupReminderTxt"></span></span>
+      <button type="button" class="primary" id="btnBackupNow" style="padding:6px 12px;">Télécharger une copie</button>
+      <button type="button" class="ghost" id="btnBackupLater" style="padding:6px 10px;">Plus tard</button>
+    </div>
 
     <div class="eye-row cost-col"><button type="button" class="eye-btn" data-eye title="Masquer / afficher les montants">👁 Montants</button></div>
     <div class="hero-row" id="dashboardHeroRow">
@@ -2784,6 +2784,7 @@
 
   // ================= Dashboard =================
   function renderDashboard() {
+    try { updateBackupReminder(); } catch (e) {}
     const g = computeGlobals();
     document.getElementById('heroInvesti').textContent = euros(g.montantInvesti);
     document.getElementById('heroValeur').textContent = euros(g.valeurPotentielle);
@@ -5412,8 +5413,41 @@
       clients: state.clients,
       paiements: state.paiements,
       depenses: state.depenses,
+      documents: state.documents,
     };
   }
+  // Rappel de copie de secours (propriétaire / admin) : une fois par semaine
+  const backupKey = () => 'sf_last_export:' + (CURRENT_COMMERCE_ID || '');
+  function markExported() { try { localStorage.setItem(backupKey(), String(Date.now())); } catch (e) {} updateBackupReminder(); }
+  function updateBackupReminder() {
+    const box = document.getElementById('backupReminder'); if (!box) return;
+    let show = false, txt = '';
+    try {
+      if (isOwnerOrAdmin() && CURRENT_COMMERCE_ID && (state.products || []).length) {
+        const last = Number(localStorage.getItem(backupKey())) || 0;
+        const snooze = Number(localStorage.getItem(backupKey() + ':later')) || 0;
+        const days = last ? Math.floor((Date.now() - last) / 86400000) : null;
+        if ((days === null || days >= 7) && Date.now() > snooze) {
+          show = true;
+          txt = days === null ? "tu n'as encore jamais téléchargé de copie de tes données sur cet appareil. Garde-la en sécurité (WhatsApp, Google Drive…)."
+                              : 'ta dernière copie date de ' + days + ' jours. Pense à en télécharger une nouvelle.';
+        }
+      }
+    } catch (e) {}
+    document.getElementById('backupReminderTxt').textContent = txt;
+    box.style.display = show ? 'flex' : 'none';
+  }
+  async function downloadBackup() {
+    const json = JSON.stringify(buildFullDataset(), null, 2);
+    const nom = String((state.commerce && state.commerce.nom) || 'boutique').replace(/[^A-Za-z0-9_-]+/g, '-').slice(0, 30);
+    const ok = await saveFile(`copie-${nom}-${todayStr()}.json`, json);
+    if (ok) { markExported(); toast('Copie téléchargée ✅ Garde ce fichier en lieu sûr. Pour la remettre : onglet Données > Import JSON.'); }
+  }
+  document.getElementById('btnBackupNow').addEventListener('click', downloadBackup);
+  document.getElementById('btnBackupLater').addEventListener('click', () => {
+    try { localStorage.setItem(backupKey() + ':later', String(Date.now() + 2 * 86400000)); } catch (e) {}
+    updateBackupReminder();
+  });
 
   function csvEscape(v) {
     const s = String(v ?? '');
@@ -5484,7 +5518,7 @@
       const arrayBuf = window.XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
       const blob = new Blob([arrayBuf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const ok = await saveFile(`stockflow-pro-${todayStr()}.xlsx`, blob);
-      if (ok) toast('Export Excel prêt.');
+      if (ok) { markExported(); toast('Export Excel prêt.'); }
     } catch (err) {
       console.error(err);
       toast("Impossible de générer le fichier Excel.");
@@ -5500,7 +5534,7 @@
   document.getElementById('btnExportJson').addEventListener('click', async () => {
     const json = JSON.stringify(buildFullDataset(), null, 2);
     const ok = await saveFile(`stockflow-pro-${todayStr()}.json`, json);
-    if (ok) toast('Export JSON prêt.');
+    if (ok) { markExported(); toast('Export JSON prêt.'); }
   });
 
   // ---- Import JSON ----
@@ -5530,13 +5564,14 @@
     const clients = Array.isArray(data.clients) ? data.clients : [];
     const paiements = Array.isArray(data.paiements) ? data.paiements : [];
     const depenses = Array.isArray(data.depenses) ? data.depenses : [];
-    if (produits.length === 0 && factures.length === 0 && mouvements.length === 0 && fournisseurs.length === 0 && commandes.length === 0 && clients.length === 0 && paiements.length === 0 && depenses.length === 0) {
+    const documents = Array.isArray(data.documents) ? data.documents : [];
+    if (produits.length === 0 && factures.length === 0 && mouvements.length === 0 && fournisseurs.length === 0 && commandes.length === 0 && clients.length === 0 && paiements.length === 0 && depenses.length === 0 && documents.length === 0) {
       statusEl.textContent = "Ce fichier ne contient aucune donnée reconnue.";
       statusEl.style.color = 'var(--danger)';
       return;
     }
-    const total = produits.length + factures.length + mouvements.length + fournisseurs.length + commandes.length + clients.length + paiements.length + depenses.length;
-    if (!confirm(`Importer ${produits.length} produit(s), ${factures.length} facture(s), ${mouvements.length} mouvement(s), ${fournisseurs.length} fournisseur(s), ${commandes.length} commande(s), ${clients.length} client(s), ${paiements.length} paiement(s) et ${depenses.length} dépense(s) ? Les éléments ayant le même identifiant seront remplacés.`)) return;
+    const total = produits.length + factures.length + mouvements.length + fournisseurs.length + commandes.length + clients.length + paiements.length + depenses.length + documents.length;
+    if (!confirm(`Importer ${produits.length} produit(s), ${factures.length} facture(s), ${mouvements.length} mouvement(s), ${fournisseurs.length} fournisseur(s), ${commandes.length} commande(s), ${clients.length} client(s), ${paiements.length} paiement(s), ${depenses.length} dépense(s) et ${documents.length} devis/bon(s) ? Les éléments ayant le même identifiant seront remplacés.`)) return;
     if (!state.db) { statusEl.textContent = 'Connexion non disponible.'; return; }
 
     statusEl.style.color = '';
@@ -5551,6 +5586,7 @@
       for (const c of clients) { const { id, ...rest } = c; if (id) { await state.db.doc('clients/' + id).set(rest); done++; statusEl.textContent = `Import en cours… ${done} / ${total}`; } }
       for (const c of paiements) { const { id, ...rest } = c; if (id) { await state.db.doc('paiements/' + id).set(rest); done++; statusEl.textContent = `Import en cours… ${done} / ${total}`; } }
       for (const c of depenses) { const { id, ...rest } = c; if (id) { await state.db.doc('depenses/' + id).set(rest); done++; statusEl.textContent = `Import en cours… ${done} / ${total}`; } }
+      for (const c of documents) { const { id, ...rest } = c; if (id) { await state.db.doc('documents/' + id).set(rest); done++; statusEl.textContent = `Import en cours… ${done} / ${total}`; } }
       statusEl.textContent = `Import terminé : ${done} élément(s) importé(s).`;
       toast('Import terminé.');
     } catch (err) {
