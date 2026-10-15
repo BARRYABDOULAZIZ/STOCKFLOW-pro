@@ -32,7 +32,13 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Méthode non autorisée" }, 405);
   try {
     const auth = req.headers.get("Authorization") ?? "";
-    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    // Clé publique du projet : nouvelle clé « publishable » si présente, sinon l'ancienne clé anon
+    let pubKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    try {
+      const keys = JSON.parse(Deno.env.get("SUPABASE_PUBLISHABLE_KEYS") ?? "{}");
+      pubKey = keys.default ?? Object.values(keys)[0] ?? pubKey;
+    } catch (_) { /* on garde la clé anon */ }
+    const sb = createClient(Deno.env.get("SUPABASE_URL")!, pubKey as string, {
       global: { headers: { Authorization: auth } },
     });
     const { data: { user } } = await sb.auth.getUser();
