@@ -9,6 +9,8 @@
 //
 // Sécurité : seuls les comptes listés dans AI_TEST_EMAILS, avec le rôle propriétaire ou admin,
 // peuvent l'utiliser. Version gratuite de Gemini = données de TEST uniquement.
+//   GEMINI_TTS_MODEL : (facultatif) modèle de voix Gemini, GEMINI_TTS_VOICE : (facultatif) voix, par défaut Achird
+// Voix : { tts: "texte" } renvoie { audio (base64), mime } — même contrôle d'accès que les questions.
 // L'IA ne modifie jamais rien : elle peut seulement PROPOSER des messages WhatsApp que le commerçant envoie lui-même.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -86,6 +88,57 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     if (body.ping) return json({ actif: true });
+
+    // ----- Voix naturelle de Bel : transforme le texte d'une réponse en audio (Gemini TTS) -----
+    if (typeof body.tts === "string") {
+      const texte = body.tts.trim().slice(0, 1500);
+      if (!texte) return json({ error: "Texte vide" }, 400);
+      const k = Deno.env.get("GEMINI_API_KEY");
+      if (!k) return json({ error: "Clé Gemini manquante dans les Secrets Supabase" }, 500);
+      const consigne = "Lis ce texte en français, d'une voix chaleureuse, souriante et naturelle, à un rythme calme, " +
+        "comme un grand frère bienveillant qui conseille un commerçant au Sénégal :\n\n" + texte;
+      const ttsBody = (voice: string) => JSON.stringify({
+        contents: [{ parts: [{ text: consigne }] }],
+        generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } } },
+      });
+      const voices = [...new Set([Deno.env.get("GEMINI_TTS_VOICE") || "Achird", "Puck"])];
+      let ttsModels = [...new Set([Deno.env.get("GEMINI_TTS_MODEL") || "gemini-2.5-flash-preview-tts", "gemini-2.5-flash-tts", "gemini-2.5-pro-preview-tts"].filter(Boolean))];
+      let discovered = false, lastTts = 0;
+      for (let m = 0; m < ttsModels.length; m++) {
+        for (const voice of voices) {
+          let r: Response | null = null;
+          for (let attempt = 0; attempt < 2; attempt++) {
+            r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${ttsModels[m]}:generateContent`, {
+              method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": k }, body: ttsBody(voice),
+            });
+            if (![429, 500, 503].includes(r.status) || attempt === 1) break;
+            await new Promise((res) => setTimeout(res, 1500));
+          }
+          lastTts = r!.status;
+          const rb = await r!.json().catch(() => ({}));
+          if (r!.ok) {
+            const part = (rb.candidates?.[0]?.content?.parts ?? []).find((p: any) => p.inlineData?.data);
+            if (part) return json({ audio: part.inlineData.data, mime: part.inlineData.mimeType || "audio/L16;rate=24000" });
+          }
+          console.error("TTS", ttsModels[m], voice, r!.status, JSON.stringify(rb).slice(0, 300));
+          if (r!.status !== 400) break; // 400 = voix refusée : on essaie l'autre voix ; sinon modèle suivant
+        }
+        // Aucun des modèles connus ne marche : on demande à Google la liste de ses modèles de voix
+        if (m === ttsModels.length - 1 && !discovered) {
+          discovered = true;
+          try {
+            const lr = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000", { headers: { "x-goog-api-key": k } });
+            const lj = await lr.json();
+            const found = (lj.models ?? []).map((x: any) => String(x.name || "").replace(/^models\//, ""))
+              .filter((n: string) => /tts/i.test(n) && !ttsModels.includes(n));
+            found.sort((a: string, b: string) => (/flash/.test(b) ? 1 : 0) - (/flash/.test(a) ? 1 : 0));
+            ttsModels = [...ttsModels, ...found];
+          } catch (_) { /* rien de plus à essayer */ }
+        }
+      }
+      if ([429, 500, 503].includes(lastTts)) return json({ error: "La voix est très demandée. Réessaie dans une minute." }, 503);
+      return json({ error: "Voix indisponible pour le moment (" + lastTts + ")" }, 502);
+    }
 
     const question = typeof body.question === "string" ? body.question.trim() : "";
     if (!question || question.length > 1000) return json({ error: "Question vide ou trop longue (1000 caractères max)" }, 400);

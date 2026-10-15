@@ -2716,8 +2716,9 @@
       cBox.innerHTML = tiles.map((t, i) => `<button type="button" class="bel-tile" data-belt="${i}" aria-label="${escapeHtml(t.l)}"><span class="e">${t.e}</span><span>${escapeHtml(t.l)}</span></button>`).join('');
       cBox.querySelectorAll('[data-belt]').forEach(b => b.addEventListener('click', () => { const t = tiles[Number(b.dataset.belt)]; document.getElementById('aiAskInput').value = t.q; aiAsk(); }));
       document.getElementById('aiAskBtn').addEventListener('click', aiAsk);
-      document.getElementById('aiAskReset').addEventListener('click', () => { belStop(); aiHistory = []; aiRender(); belMood('idle'); });
+      document.getElementById('aiAskReset').addEventListener('click', () => { belStop(); belAudioCache.forEach(u => URL.revokeObjectURL(u)); belAudioCache.clear(); aiHistory = []; aiRender(); belMood('idle'); });
       document.getElementById('aiAskAnswer').addEventListener('click', (e) => {
+        const v = e.target.closest('[data-belvoice]'); if (v) { belSpeak(Number(v.dataset.belvoice)); return; }
         const b = e.target.closest('[data-aiwa]'); if (!b) return;
         const a = aiWaActions[Number(b.dataset.aiwa)]; if (!a) return;
         aiOpenWa(aiPhoneOf(a.nom), a.msg, a.nom);
@@ -2842,7 +2843,78 @@
   }
   function belMood(m) { const f = document.getElementById('belFace'); if (f) f.dataset.mood = m; const hb = document.getElementById('belHeadBtn'); if (hb) hb.dataset.mood = m; document.querySelectorAll('#aiAskAnswer .bel-av.live').forEach(a => a.dataset.mood = m); }
   // ----- Bel : micro (dicter sa question), pour les commerçants qui ne lisent pas -----
-  function belStop() {}
+  // ----- Bel : voix naturelle (voix IA de Google, via la fonction ask-ai) -----
+  let belAudio = null, belAudioIdx = -1, belAudioLoading = -1;
+  const belAudioCache = new Map();
+  function belPlain(txt) {
+    return String(txt || '')
+      .replace(/\[\[WHATSAPP\|([^|\]]{1,80})\|[^\]]*\]\]/g, (m, nom) => 'Je t\'ai préparé un message WhatsApp pour ' + nom.trim() + '.')
+      .replace(/\*\*/g, '').replace(/^#{1,4}\s*/gm, '').replace(/^\s*[-*•] /gm, '')
+      .replace(/\p{Extended_Pictographic}/gu, '').replace(/[‍️⃣]/g, '')
+      .replace(/FCFA/g, 'francs CFA').replace(/[ \t]+/g, ' ').replace(/^ +| +$/gm, '').replace(/\n\s*\n+/g, '\n').trim();
+  }
+  function belPcmToWav(b64, mime) {
+    const bin = atob(b64), n = bin.length, pcm = new Uint8Array(n);
+    for (let i = 0; i < n; i++) pcm[i] = bin.charCodeAt(i);
+    if (/wav|mpeg|mp3|ogg|webm/i.test(mime || '')) return new Blob([pcm], { type: mime });
+    const rate = Number((/rate=(\d+)/.exec(mime || '') || [])[1]) || 24000;
+    const buf = new ArrayBuffer(44 + n), v = new DataView(buf);
+    const w = (o, str) => { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+    w(0, 'RIFF'); v.setUint32(4, 36 + n, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true);
+    v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true);
+    v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n, true);
+    new Uint8Array(buf, 44).set(pcm);
+    return new Blob([buf], { type: 'audio/wav' });
+  }
+  function belVoiceLabel(i) {
+    if (belAudioLoading === i) return '⏳ Bel prépare sa voix…';
+    if (belAudioIdx === i) return '⏹ Arrêter';
+    return '🔊 Écouter';
+  }
+  function belVoiceUi() {
+    document.querySelectorAll('#aiAskAnswer [data-belvoice]').forEach(b => {
+      const i = Number(b.dataset.belvoice); b.textContent = belVoiceLabel(i);
+      b.classList.toggle('primary', belAudioIdx === i);
+    });
+  }
+  function belStop() {
+    if (belAudio) { try { belAudio.pause(); } catch (e) {} belAudio = null; }
+    belAudioIdx = -1; belAudioLoading = -1; belVoiceUi();
+  }
+  async function belSpeak(i) {
+    const h = aiHistory[i]; if (!h || h.err) return;
+    if (belAudioIdx === i || belAudioLoading === i) { belStop(); return; }
+    belStop();
+    const txt = belPlain(h.a); if (!txt) return;
+    let url = belAudioCache.get(txt);
+    if (!url) {
+      if (!needOnline('la voix de Bel')) return;
+      belAudioLoading = i; belVoiceUi(); belMood('think');
+      try {
+        const { data, error } = await supabaseClient.functions.invoke('ask-ai', { body: { tts: txt } });
+        if (error || !data || !data.audio) {
+          let msg = 'Voix indisponible pour le moment';
+          try { const j = error && await error.context.json(); if (j && j.error) msg = j.error; } catch (e) {}
+          throw new Error(msg);
+        }
+        url = URL.createObjectURL(belPcmToWav(data.audio, data.mime));
+        belAudioCache.set(txt, url);
+      } catch (e) {
+        if (belAudioLoading !== i) return; // arrêté entre-temps
+        belAudioLoading = -1; belVoiceUi(); belMood('sad');
+        const b = document.querySelector('#aiAskAnswer [data-belvoice="' + i + '"]');
+        if (b) { b.textContent = '😕 ' + (isNetErr(e) ? 'Pas de connexion' : (e.message || 'Voix indisponible')); setTimeout(belVoiceUi, 4000); }
+        setTimeout(() => { if (!aiBusy) belMood('idle'); }, 2500);
+        return;
+      }
+      if (belAudioLoading !== i) return; // l'utilisateur a arrêté ou demandé autre chose
+    }
+    belAudioLoading = -1;
+    const a = new Audio(url); belAudio = a; belAudioIdx = i; belVoiceUi(); belMood('happy');
+    const done = () => { if (belAudio === a) { belAudio = null; belAudioIdx = -1; belVoiceUi(); if (!aiBusy) belMood('idle'); } };
+    a.onended = done; a.onerror = done;
+    try { await a.play(); } catch (e) { done(); }
+  }
   function belMicInit() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const mic = document.getElementById('belMic'); if (!SR || !mic) return;
@@ -2886,7 +2958,7 @@
     const bot = (inner, cls, live) => `<div class="bel-row bot"><span class="bel-av${live ? ' live' : ''}" data-mood="${live ? 'think' : 'idle'}">${belAvatarSvg(30)}</span><div class="bel-bub ${cls || ''}">${inner}</div></div>`;
     const parts = aiHistory.map((h, i) => me(h.q) + (h.err
       ? bot('😕 ' + escapeHtml(h.a), 'err')
-      : bot(aiFormat(h.a))));
+      : bot(aiFormat(h.a) + `<div><button type="button" class="bel-speak" data-belvoice="${i}">${belVoiceLabel(i)}</button></div>`)));
     if (pendingQ) parts.push(me(pendingQ) + bot('<span class="bel-dots"><span></span><span></span><span></span></span> <span class="muted" style="font-size:12.5px;">🧠 Je regarde tes chiffres…</span>', '', true));
     out.innerHTML = parts.join('');
     out.style.display = parts.length ? 'block' : 'none';
@@ -2919,6 +2991,8 @@
     } finally {
       aiHistory = aiHistory.slice(-10);
       aiBusy = false; btn.disabled = false; aiRender();
+      // Question posée à la voix (🎤) : Bel répond aussi à la voix
+      if (q.startsWith('🎤') && aiHistory.length && !aiHistory[aiHistory.length - 1].err) belSpeak(aiHistory.length - 1);
       document.querySelectorAll('#aiAskChips .bel-tile').forEach(b => b.disabled = false);
       const last = aiHistory[aiHistory.length - 1];
       belMood(last && last.err ? 'sad' : 'happy');
