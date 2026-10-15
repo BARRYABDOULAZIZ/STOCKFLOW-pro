@@ -2556,17 +2556,19 @@
   // ================= IA (TEST) : « Pose une question à ta boutique » =================
   // Visible seulement si le serveur dit que ce compte est autorisé (comptes de test, propriétaire/admin).
   // L'IA lit un RÉSUMÉ des chiffres préparé ici ; elle ne modifie jamais rien.
-  let aiAskReady = false;
+  let aiAskReady = false, aiAskOk = false, aiAskFor = null;
   async function aiAskInit() {
     const box = document.getElementById('aiAsk'); if (!box) return;
-    box.style.display = 'none';
-    if (!isOwnerOrAdmin() || !supabaseClient || navigator.onLine === false) return;
+    if (!isOwnerOrAdmin() || !supabaseClient) { box.style.display = 'none'; return; }
+    if (aiAskFor !== CURRENT_USER_ID) { aiAskFor = CURRENT_USER_ID; aiAskOk = false; box.style.display = 'none'; }
+    if (aiAskOk || navigator.onLine === false) return;   // déjà vérifié pour ce compte : pas de nouvelle vérification (évite que le cadre clignote)
     try {
       const { data, error } = await supabaseClient.functions.invoke('ask-ai', { body: { ping: true } });
       if (error || !data || !data.actif) return;
+      aiAskOk = true;
       box.style.display = '';
       if (aiAskReady) return; aiAskReady = true;
-      const chips = ["Qu'est-ce qui s'est le moins vendu ce mois-ci ?", 'Quels clients me doivent de l\'argent ?', 'Quels produits dois-je recommander ?', 'Comment se passe ma semaine ?'];
+      const chips = ["Qu'est-ce qui s'est le moins vendu ce mois-ci ?", 'Quels clients me doivent de l\'argent ?', 'Quels produits dois-je racheter au fournisseur ?', 'Comment se passe ma semaine ?'];
       const cBox = document.getElementById('aiAskChips');
       cBox.innerHTML = chips.map(q => `<button type="button" class="ghost" data-aiq="${escapeHtml(q)}" style="padding:4px 10px; font-size:12px;">${escapeHtml(q)}</button>`).join('');
       cBox.querySelectorAll('[data-aiq]').forEach(b => b.addEventListener('click', () => { document.getElementById('aiAskInput').value = b.dataset.aiq; aiAsk(); }));
