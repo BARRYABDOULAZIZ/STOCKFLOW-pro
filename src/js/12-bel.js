@@ -24,9 +24,9 @@
   async function aiAskInit() {
     const box = document.getElementById('aiAsk'); if (!box) return;
     const hbtn = document.getElementById('belHeadBtn');
-    if (!isOwnerOrAdmin() || !supabaseClient) { box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; const c0 = document.getElementById('photoFillCard'); if (c0) c0.style.display = 'none'; const v0 = document.getElementById('voiceSale'); if (v0) v0.style.display = 'none'; const b0 = document.getElementById('bossCard'); if (b0) b0.style.display = 'none'; belClosePage(); return; }
+    if (!isOwnerOrAdmin() || !supabaseClient) { box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; const c0 = document.getElementById('photoFillCard'); if (c0) c0.style.display = 'none'; const v0 = document.getElementById('voiceSale'); if (v0) v0.style.display = 'none'; const b0 = document.getElementById('bossCard'); if (b0) b0.style.display = 'none'; aiAskOk = false; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} belClosePage(); return; }
     const pfc = document.getElementById('photoFillCard');
-    if (aiAskFor !== CURRENT_USER_ID) { aiAskFor = CURRENT_USER_ID; aiAskOk = false; box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; if (pfc) pfc.style.display = 'none'; const vs0 = document.getElementById('voiceSale'); if (vs0) vs0.style.display = 'none'; const bs0 = document.getElementById('bossCard'); if (bs0) bs0.style.display = 'none'; belClosePage(); }
+    if (aiAskFor !== CURRENT_USER_ID) { aiAskFor = CURRENT_USER_ID; aiAskOk = false; box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; if (pfc) pfc.style.display = 'none'; const vs0 = document.getElementById('voiceSale'); if (vs0) vs0.style.display = 'none'; const bs0 = document.getElementById('bossCard'); if (bs0) bs0.style.display = 'none'; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} belClosePage(); }
     if (aiAskOk || navigator.onLine === false) return;   // déjà vérifié pour ce compte : pas de nouvelle vérification (évite que le cadre clignote)
     try {
       const { data, error } = await supabaseClient.functions.invoke('ask-ai', { body: { ping: true } });
@@ -35,6 +35,7 @@
       box.style.display = '';
       if (pfc) pfc.style.display = '';
       const bsc = document.getElementById('bossCard'); if (bsc) { bsc.style.display = ''; try { bossRender(); } catch (e) { console.error(e); } }
+      try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) { console.error(e); }
       // Vente à la voix : prête mais mise en pause (à rallumer : remettre display = '')
       const vsc = document.getElementById('voiceSale'); if (vsc) vsc.style.display = 'none';
       const face = document.getElementById('belFace'); if (face && !face.innerHTML) face.innerHTML = belAvatarSvg(56);

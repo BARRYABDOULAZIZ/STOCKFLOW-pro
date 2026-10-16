@@ -28,6 +28,7 @@ src/
     23-saisie-photo.js          stock par photo (IA)
     24-point-patron.js          le point du patron
     25-vente-voix.js            vente à la voix (en pause)
+    25a-intelligence.js         à commander (prévision de rupture), anti-erreur à la caisse, 3 actions du jour
     36-base-de-donnees.js       Supabase + copie locale (IndexedDB) + file d'attente hors connexion
     37-demarrage.js             démarrage de l'appli
     menu-bas.js                 barre de menu du bas (téléphone)

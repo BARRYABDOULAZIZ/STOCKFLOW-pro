@@ -214,6 +214,7 @@
     if (shortages.length) { hint.textContent = '⚠ Stock insuffisant — ' + shortages.join(', '); hint.style.color = ''; hint.classList.add('fh-warn'); }
     else if (customLines) { hint.textContent = `⚠ ${customLines} ligne(s) hors catalogue (produit non enregistré dans ton stock) — le stock ne sera PAS déduit pour ces lignes.`; hint.style.color = ''; hint.classList.add('fh-warn'); }
     else { hint.textContent = 'La finalisation déduit automatiquement les quantités du stock pour les articles du catalogue.'; hint.style.color = ''; }
+    try { saleGuardRender(); } catch (e) { console.error(e); }
   }
   function closeAllAutocomplete() { document.querySelectorAll('.ac-list').forEach(el => el.style.display = 'none'); }
   function openAutocomplete(idx, query) {
@@ -260,6 +261,7 @@
     if (validLines.length === 0) { toast('Ajoute au moins une ligne valide (désignation + quantité).'); return; }
     const shortage = validLines.find(l => { if (!l.matched) return false; const prod = state.products.find(p => p.ref === l.ref); return prod && Number(l.qte) > Number(prod.stock); });
     if (shortage) { toast(`Stock insuffisant pour ${shortage.nom}.`); return; }
+    if (!saleGuardCheck(validLines)) return;   // anti-erreur : vente à perte, prix à 0, prix anormal (compte de test)
     if (!state.db) { toast('Connexion non disponible — réessaie dans un instant.'); return; }
     if (saleType === 'credit' && !document.getElementById('f-client').value.trim()) { toast('⚠ Pour une vente à crédit, indique le nom du client : sans nom, impossible de savoir qui doit payer.'); document.getElementById('f-client').focus(); return; }
 

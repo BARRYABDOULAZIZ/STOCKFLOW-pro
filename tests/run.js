@@ -207,6 +207,79 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     await p.close2();
   });
 
+  // Données d'une boutique inventée, sur 10 jours, pour les fonctions « intelligentes »
+  const smartData = () => {
+    const invoices = [];
+    for (let k = 0; k < 10; k++) invoices.push({ num: k + 1, date: day(k), total: 35000 + 2300, montantPaye: 37300, lignes: [{ ref: 'R1', nom: 'Riz 25 kg', qte: 2, prix: 17500 }, { ref: 'S1', nom: 'Savon', qte: 1, prix: 300 }] });
+    invoices.push({ num: 20, date: day(20), total: 25000, montantPaye: 5000, client: 'Moussa Diop', clientId: 'c1', lignes: [{ ref: 'S1', nom: 'Savon', qte: 1, prix: 300 }] });
+    return {
+      commerce: { nom: 'Boutique Test' },
+      products: [
+        { id: 'p1', ref: 'R1', nom: 'Riz 25 kg', stock: 5, seuil: 2, unite: 'sac', prixAchat: 16000, prixVente: 17500, fournisseur: 'Grossiste Ndiaye' },
+        { id: 'p2', ref: 'S1', nom: 'Savon', stock: 100, seuil: 5, unite: 'pièce', prixAchat: 200, prixVente: 300 },
+        { id: 'p3', ref: 'U1', nom: 'Sucre 1 kg', stock: 2, seuil: 5, unite: 'kg', prixAchat: 700, prixVente: 650, fournisseur: 'grossiste ndiaye' }],
+      fournisseurs: [{ id: 'f1', nom: 'Grossiste Ndiaye', telephone: '77 000 00 00' }],
+      clients: [{ id: 'c1', nom: 'Moussa Diop', telephone: '' }],
+      invoices, paiements: [], depenses: [], movements: [],
+    };
+  };
+
+  await test('À commander : prévision de rupture et quantité pour 2 semaines', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(() => { document.getElementById('loginOverlay').style.display = 'none'; Object.assign(state, ${JSON.stringify(smartData())}); aiAskOk = true;
+      const F = smartForecast(); smartOrderRender();
+      return { list: F.list.map(o => [o.p.nom, o.days === null ? null : Math.round(o.days * 10) / 10, o.qty]), groups: F.groups.map(g => [g.nom, g.items.length]),
+        txt: smartOrderText(F.groups[0]), shown: document.getElementById('smartOrderCard').style.display, rows: document.querySelectorAll('#smartOrderBody .so-row').length }; })()`);
+    eq(r.list, [['Riz 25 kg', 3.2, 18], ['Sucre 1 kg', null, 8]], 'produits à commander [nom, jours restants, quantité]');
+    eq(r.groups, [['Grossiste Ndiaye', 2]], 'regroupement par fournisseur');
+    expect(r.txt.includes('- 18 sac Riz 25 kg') && r.txt.includes('- 8 kg Sucre 1 kg'), 'message de commande : ' + r.txt);
+    eq([r.shown, r.rows], ['', 2], 'carte affichée');
+    const hidden = await p.app(`(() => { aiAskOk = false; smartOrderRender(); return document.getElementById('smartOrderCard').style.display; })()`);
+    eq(hidden, 'none', 'carte cachée pour un compte qui n\'est pas de test');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
+  await test('Anti-erreur à la caisse : vente à perte, prix à 0, zéro en trop', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(async () => { document.getElementById('loginOverlay').style.display = 'none'; document.querySelector('[data-tab="ventes"]').click();
+      Object.assign(state, ${JSON.stringify(smartData())}); aiAskOk = true;
+      const L = (prix, qte = 1) => ({ ref: 'R1', nom: 'Riz 25 kg', qte, prix, unite: 'sac', matched: true });
+      const kinds = (lines) => saleGuardIssues(lines).map(i => i.k);
+      const res = { ok: kinds([L(17500)]), perte: kinds([L(15000, 2)]), cher: kinds([L(175000)]), zero: kinds([{ nom: 'Sachet', qte: 1, prix: 0 }]), bas: kinds([{ ...L(8000), ref: 'S1', nom: 'x' }]) };
+      // Vente à perte : la 1re tentative est arrêtée, la vente passe après « Oui, je confirme »
+      const writes = []; window.logAction = () => {};
+      state.db = { queueStock: async () => 0, doc: (path) => ({ set: async (v) => writes.push(path), update: async () => {} }), collection: (c) => ({ doc: (id) => ({ set: async () => writes.push(c + '/' + id) }) }) };
+      invoiceLines = [L(15000)]; renderInvoiceLines();
+      await finalizeInvoice();
+      res.blocked = writes.length; res.ask = !!document.getElementById('sgYes');
+      document.getElementById('sgYes').click(); await new Promise(r => setTimeout(r, 300));
+      res.saved = writes.filter(w => w.startsWith('factures/')).length;
+      // Compte qui n'est pas de test : aucun blocage (comme avant)
+      aiAskOk = false; invoiceLines = [L(15000)]; renderInvoiceLines(); writes.length = 0;
+      await finalizeInvoice(); res.free = writes.filter(w => w.startsWith('factures/')).length;
+      return res; })()`);
+    eq([r.ok, r.perte, r.cher, r.zero], [[], ['perte'], ['cher'], ['zero']], 'anomalies détectées');
+    eq([r.blocked, r.ask, r.saved, r.free], [0, true, 1, 1], '[écritures avant confirmation, bouton de confirmation, vente après confirmation, vente sans test]');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
+  await test('Mes 3 actions du jour : les plus utiles d\'abord', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(() => { document.getElementById('loginOverlay').style.display = 'none'; Object.assign(state, ${JSON.stringify(smartData())}); aiAskOk = true;
+      try { localStorage.removeItem('sf_actions_faites_' + todayStr()); } catch (e) {}
+      smartActionsRender();
+      const titles = () => [...document.querySelectorAll('#smartActionsBody .sa-tx b')].map(b => b.textContent);
+      const before = titles();
+      document.querySelector('#smartActionsBody [data-sadone]').click();
+      return { before, done: document.querySelectorAll('#smartActionsBody .sa-item.done').length, shown: document.getElementById('smartActionsCard').style.display }; })()`);
+    eq(r.before, ['💸 Corriger le prix de Sucre 1 kg', '🙋 Relancer Moussa Diop', '🛒 Commander chez Grossiste Ndiaye'], 'les 3 actions');
+    eq([r.done, r.shown], [1, ''], 'cocher « fait »');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
   await browser.close();
   fs.rmSync(tmp, { recursive: true, force: true });
   const ko = results.filter((r) => !r[0]);

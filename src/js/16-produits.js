@@ -6,6 +6,7 @@
   document.getElementById('stockSearch').addEventListener('input', e => { stockFilter = e.target.value.trim().toLowerCase(); clearTimeout(stockSearchT); stockSearchT = setTimeout(renderStock, 150); });
 
   function renderStock() {
+    try { smartOrderRender(); } catch (e) { console.error(e); }
     const body = document.getElementById('stockBody');
     const empty = document.getElementById('stockEmpty');
     body.innerHTML = '';

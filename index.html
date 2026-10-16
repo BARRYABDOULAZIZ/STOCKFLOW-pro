@@ -648,6 +648,11 @@
       <button type="button" class="ghost" id="btnBackupLater" style="padding:6px 10px;">Plus tard</button>
     </div>
 
+    <div class="card smart-card" id="smartActionsCard" style="display:none;">
+      <div class="row-head"><h2>☀️ Mes 3 actions du jour <span class="muted" style="font-size:12px; font-weight:500;">(test)</span></h2></div>
+      <div id="smartActionsBody"></div>
+    </div>
+
     <div class="card boss-card" id="bossCard" style="display:none;">
       <div class="row-head" style="flex-wrap:wrap; gap:8px;">
         <h2>👁 Le point du patron <span class="muted" style="font-size:12px; font-weight:500;">(test)</span></h2>
@@ -810,6 +815,12 @@
       <input type="file" id="pfFile" accept="image/*" multiple style="display:none;">
       <div id="pfStatus" class="muted" style="margin-top:10px;"></div>
       <div id="pfReview" style="display:none; margin-top:10px;"></div>
+    </div>
+
+    <div class="card smart-card" id="smartOrderCard" style="display:none;">
+      <div class="row-head"><h2>🛒 À commander <span class="muted" style="font-size:12px; font-weight:500;">(test)</span></h2><span class="muted" id="smartOrderSub"></span></div>
+      <p class="hint-text" style="margin-top:0;">Calculé d'après tes ventes : ce qui sera bientôt fini, et la quantité pour tenir 2 semaines. Tu peux changer les quantités.</p>
+      <div id="smartOrderBody"></div>
     </div>
 
     <div class="card">
@@ -1157,6 +1168,7 @@
             <div class="inv-total-row"><span class="lbl" id="invTotalLbl">Total à payer</span><span class="amt" id="invGrandTotal">0 FCFA</span></div>
             <div id="invLettres" class="inv-lettres"></div>
             <p class="muted" id="finalizeHint" style="margin:6px 0;"></p>
+            <div id="saleGuard" class="sale-guard" style="display:none;"></div>
             <button class="primary sale-go" id="btnFinalize">✓ Finaliser la vente</button>
           </div>
         </div>
@@ -2444,6 +2456,44 @@
     ["produit(s) créé(s)", "product(s) created", "منتج(ات) أُنشئت"],
     ["mis à jour", "updated", "تم تحديثها"],
     ["Ajoute les prix d'achat pour voir ton vrai bénéfice.", "Add purchase prices to see your real profit.", "أضف أسعار الشراء لترى ربحك الحقيقي."],
+    // Appli plus intelligente (test)
+    ["☀️ Mes 3 actions du jour", "☀️ My 3 actions for today", "☀️ مهامي الثلاث لليوم"],
+    ["🛒 À commander", "🛒 To order", "🛒 للطلب"],
+    ["Calculé d'après tes ventes : ce qui sera bientôt fini, et la quantité pour tenir 2 semaines. Tu peux changer les quantités.", "Based on your sales: what will run out soon, and the quantity to last 2 weeks. You can change the quantities.", "محسوب من مبيعاتك: ما سينفد قريباً والكمية التي تكفي أسبوعين. يمكنك تغيير الكميات."],
+    ["rupture", "out of stock", "نفد"],
+    ["sous le seuil", "below threshold", "تحت حد التنبيه"],
+    ["moins d'1 jour", "less than 1 day", "أقل من يوم"],
+    ["jour", "day", "يوم"],
+    ["jours", "days", "أيام"],
+    ["produit", "product", "منتج"],
+    ["produits", "products", "منتجات"],
+    ["Rien à commander pour le moment : ton stock tient au moins une semaine.", "Nothing to order for now: your stock will last at least a week.", "لا شيء للطلب حالياً: مخزونك يكفي أسبوعاً على الأقل."],
+    ["Encore peu de ventes enregistrées : la liste se base surtout sur les seuils d'alerte.", "Few sales recorded yet: the list is mostly based on alert thresholds.", "مبيعات قليلة مسجلة حتى الآن: القائمة تعتمد أساساً على حدود التنبيه."],
+    ["Fournisseur non indiqué", "Supplier not set", "المورّد غير محدد"],
+    ["En stock", "In stock", "في المخزون"],
+    ["vendu", "sold", "مُباع"],
+    ["acheté", "bought", "مُشترى"],
+    ["Quantité à commander", "Quantity to order", "الكمية المطلوبة"],
+    ["Commander sur WhatsApp", "Order on WhatsApp", "اطلب عبر واتساب"],
+    ["prix à 0 (article donné gratuitement ?)", "price is 0 (item given for free?)", "السعر صفر (هل هو مجاني؟)"],
+    ["perte de", "loss of", "خسارة"],
+    ["au lieu de", "instead of", "بدلاً من"],
+    ["d'habitude (un zéro en trop ?)", "usually (one zero too many?)", "عادةً (صفر زائد؟)"],
+    ["d'habitude (moitié prix ou moins)", "usually (half price or less)", "عادةً (نصف السعر أو أقل)"],
+    ["Vérifie avant de valider", "Check before confirming", "تحقق قبل التأكيد"],
+    ["Oui, je confirme cette vente", "Yes, I confirm this sale", "نعم، أؤكد هذا البيع"],
+    ["Corriger", "Fix", "تصحيح"],
+    ["Rien d'urgent aujourd'hui. Belle journée de vente !", "Nothing urgent today. Have a good sales day!", "لا شيء عاجل اليوم. يوم بيع موفق!"],
+    ["Pas encore fait", "Not done yet", "لم يُنجز بعد"],
+    ["Marquer comme fait", "Mark as done", "تحديد كمنجز"],
+    ["Bravo, tout est fait pour aujourd'hui !", "Well done, everything is done for today!", "أحسنت، أنجزت كل شيء اليوم!"],
+    ["Mets au moins une quantité.", "Enter at least one quantity.", "أدخل كمية واحدة على الأقل."],
+    ["🛒 Voir la commande", "🛒 See the order", "🛒 عرض الطلب"],
+    ["✏️ Corriger", "✏️ Fix", "✏️ تصحيح"],
+    ["📤 WhatsApp", "📤 WhatsApp", "📤 واتساب"],
+    ["📋 Inventaire", "📋 Inventory", "📋 الجرد"],
+    ["🧾 Caisse", "🧾 Till", "🧾 الصندوق"],
+    ["📦 Voir", "📦 See", "📦 عرض"],
   ].forEach(([fr, en, ar]) => I18N.set(fr, { en, ar }));
   // Traduit un texte écrit en français (rend le texte d'origine s'il n'est pas dans le dictionnaire)
   function tr(fr) { if (UI_LANG === 'fr') return fr; const t = I18N.get(String(fr).replace(/\s+/g, ' ').trim()); return (t && t[UI_LANG]) || fr; }
@@ -3559,9 +3609,9 @@
   async function aiAskInit() {
     const box = document.getElementById('aiAsk'); if (!box) return;
     const hbtn = document.getElementById('belHeadBtn');
-    if (!isOwnerOrAdmin() || !supabaseClient) { box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; const c0 = document.getElementById('photoFillCard'); if (c0) c0.style.display = 'none'; const v0 = document.getElementById('voiceSale'); if (v0) v0.style.display = 'none'; const b0 = document.getElementById('bossCard'); if (b0) b0.style.display = 'none'; belClosePage(); return; }
+    if (!isOwnerOrAdmin() || !supabaseClient) { box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; const c0 = document.getElementById('photoFillCard'); if (c0) c0.style.display = 'none'; const v0 = document.getElementById('voiceSale'); if (v0) v0.style.display = 'none'; const b0 = document.getElementById('bossCard'); if (b0) b0.style.display = 'none'; aiAskOk = false; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} belClosePage(); return; }
     const pfc = document.getElementById('photoFillCard');
-    if (aiAskFor !== CURRENT_USER_ID) { aiAskFor = CURRENT_USER_ID; aiAskOk = false; box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; if (pfc) pfc.style.display = 'none'; const vs0 = document.getElementById('voiceSale'); if (vs0) vs0.style.display = 'none'; const bs0 = document.getElementById('bossCard'); if (bs0) bs0.style.display = 'none'; belClosePage(); }
+    if (aiAskFor !== CURRENT_USER_ID) { aiAskFor = CURRENT_USER_ID; aiAskOk = false; box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; if (pfc) pfc.style.display = 'none'; const vs0 = document.getElementById('voiceSale'); if (vs0) vs0.style.display = 'none'; const bs0 = document.getElementById('bossCard'); if (bs0) bs0.style.display = 'none'; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} belClosePage(); }
     if (aiAskOk || navigator.onLine === false) return;   // déjà vérifié pour ce compte : pas de nouvelle vérification (évite que le cadre clignote)
     try {
       const { data, error } = await supabaseClient.functions.invoke('ask-ai', { body: { ping: true } });
@@ -3570,6 +3620,7 @@
       box.style.display = '';
       if (pfc) pfc.style.display = '';
       const bsc = document.getElementById('bossCard'); if (bsc) { bsc.style.display = ''; try { bossRender(); } catch (e) { console.error(e); } }
+      try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) { console.error(e); }
       // Vente à la voix : prête mais mise en pause (à rallumer : remettre display = '')
       const vsc = document.getElementById('voiceSale'); if (vsc) vsc.style.display = 'none';
       const face = document.getElementById('belFace'); if (face && !face.innerHTML) face.innerHTML = belAvatarSvg(56);
@@ -4040,6 +4091,7 @@
   function renderDashboard() {
     try { updateBackupReminder(); } catch (e) {}
     try { bossRender(); } catch (e) { console.error(e); }
+    try { smartActionsRender(); } catch (e) { console.error(e); }
     const g = computeGlobals();
     document.getElementById('heroInvesti').textContent = euros(g.montantInvesti);
     document.getElementById('heroValeur').textContent = euros(g.valeurPotentielle);
@@ -4126,6 +4178,7 @@
   document.getElementById('stockSearch').addEventListener('input', e => { stockFilter = e.target.value.trim().toLowerCase(); clearTimeout(stockSearchT); stockSearchT = setTimeout(renderStock, 150); });
 
   function renderStock() {
+    try { smartOrderRender(); } catch (e) { console.error(e); }
     const body = document.getElementById('stockBody');
     const empty = document.getElementById('stockEmpty');
     body.innerHTML = '';
@@ -5045,6 +5098,7 @@
     if (shortages.length) { hint.textContent = '⚠ Stock insuffisant — ' + shortages.join(', '); hint.style.color = ''; hint.classList.add('fh-warn'); }
     else if (customLines) { hint.textContent = `⚠ ${customLines} ligne(s) hors catalogue (produit non enregistré dans ton stock) — le stock ne sera PAS déduit pour ces lignes.`; hint.style.color = ''; hint.classList.add('fh-warn'); }
     else { hint.textContent = 'La finalisation déduit automatiquement les quantités du stock pour les articles du catalogue.'; hint.style.color = ''; }
+    try { saleGuardRender(); } catch (e) { console.error(e); }
   }
   function closeAllAutocomplete() { document.querySelectorAll('.ac-list').forEach(el => el.style.display = 'none'); }
   function openAutocomplete(idx, query) {
@@ -5091,6 +5145,7 @@
     if (validLines.length === 0) { toast('Ajoute au moins une ligne valide (désignation + quantité).'); return; }
     const shortage = validLines.find(l => { if (!l.matched) return false; const prod = state.products.find(p => p.ref === l.ref); return prod && Number(l.qte) > Number(prod.stock); });
     if (shortage) { toast(`Stock insuffisant pour ${shortage.nom}.`); return; }
+    if (!saleGuardCheck(validLines)) return;   // anti-erreur : vente à perte, prix à 0, prix anormal (compte de test)
     if (!state.db) { toast('Connexion non disponible — réessaie dans un instant.'); return; }
     if (saleType === 'credit' && !document.getElementById('f-client').value.trim()) { toast('⚠ Pour une vente à crédit, indique le nom du client : sans nom, impossible de savoir qui doit payer.'); document.getElementById('f-client').focus(); return; }
 
@@ -5892,6 +5947,9 @@
     if (annulees.length) alertes.push(`${annulees.length} vente(s) annulée(s) : ${annulees.slice(0, 3).map(i => 'FAC-' + String(i.num).padStart(4, '0') + ' (' + euros(i.total) + (i.operateur ? ', ' + String(i.operateur).replace(/\s*\(.*\)$/, '') : '') + ')').join(', ')}`);
     inv.forEach(i => { const st = Number(i.sousTotal) || Number(i.total) || 0, r = Number(i.remise) || 0; if (r > 0 && st > 0 && r / st >= 0.15) alertes.push(`Grosse remise de ${Math.round(r / st * 100)} % sur FAC-${String(i.num).padStart(4, '0')} (${euros(r)})${i.operateur ? ' par ' + String(i.operateur).replace(/\s*\(.*\)$/, '') : ''}`); });
     inv.forEach(i => { if (!i.createdAt) return; const h = new Date(i.createdAt).getHours(); if (h >= 22 || h < 6) alertes.push(`Vente à ${String(h).padStart(2, '0')} h ${String(new Date(i.createdAt).getMinutes()).padStart(2, '0')} : FAC-${String(i.num).padStart(4, '0')} (${euros(i.total)})`); });
+    // Ventes en dessous du prix d'achat (erreur ou « arrangement » avec un client)
+    const aPerte = []; inv.forEach(i => (i.lignes || []).forEach(l => { const p = l.ref && byProdId[l.ref], pv = Number(l.prix) || 0; if (p && Number(p.prixAchat) > 0 && pv < Number(p.prixAchat)) aPerte.push(`${l.nom} à ${euros(pv)} (achat ${euros(p.prixAchat)}, FAC-${String(i.num).padStart(4, '0')}${i.operateur ? ', ' + String(i.operateur).replace(/\s*\(.*\)$/, '') : ''})`); }));
+    if (aPerte.length) alertes.push(`${aPerte.length} vente(s) à perte : ${aPerte.slice(0, 3).join(' ; ')}`);
     const pertes = (state.movements || []).filter(m => m.date === day && m.source === 'perte');
     if (pertes.length) alertes.push(`${pertes.length} perte(s) déclarée(s) : ${pertes.slice(0, 3).map(m => Math.abs(Number(m.quantite) || 0) + ' ' + (m.unite || '') + ' ' + m.nom + (m.raison ? ' (' + m.raison + ')' : '')).join(', ')}`);
     const negatifs = (state.products || []).filter(p => Number(p.stock) < 0);
@@ -6055,6 +6113,226 @@
     }).join('');
   }
 
+  // ================= Appli plus intelligente (test) : prévision de rupture + commande, anti-erreur à la caisse, 3 actions du jour =================
+  // Tout est calculé sur l'appareil à partir des ventes : marche sans internet, ne coûte rien. Réservé au compte de test (aiAskOk).
+  const SMART_DAY = 86400000;
+  let smartQty = {};            // quantités à commander modifiées à la main (id produit → quantité)
+  let saleGuardAck = '';         // anomalies déjà confirmées par le vendeur pour la vente en cours
+
+  // ---- 1. Prévision : à quelle vitesse chaque produit part, et dans combien de jours il sera fini ----
+  function smartForecast() {
+    const prods = state.products || [], inv = (state.invoices || []).filter(i => !i.annulee);
+    const today = todayStr();
+    const ago = (d) => Math.round((new Date(today + 'T12:00:00').getTime() - new Date((d || today) + 'T12:00:00').getTime()) / SMART_DAY);
+    const byRef = {}, byId = {}; prods.forEach(p => { byId[p.id] = p; if (p.ref) byRef[p.ref] = p; });
+    let maxAgo = 0; const q7 = {}, q30 = {};
+    inv.forEach(i => {
+      const a = ago(i.date); if (a < 0) return; if (a > maxAgo) maxAgo = a;
+      (i.lignes || []).forEach(l => {
+        const p = (l.productId && byId[l.productId]) || (l.ref && byRef[l.ref]); if (!p) return;
+        const q = Number(l.qte) || 0;
+        if (a < 7) q7[p.id] = (q7[p.id] || 0) + q;
+        if (a < 30) q30[p.id] = (q30[p.id] || 0) + q;
+      });
+    });
+    const span = maxAgo + 1;                              // nombre de jours d'historique (aujourd'hui compris)
+    const ready = span >= 3;                              // trop peu de jours de ventes : pas de prévision fiable
+    const fours = state.fournisseurs || [];
+    const list = [];
+    prods.forEach(p => {
+      const stock = Number(p.stock) || 0, seuil = Number(p.seuil) || 0;
+      const r30 = (q30[p.id] || 0) / Math.min(30, span), r7 = (q7[p.id] || 0) / Math.min(7, span);
+      const rate = ready ? (span >= 7 ? 0.6 * r7 + 0.4 * r30 : r30) : 0;   // les 7 derniers jours comptent plus
+      const days = rate > 0 ? Math.max(0, stock) / rate : null;
+      const low = seuil > 0 && stock <= seuil;
+      if (!((days !== null && days <= 7) || low || (stock <= 0 && (q30[p.id] || 0) > 0))) return;
+      let qty = rate > 0 ? Math.ceil(rate * 14 - Math.max(0, stock)) : Math.ceil(seuil * 2 - Math.max(0, stock));   // de quoi tenir 2 semaines
+      qty = Math.max(1, qty);
+      const fNom = String(p.fournisseur || '').trim();
+      const f = fNom ? fours.find(x => String(x.nom || '').trim().toLowerCase() === fNom.toLowerCase()) : null;
+      list.push({ p, stock, rate, days, qty: smartQty[p.id] != null ? smartQty[p.id] : qty, qtyAuto: qty, fNom: fNom || '', tel: f ? f.telephone : '', pa: Number(p.prixAchat) || 0 });
+    });
+    list.sort((a, b) => (a.days === null ? 99 : a.days) - (b.days === null ? 99 : b.days));
+    const groups = {};
+    list.forEach(o => { const k = o.fNom.toLowerCase() || '—'; const g = groups[k] || (groups[k] = { nom: o.fNom, tel: o.tel, items: [], cout: 0, urgent: 99 }); g.items.push(o); g.cout += o.qty * o.pa; if (o.days !== null) g.urgent = Math.min(g.urgent, o.days); else if (o.stock <= 0) g.urgent = 0; });
+    return { ready, span, list, groups: Object.values(groups).sort((a, b) => a.urgent - b.urgent), q30 };
+  }
+  const smartDaysTxt = (o) => o.stock <= 0 ? tr('rupture') : o.days === null ? tr('sous le seuil') : o.days < 1 ? tr('moins d\'1 jour') : '≈ ' + Math.round(o.days) + ' ' + tr(Math.round(o.days) > 1 ? 'jours' : 'jour');
+  const smartDaysCls = (o) => (o.stock <= 0 || (o.days !== null && o.days <= 2)) ? 'bad' : 'warn';
+  function smartOrderText(g) {
+    const shop = (state.commerce && state.commerce.nom) || '';
+    return `Bonjour${g.nom ? ' ' + g.nom : ''}, je voudrais commander :\n` + g.items.map(o => `- ${o.qty} ${o.p.unite || ''} ${o.p.nom}${o.p.ref ? ' (réf. ' + o.p.ref + ')' : ''}`.replace(/  +/g, ' ')).join('\n')
+      + `\nMerci de me confirmer le prix et le jour de livraison.${shop ? '\n' + shop : ''}`;
+  }
+  function smartOrderRender() {
+    const card = document.getElementById('smartOrderCard'); if (!card) return;
+    if (!aiAskOk) { card.style.display = 'none'; return; }
+    card.style.display = '';
+    const F = smartForecast(), body = document.getElementById('smartOrderBody');
+    document.getElementById('smartOrderSub').textContent = F.list.length ? F.list.length + ' ' + tr(F.list.length > 1 ? 'produits' : 'produit') : '';
+    if (!F.list.length) { body.innerHTML = `<div class="boss-ok">✅ ${escapeHtml(tr('Rien à commander pour le moment : ton stock tient au moins une semaine.'))}</div>`; return; }
+    let h = F.ready ? '' : `<p class="muted" style="margin:0 0 8px;">${escapeHtml(tr('Encore peu de ventes enregistrées : la liste se base surtout sur les seuils d\'alerte.'))}</p>`;
+    F.groups.forEach((g, gi) => {
+      h += `<div class="so-group"><div class="so-head"><b>🏪 ${escapeHtml(g.nom || tr('Fournisseur non indiqué'))}</b>${g.cout > 0 ? `<span class="muted">≈ ${euros(g.cout)}</span>` : ''}</div>`;
+      g.items.forEach(o => {
+        h += `<div class="so-row"><span class="so-nom">${escapeHtml(o.p.nom || o.p.ref || '—')}<small>${escapeHtml(tr('En stock'))} : ${o.stock} ${escapeHtml(o.p.unite || '')}${o.rate > 0 ? ' · ' + escapeHtml(tr('vendu')) + ' ≈ ' + (Math.round(o.rate * 10) / 10).toLocaleString('fr-FR') + '/' + escapeHtml(tr('jour')) : ''}</small></span>`
+          + `<span class="so-days ${smartDaysCls(o)}">${escapeHtml(smartDaysTxt(o))}</span>`
+          + `<input type="number" min="0" step="1" inputmode="numeric" class="so-qty" data-soq="${escapeHtml(o.p.id)}" value="${o.qty}" title="${escapeHtml(tr('Quantité à commander'))}"></div>`;
+      });
+      h += `<div class="so-actions"><button type="button" class="primary" data-sowa="${gi}">📤 ${escapeHtml(tr('Commander sur WhatsApp'))}</button></div></div>`;
+    });
+    body.innerHTML = h;
+    body._groups = F.groups;
+  }
+  function smartOrderGoto() {
+    const b = document.querySelector('nav.tabs button[data-tab="produits"]'); if (b) b.click();
+    setTimeout(() => { const c = document.getElementById('smartOrderCard'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 120);
+  }
+
+  // ---- 2. Anti-erreur à la caisse : vente à perte, prix à 0, prix très différent de d'habitude ----
+  function saleGuardIssues(lines) {
+    const out = [];
+    (lines || []).forEach(l => {
+      if (!l || !l.nom || !String(l.nom).trim() || !(Number(l.qte) > 0)) return;
+      const prix = Number(l.prix) || 0, q = Number(l.qte) || 0;
+      const p = l.matched ? (state.products || []).find(x => x.ref === l.ref) : null;
+      const pa = p ? Number(p.prixAchat) || 0 : 0, pv = p ? Number(p.prixVente) || 0 : 0;
+      if (prix <= 0) { out.push({ k: 'zero', t: `${l.nom} : ${tr('prix à 0 (article donné gratuitement ?)')}` }); return; }
+      if (pa > 0 && prix < pa) { out.push({ k: 'perte', t: `${l.nom} : ${tr('vendu')} ${euros(prix)}, ${tr('acheté')} ${euros(pa)} → ${tr('perte de')} ${euros((pa - prix) * q)}` }); return; }
+      if (pv > 0 && prix >= pv * 3) out.push({ k: 'cher', t: `${l.nom} : ${euros(prix)} ${tr('au lieu de')} ${euros(pv)} ${tr('d\'habitude (un zéro en trop ?)')}` });
+      else if (pv > 0 && prix <= pv * 0.5) out.push({ k: 'bas', t: `${l.nom} : ${euros(prix)} ${tr('au lieu de')} ${euros(pv)} ${tr('d\'habitude (moitié prix ou moins)')}` });
+    });
+    return out;
+  }
+  function saleGuardRender() {
+    const box = document.getElementById('saleGuard'); if (!box) return;
+    const issues = aiAskOk && currentDocType() === 'facture' ? saleGuardIssues(invoiceLines) : [];
+    if (!issues.length) { box.style.display = 'none'; box.innerHTML = ''; saleGuardAck = ''; return; }
+    const sig = JSON.stringify(issues);
+    if (saleGuardAck && saleGuardAck !== sig) saleGuardAck = '';
+    box.style.display = '';
+    box.innerHTML = `<b>🛑 ${escapeHtml(tr('Vérifie avant de valider'))}</b>` + issues.map(i => `<div class="sg-line">${i.k === 'perte' ? '💸' : i.k === 'zero' ? '🎁' : '🔢'} ${escapeHtml(i.t)}</div>`).join('')
+      + (box.dataset.ask === sig ? `<div class="sg-actions"><button type="button" class="primary sg-yes" id="sgYes">${escapeHtml(tr('Oui, je confirme cette vente'))}</button><button type="button" class="ghost" id="sgNo">${escapeHtml(tr('Corriger'))}</button></div>` : '');
+    const yes = document.getElementById('sgYes');
+    if (yes) yes.addEventListener('click', () => { saleGuardAck = sig; delete box.dataset.ask; saleGuardRender(); document.getElementById('btnFinalize').click(); });
+    const no = document.getElementById('sgNo');
+    if (no) no.addEventListener('click', () => { delete box.dataset.ask; saleGuardRender(); const f = document.querySelector('.line-prix'); if (f) f.focus(); });
+  }
+  // Appelé au moment de finaliser : true = on peut enregistrer la vente
+  function saleGuardCheck(lines) {
+    if (!aiAskOk) return true;
+    const issues = saleGuardIssues(lines);
+    if (!issues.length) return true;
+    const sig = JSON.stringify(issues);
+    if (saleGuardAck === sig) {
+      try { logAction('VENTE_ANOMALIE_CONFIRMEE', { anomalies: issues.map(i => i.t), client: document.getElementById('f-client').value.trim() }); } catch (e) { console.error(e); }
+      saleGuardAck = '';
+      return true;
+    }
+    const box = document.getElementById('saleGuard');
+    box.dataset.ask = sig; saleGuardRender();
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return false;
+  }
+
+  // ---- 5. Mes 3 actions du jour : les choses les plus utiles à faire aujourd'hui ----
+  const smartDoneKey = () => 'sf_actions_faites_' + todayStr();
+  const smartDone = () => { try { return JSON.parse(localStorage.getItem(smartDoneKey()) || '[]'); } catch (e) { return []; } };
+  const smartActs = {};
+  function smartActions() {
+    const acts = [], today = todayStr(), shop = (state.commerce && state.commerce.nom) || 'notre boutique';
+    const ago = (d) => Math.round((new Date(today + 'T12:00:00').getTime() - new Date((d || today) + 'T12:00:00').getTime()) / SMART_DAY);
+    const n0 = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR');
+    const F = smartForecast();
+    // Commandes fournisseurs (une action par fournisseur)
+    F.groups.forEach((g, gi) => {
+      const urgent = g.urgent <= 2;
+      const names = g.items.slice(0, 2).map(o => o.p.nom).join(', ') + (g.items.length > 2 ? '…' : '');
+      acts.push({ id: 'cmd_' + (g.nom || '—'), kind: 'stock', score: urgent ? 100 - gi : 55 - gi, ic: '🛒',
+        t: g.nom ? `Commander chez ${g.nom}` : `Racheter ${g.items.length > 1 ? g.items.length + ' produits' : g.items[0].p.nom}`,
+        d: `${names} : ${g.urgent <= 0 ? 'déjà en rupture' : g.urgent < 99 ? 'plus que ≈ ' + Math.max(1, Math.round(g.urgent)) + ' jour(s) de stock' : 'sous le seuil d\'alerte'}.`,
+        btn: '🛒 Voir la commande', go: smartOrderGoto });
+    });
+    // Produits vendus à perte dans le catalogue
+    (state.products || []).filter(p => Number(p.prixAchat) > 0 && Number(p.prixVente) > 0 && Number(p.prixVente) < Number(p.prixAchat)).slice(0, 2).forEach(p => {
+      acts.push({ id: 'perte_' + p.id, kind: 'prix', score: 90, ic: '💸', t: `Corriger le prix de ${p.nom}`,
+        d: `Vendu ${euros(p.prixVente)} mais acheté ${euros(p.prixAchat)} : chaque vente te fait perdre ${euros(Number(p.prixAchat) - Number(p.prixVente))}.`,
+        btn: '✏️ Corriger', go: () => { const b = document.querySelector('nav.tabs button[data-tab="produits"]'); if (b) b.click(); setTimeout(() => { try { startEditProduct(p.id); } catch (e) { console.error(e); } }, 120); } });
+    });
+    // Crédits : le client qui doit le plus, depuis le plus longtemps
+    const groups = {};
+    (state.invoices || []).filter(i => !i.annulee).forEach(i => {
+      const r = Math.max(0, (Number(i.total) || 0) - (Number(i.montantPaye) || 0)); if (!r || !(i.client || i.clientId)) return;
+      const k = i.clientId || String(i.client).trim().toLowerCase();
+      const g = groups[k] || (groups[k] = { name: i.client || '', cid: i.clientId, sum: 0, oldest: 0, late: false });
+      g.sum += r; g.oldest = Math.max(g.oldest, ago(i.date)); if (i.echeance && i.echeance < today) g.late = true;
+    });
+    Object.values(groups).filter(g => g.oldest >= 7 || g.late).sort((a, b) => (b.sum * (1 + b.oldest / 30)) - (a.sum * (1 + a.oldest / 30))).slice(0, 2).forEach((g, k) => {
+      const cl = g.cid ? (state.clients || []).find(c => c.id === g.cid) : (state.clients || []).find(c => String(c.nom || '').trim().toLowerCase() === g.name.trim().toLowerCase());
+      acts.push({ id: 'rel_' + (g.cid || g.name), kind: 'credit', score: 70 + Math.min(20, g.oldest / 2) - k * 5, ic: '🙋', t: `Relancer ${g.name}`,
+        d: `${euros(g.sum)} à payer${g.late ? ', échéance dépassée' : ''} (depuis ${g.oldest} jours).`,
+        btn: '📤 WhatsApp', go: () => aiOpenWa(cl && cl.telephone, `Bonjour ${g.name}, petit rappel amical de ${shop} : il reste ${n0(g.sum)} ${curSym()} à régler. Merci d'avance et bonne journée 🙏`, g.name) });
+    });
+    // Stock négatif : à recompter
+    const neg = (state.products || []).filter(p => Number(p.stock) < 0);
+    if (neg.length) acts.push({ id: 'neg', kind: 'stock2', score: 60, ic: '🔢', t: `Recompter ${neg.length > 1 ? neg.length + ' produits' : neg[0].nom}`,
+      d: `Le stock affiché est négatif (${neg.slice(0, 2).map(p => p.nom + ' : ' + p.stock).join(', ')}) : il y a eu une erreur de saisie ou une sortie non notée.`,
+      btn: '📋 Inventaire', go: () => { const b = document.querySelector('nav.tabs button[data-tab="inventaire"]'); if (b) b.click(); } });
+    // Caisse du jour à clôturer (le soir)
+    let lastClose = ''; try { lastClose = localStorage.getItem('sf_last_close') || ''; } catch (e) {}
+    if (new Date().getHours() >= 18 && lastClose !== today && (state.invoices || []).some(i => !i.annulee && i.date === today))
+      acts.push({ id: 'cloture', kind: 'caisse', score: 50, ic: '🔒', t: 'Clôturer la caisse', d: 'Compte le tiroir et compare avec les ventes de la journée.', btn: '🧾 Caisse', go: () => { const b = document.querySelector('nav.tabs button[data-tab="caisse"]'); if (b) b.click(); } });
+    // Argent qui dort : produits sans vente depuis 45 jours
+    if (F.span >= 45) {
+      const lastSold = {}; (state.invoices || []).filter(i => !i.annulee).forEach(i => (i.lignes || []).forEach(l => { const a = ago(i.date); const k = l.productId || l.ref; if (k && (lastSold[k] === undefined || a < lastSold[k])) lastSold[k] = a; }));
+      const dorm = (state.products || []).filter(p => Number(p.stock) > 0 && Number(p.prixAchat) > 0 && lastSold[p.id] === undefined && lastSold[p.ref] === undefined)
+        .map(p => ({ p, v: Number(p.stock) * Number(p.prixAchat) })).sort((a, b) => b.v - a.v)[0];
+      if (dorm && dorm.v > 0) acts.push({ id: 'dort_' + dorm.p.id, kind: 'dort', score: 25, ic: '💤', t: `Faire une promo sur ${dorm.p.nom}`,
+        d: `Aucune vente depuis plus de 45 jours : ${euros(dorm.v)} dorment sur l'étagère.`, btn: '📦 Voir', go: () => { const b = document.querySelector('nav.tabs button[data-tab="produits"]'); if (b) b.click(); } });
+    }
+    // Les 3 plus utiles, avec au plus 2 actions du même genre
+    acts.sort((a, b) => b.score - a.score);
+    const pick = [], perKind = {};
+    for (const a of acts) { if (pick.length >= 3) break; if ((perKind[a.kind] || 0) >= 2) continue; perKind[a.kind] = (perKind[a.kind] || 0) + 1; pick.push(a); }
+    return pick;
+  }
+  function smartActionsRender() {
+    const card = document.getElementById('smartActionsCard'); if (!card) return;
+    if (!aiAskOk) { card.style.display = 'none'; return; }
+    card.style.display = '';
+    const acts = smartActions(), done = smartDone(), body = document.getElementById('smartActionsBody');
+    Object.keys(smartActs).forEach(k => delete smartActs[k]);
+    acts.forEach(a => { smartActs[a.id] = a.go; });
+    if (!acts.length) { body.innerHTML = `<div class="boss-ok">✅ ${escapeHtml(tr('Rien d\'urgent aujourd\'hui. Belle journée de vente !'))}</div>`; return; }
+    const nDone = acts.filter(a => done.includes(a.id)).length;
+    body.innerHTML = acts.map((a, k) => {
+      const ok = done.includes(a.id);
+      return `<div class="sa-item ${ok ? 'done' : ''}"><button type="button" class="sa-check" data-sadone="${escapeHtml(a.id)}" title="${escapeHtml(tr(ok ? 'Pas encore fait' : 'Marquer comme fait'))}">${ok ? '✓' : k + 1}</button>`
+        + `<div class="sa-tx"><b>${a.ic} ${escapeHtml(a.t)}</b><span>${escapeHtml(a.d)}</span></div>`
+        + (ok ? '' : `<button type="button" class="ghost sa-go" data-sago="${escapeHtml(a.id)}">${escapeHtml(tr(a.btn))}</button>`) + `</div>`;
+    }).join('') + (nDone === acts.length ? `<div class="boss-ok">🎉 ${escapeHtml(tr('Bravo, tout est fait pour aujourd\'hui !'))}</div>` : '');
+  }
+
+  (function smartInit() {
+    const ob = document.getElementById('smartOrderBody');
+    if (ob) {
+      ob.addEventListener('input', (e) => { const i = e.target.closest('[data-soq]'); if (i) smartQty[i.dataset.soq] = Math.max(0, Math.round(Number(i.value) || 0)); });
+      ob.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-sowa]'); if (!b || !ob._groups) return;
+        const g = ob._groups[Number(b.dataset.sowa)]; if (!g) return;
+        const items = g.items.map(o => ({ ...o, qty: smartQty[o.p.id] != null ? smartQty[o.p.id] : o.qty })).filter(o => o.qty > 0);
+        if (!items.length) { toast(tr('Mets au moins une quantité.')); return; }
+        aiOpenWa(g.tel, smartOrderText({ ...g, items }), g.nom || '');
+        try { logAction('COMMANDE_WHATSAPP', { fournisseur: g.nom || '', lignes: items.map(o => o.qty + ' ' + (o.p.unite || '') + ' ' + o.p.nom) }); } catch (er) { console.error(er); }
+      });
+    }
+    const ab = document.getElementById('smartActionsBody');
+    if (ab) ab.addEventListener('click', (e) => {
+      const d = e.target.closest('[data-sadone]');
+      if (d) { const list = smartDone(), id = d.dataset.sadone, i = list.indexOf(id); if (i >= 0) list.splice(i, 1); else list.push(id); try { localStorage.setItem(smartDoneKey(), JSON.stringify(list)); } catch (er) {} smartActionsRender(); return; }
+      const g = e.target.closest('[data-sago]'); if (g && smartActs[g.dataset.sago]) smartActs[g.dataset.sago]();
+    });
+  })();
   // ================= Produits: add / restock / edit =================
   let editingId = null; // null = mode ajout/réappro ; sinon = id du produit en cours de modification
 
@@ -8338,6 +8616,34 @@ body.hide-amounts #stockValue,body.hide-amounts #heroInvesti,body.hide-amounts #
 header.top{animation:none !important;background-size:100% 100% !important;}
 .sync .dot,.sync .dot::before,.sync .dot::after{animation:none !important;}
 .stk.low{animation:none !important;}
+</style>
+<style id="smart-css">
+  /* ===== Appli plus intelligente (test) : 3 actions du jour, à commander, anti-erreur caisse ===== */
+  .smart-card { border:2px solid rgba(245,158,11,.40) !important; }
+  .sa-item { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:10px; margin:6px 0; border-radius:12px; background:rgba(127,127,127,.07); }
+  .sa-item.done { opacity:.55; }
+  .sa-item.done .sa-tx b { text-decoration:line-through; }
+  .sa-check { flex:0 0 34px; width:34px; height:34px; border-radius:50%; border:2px solid var(--accent, #5b3df5); background:transparent; color:var(--accent, #5b3df5); font-weight:800; font-size:15px; cursor:pointer; padding:0; }
+  .sa-item.done .sa-check { background:#059669; border-color:#059669; color:#fff; }
+  .sa-tx { flex:1 1 200px; min-width:0; display:flex; flex-direction:column; gap:2px; }
+  .sa-tx b { font-size:14.5px; }
+  .sa-tx span { font-size:12.5px; opacity:.8; }
+  .sa-go { flex:0 0 auto; padding:7px 10px; font-size:13px; white-space:nowrap; }
+  @media (max-width:520px) { .sa-go { margin-left:44px; } }
+  .so-group { border:1px solid var(--line); border-radius:12px; padding:10px; margin:8px 0; }
+  .so-head { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap; }
+  .so-row { display:flex; align-items:center; gap:8px; padding:6px 0; border-top:1px dashed var(--line); }
+  .so-nom { flex:1; min-width:0; display:flex; flex-direction:column; font-weight:600; font-size:14px; }
+  .so-nom small { font-weight:400; font-size:12px; opacity:.75; }
+  .so-days { font-size:12px; font-weight:700; padding:3px 8px; border-radius:999px; white-space:nowrap; }
+  .so-days.bad { background:rgba(220,38,38,.12); color:#dc2626; }
+  .so-days.warn { background:rgba(245,158,11,.15); color:#b45309; }
+  .so-qty { width:72px; flex:0 0 72px; text-align:center; padding:6px; }
+  .so-actions { display:flex; justify-content:flex-end; margin-top:8px; }
+  .sale-guard { margin:8px 0; padding:10px 12px; border-radius:12px; background:rgba(220,38,38,.08); border:1px solid rgba(220,38,38,.45); font-size:13.5px; }
+  .sale-guard .sg-line { margin-top:4px; }
+  .sale-guard .sg-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .sale-guard .sg-yes { background:#dc2626 !important; border-color:#dc2626 !important; }
 </style>
 </body>
 </html>
