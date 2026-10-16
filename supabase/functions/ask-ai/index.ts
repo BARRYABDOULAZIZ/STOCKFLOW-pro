@@ -87,7 +87,58 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    if (body.ping) return json({ actif: true });
+    if (body.ping) return json({ actif: true, vision: true });
+
+    // ----- Saisie par photo : étagère (créer le catalogue) ou facture fournisseur (réassort) -----
+    if (body.vision === "etagere" || body.vision === "facture") {
+      const k = Deno.env.get("GEMINI_API_KEY");
+      if (!k) return json({ error: "Clé Gemini manquante dans les Secrets Supabase" }, 500);
+      const imgs = (Array.isArray(body.images) ? body.images : []).slice(0, 4)
+        .filter((i: any) => i && typeof i.data === "string" && /^image\/(jpeg|png|webp)$/.test(i.mime) && i.data.length < 4_000_000);
+      if (!imgs.length) return json({ error: "Aucune photo valable" }, 400);
+      const devise = String(body.devise || "FCFA").slice(0, 10);
+      const catalogue = String(body.catalogue || "").slice(0, 20000);
+      const consigne = body.vision === "etagere"
+        ? `Tu aides un commerçant d'Afrique de l'Ouest à créer son catalogue à partir de photos de ses étagères.
+Liste chaque produit DIFFÉRENT visible (marque + type + format, ex : "Huile Dinor 1 L", "Riz parfumé sac 25 kg", "Savon Madar 200 g").
+Pour chacun : compte les unités visibles (estimation honnête), donne l'unité de vente (pièce, sac, carton, bidon, paquet…), une catégorie simple (Alimentation, Boissons, Hygiène, Entretien, Quincaillerie, Électricité, Autre),
+et, seulement si tu le connais bien, un prix de vente habituel au détail en ${devise} (sinon null). confiance = 0 à 1.
+N'invente pas de produit que tu ne vois pas. Ignore les étiquettes illisibles.
+Produits déjà dans le catalogue (pour réutiliser le même nom quand c'est le même produit) : ${catalogue || "aucun"}
+Réponds UNIQUEMENT en JSON : {"produits":[{"nom":string,"categorie":string,"quantite":number,"unite":string,"prix_vente":number|null,"confiance":number}]}`
+        : `Tu lis la facture ou le bon de livraison d'un grossiste pour un commerçant d'Afrique de l'Ouest (montants en ${devise}).
+Relève le nom du fournisseur, la date, et chaque ligne : désignation, quantité, unité, prix d'achat unitaire, total de la ligne.
+Si le prix unitaire manque, calcule-le avec total / quantité. Vérifie que les totaux sont cohérents ; sinon mets "doute": true sur la ligne.
+Produits déjà dans le catalogue (pour réutiliser le même nom quand c'est le même produit) : ${catalogue || "aucun"}
+Réponds UNIQUEMENT en JSON : {"fournisseur":string|null,"date":string|null,"lignes":[{"nom":string,"quantite":number,"unite":string,"prix_achat":number|null,"total":number|null,"doute":boolean}],"total":number|null}`;
+      const parts = [{ text: consigne }, ...imgs.map((i: any) => ({ inlineData: { mimeType: i.mime, data: i.data } }))];
+      const vModels = [...new Set([Deno.env.get("GEMINI_MODEL") || "gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"])];
+      let out: any = null, lastV = 0;
+      outerV: for (const model of vModels) {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+            method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": k },
+            body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: { temperature: 0.1, maxOutputTokens: 8192, responseMimeType: "application/json" } }),
+          });
+          lastV = r.status;
+          const rb = await r.json().catch(() => ({}));
+          if (r.ok) {
+            const txt = (rb.candidates?.[0]?.content?.parts ?? []).filter((p: any) => !p.thought).map((p: any) => p.text ?? "").join("").trim();
+            try { out = JSON.parse(txt.replace(/^```(json)?|```$/g, "")); } catch (_) { out = null; }
+            if (out) break outerV;
+            continue outerV;
+          }
+          console.error("Vision", model, r.status, JSON.stringify(rb).slice(0, 300));
+          if ([429, 500, 503].includes(r.status) && attempt < 2) { await new Promise((res) => setTimeout(res, 1500 * (attempt + 1))); continue; }
+          continue outerV;
+        }
+      }
+      if (!out) {
+        if ([429, 500, 503].includes(lastV)) return json({ error: "L'IA est très demandée. Réessaie dans une minute." }, 503);
+        return json({ error: "Je n'ai pas réussi à lire la photo. Reprends-la avec plus de lumière, bien en face." }, 502);
+      }
+      return json({ resultat: out });
+    }
 
     // ----- Voix naturelle de Bel : transforme le texte d'une réponse en audio (Gemini TTS) -----
     if (typeof body.tts === "string") {

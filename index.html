@@ -229,6 +229,21 @@
   .lang-row .lang-opt { width:auto; border:1px solid var(--line); padding:7px 11px; font-size:14px; }
   html[dir="rtl"] body { font-family:'Noto Naskh Arabic', 'Segoe UI', Tahoma, Arial, sans-serif; }
   html[dir="rtl"] input[type="email"], html[dir="rtl"] input[type="password"] { direction:ltr; text-align:right; }
+  /* Saisie par photo */
+  .pf-btns { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .pf-big { display:flex; flex-direction:column; align-items:center; gap:4px; padding:16px 10px; border-radius:16px; border:2px dashed var(--accent, #5b3df5); background:rgba(91,61,245,.06); color:inherit; cursor:pointer; text-align:center; }
+  .pf-big .e { font-size:36px; line-height:1; }
+  .pf-big small { opacity:.7; font-size:12px; }
+  .pf-big:hover { background:rgba(91,61,245,.12); }
+  .pf-big[disabled] { opacity:.5; cursor:wait; }
+  #pfReview table { width:100%; border-collapse:collapse; font-size:13px; }
+  #pfReview th { text-align:start; font-size:11.5px; opacity:.7; padding:6px 4px; }
+  #pfReview td { padding:4px; border-top:1px solid var(--line); vertical-align:middle; }
+  #pfReview input, #pfReview select { width:100%; min-width:58px; padding:6px; font-size:13px; }
+  #pfReview td.pf-n input { min-width:150px; }
+  #pfReview .pf-scroll { overflow-x:auto; }
+  #pfReview .pf-doute { color:#b45309; font-size:11.5px; }
+  @media (max-width: 520px) { .pf-btns { grid-template-columns:1fr; } }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -744,6 +759,18 @@
       <div class="stat"><div class="num" id="statCount">–</div><div class="lbl">Produits en catalogue</div></div>
       <div class="stat"><div class="num alert" id="statAlert">–</div><div class="lbl">Sous le seuil d'alerte</div></div>
       <div class="stat"><div class="num" id="statCategories">–</div><div class="lbl">Catégories</div></div>
+    </div>
+
+    <div class="card" id="photoFillCard" style="display:none;">
+      <div class="row-head"><h2>📸 Remplir mon stock par photo <span class="muted" style="font-size:12px; font-weight:500;">(test)</span></h2></div>
+      <p class="hint-text" style="margin-top:0;">Prends une photo : l'IA trouve les produits, les quantités et les prix. Tu vérifies, rien n'est enregistré sans toi.</p>
+      <div class="pf-btns">
+        <button type="button" class="pf-big" data-pf="etagere"><span class="e">🏪</span><b>Photo de mon étagère</b><small>crée les produits</small></button>
+        <button type="button" class="pf-big" data-pf="facture"><span class="e">🧾</span><b>Photo d'une facture</b><small>ajoute au stock et note les prix d'achat</small></button>
+      </div>
+      <input type="file" id="pfFile" accept="image/*" multiple style="display:none;">
+      <div id="pfStatus" class="muted" style="margin-top:10px;"></div>
+      <div id="pfReview" style="display:none; margin-top:10px;"></div>
     </div>
 
     <div class="card">
@@ -2316,6 +2343,33 @@
     ["Signature / cachet", "Signature / stamp", "التوقيع / الختم"],
     ["Désignation", "Description", "البيان"],
     ["Prix", "Price", "السعر"],
+    // Saisie par photo
+    ["📸 Remplir mon stock par photo", "📸 Fill my stock with a photo", "📸 املأ مخزوني بصورة"],
+    ["(test)", "(test)", "(تجربة)"],
+    ["Prends une photo : l'IA trouve les produits, les quantités et les prix. Tu vérifies, rien n'est enregistré sans toi.", "Take a photo: the AI finds the products, quantities and prices. You check, nothing is saved without you.", "التقط صورة: يجد الذكاء الاصطناعي المنتجات والكميات والأسعار. أنت تتحقق، ولا يُحفظ شيء بدونك."],
+    ["Photo de mon étagère", "Photo of my shelf", "صورة رفّي"],
+    ["crée les produits", "creates the products", "يُنشئ المنتجات"],
+    ["Photo d'une facture", "Photo of an invoice", "صورة فاتورة"],
+    ["ajoute au stock et note les prix d'achat", "adds to stock and records purchase prices", "يضيف إلى المخزون ويسجل أسعار الشراء"],
+    ["Stock par photo", "Stock by photo", "المخزون بالصورة"],
+    ["Nouveau produit", "New product", "منتج جديد"],
+    ["Prix d'achat", "Purchase price", "سعر الشراء"],
+    ["Prix de vente", "Selling price", "سعر البيع"],
+    ["Dans le catalogue", "In the catalogue", "في الكتالوج"],
+    ["Chiffres à vérifier", "Numbers to check", "أرقام يجب التحقق منها"],
+    ["Déjà dans le catalogue : coché = le stock devient la quantité comptée", "Already in the catalogue: ticked = stock becomes the counted quantity", "موجود في الكتالوج: التحديد = يصبح المخزون هو الكمية المعدودة"],
+    ["Le prix de vente proposé pour un nouveau produit = prix d'achat + 15 %, à vérifier.", "Suggested selling price for a new product = purchase price + 15%, to check.", "سعر البيع المقترح لمنتج جديد = سعر الشراء + 15٪، يجب التحقق منه."],
+    ["Les quantités sont comptées sur la photo : vérifie-les avant d'enregistrer.", "Quantities are counted from the photo: check them before saving.", "الكميات معدودة من الصورة: تحقق منها قبل الحفظ."],
+    ["Enregistrer dans mon stock", "Save to my stock", "حفظ في مخزوني"],
+    ["Bel lit la facture…", "Bel is reading the invoice…", "بِل يقرأ الفاتورة…"],
+    ["Bel regarde ton étagère…", "Bel is looking at your shelf…", "بِل ينظر إلى رفّك…"],
+    ["Vérifie la liste, corrige si besoin, puis enregistre.", "Check the list, correct if needed, then save.", "تحقق من القائمة، صحّح إن لزم، ثم احفظ."],
+    ["Aucun produit trouvé. Reprends la photo de plus près, avec plus de lumière.", "No product found. Retake the photo closer, with more light.", "لم يُعثر على أي منتج. أعد التصوير عن قرب وبإضاءة أكثر."],
+    ["Pas de connexion internet.", "No internet connection.", "لا يوجد اتصال بالإنترنت."],
+    ["Coche au moins un produit.", "Tick at least one product.", "حدّد منتجاً واحداً على الأقل."],
+    ["produit(s) créé(s)", "product(s) created", "منتج(ات) أُنشئت"],
+    ["mis à jour", "updated", "تم تحديثها"],
+    ["Ajoute les prix d'achat pour voir ton vrai bénéfice.", "Add purchase prices to see your real profit.", "أضف أسعار الشراء لترى ربحك الحقيقي."],
   ].forEach(([fr, en, ar]) => I18N.set(fr, { en, ar }));
   // Traduit un texte écrit en français (rend le texte d'origine s'il n'est pas dans le dictionnaire)
   function tr(fr) { if (UI_LANG === 'fr') return fr; const t = I18N.get(String(fr).replace(/\s+/g, ' ').trim()); return (t && t[UI_LANG]) || fr; }
@@ -3431,14 +3485,16 @@
   async function aiAskInit() {
     const box = document.getElementById('aiAsk'); if (!box) return;
     const hbtn = document.getElementById('belHeadBtn');
-    if (!isOwnerOrAdmin() || !supabaseClient) { box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; belClosePage(); return; }
-    if (aiAskFor !== CURRENT_USER_ID) { aiAskFor = CURRENT_USER_ID; aiAskOk = false; box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; belClosePage(); }
+    if (!isOwnerOrAdmin() || !supabaseClient) { box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; const c0 = document.getElementById('photoFillCard'); if (c0) c0.style.display = 'none'; belClosePage(); return; }
+    const pfc = document.getElementById('photoFillCard');
+    if (aiAskFor !== CURRENT_USER_ID) { aiAskFor = CURRENT_USER_ID; aiAskOk = false; box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; if (pfc) pfc.style.display = 'none'; belClosePage(); }
     if (aiAskOk || navigator.onLine === false) return;   // déjà vérifié pour ce compte : pas de nouvelle vérification (évite que le cadre clignote)
     try {
       const { data, error } = await supabaseClient.functions.invoke('ask-ai', { body: { ping: true } });
       if (error || !data || !data.actif) return;
       aiAskOk = true;
       box.style.display = '';
+      if (pfc) pfc.style.display = '';
       const face = document.getElementById('belFace'); if (face && !face.innerHTML) face.innerHTML = belAvatarSvg(56);
       const hb = document.getElementById('belHeadBtn'); if (hb) { if (!hb.innerHTML) hb.innerHTML = belAvatarSvg(42); hb.style.display = 'inline-block'; }
       if (aiAskReady) return; aiAskReady = true;
@@ -3453,10 +3509,11 @@
         { e: '📊', l: 'Bilan du mois', q: "📊 Fais-moi le bilan complet du mois." },
         { e: '⚠️', l: 'Problèmes', q: "⚠️ Qu'est-ce qui me fait perdre de l'argent ?" },
         { e: '📅', l: 'Bons jours', q: "📅 Quels sont mes meilleurs jours et heures de vente ?" },
+        { e: '📸', l: 'Stock par photo', go: 'photo' },
       ];
       const cBox = document.getElementById('aiAskChips');
       cBox.innerHTML = tiles.map((t, i) => `<button type="button" class="bel-tile" data-belt="${i}" aria-label="${escapeHtml(t.l)}"><span class="e">${t.e}</span><span>${escapeHtml(t.l)}</span></button>`).join('');
-      cBox.querySelectorAll('[data-belt]').forEach(b => b.addEventListener('click', () => { const t = tiles[Number(b.dataset.belt)]; document.getElementById('aiAskInput').value = tr(t.q); aiAsk(); }));
+      cBox.querySelectorAll('[data-belt]').forEach(b => b.addEventListener('click', () => { const t = tiles[Number(b.dataset.belt)]; if (t.go === 'photo') { belClosePage(); const tb = document.querySelector('[data-tab="produits"]'); if (tb) tb.click(); setTimeout(() => { const c = document.getElementById('photoFillCard'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 150); return; } document.getElementById('aiAskInput').value = tr(t.q); aiAsk(); }));
       document.getElementById('aiAskBtn').addEventListener('click', aiAsk);
       document.getElementById('aiAskReset').addEventListener('click', () => { belStop(); belAudioCache.forEach(u => URL.revokeObjectURL(u)); belAudioCache.clear(); aiHistory = []; aiRender(); belMood('idle'); });
       document.getElementById('aiAskAnswer').addEventListener('click', (e) => {
@@ -5567,6 +5624,159 @@
     if (note) doc.note = note;
     await state.db.doc('mouvements/' + id).set(doc);
   }
+
+  // ================= Saisie par photo (test) : étagère → produits, facture fournisseur → réassort =================
+  let pfMode = 'etagere', pfRows = [], pfMeta = {}, pfBusy = false;
+  const pfNorm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+  function pfMatch(nom) {
+    const a = new Set(pfNorm(nom).split(' ').filter(w => w.length > 1));
+    if (!a.size) return '';
+    let best = '', score = 0;
+    (state.products || []).forEach(p => {
+      const b = new Set(pfNorm(p.nom).split(' ').filter(w => w.length > 1));
+      if (!b.size) return;
+      let common = 0; a.forEach(w => { if (b.has(w)) common++; });
+      const s = common / Math.max(a.size, b.size);
+      if (s > score) { score = s; best = p.id; }
+    });
+    return score >= 0.6 ? best : '';
+  }
+  function pfResize(file) {
+    return new Promise((resolve, reject) => {
+      const rd = new FileReader();
+      rd.onerror = () => reject(new Error('Lecture impossible'));
+      rd.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('Image illisible'));
+        img.onload = () => {
+          const r = Math.min(1600 / img.width, 1600 / img.height, 1);
+          const c = document.createElement('canvas'); c.width = Math.round(img.width * r); c.height = Math.round(img.height * r);
+          const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
+          resolve({ mime: 'image/jpeg', data: c.toDataURL('image/jpeg', 0.82).split(',')[1] });
+        };
+        img.src = rd.result;
+      };
+      rd.readAsDataURL(file);
+    });
+  }
+  function pfStatus(html) { const s = document.getElementById('pfStatus'); if (s) s.innerHTML = html; }
+  function pfRender() {
+    const box = document.getElementById('pfReview');
+    if (!pfRows.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+    const isF = pfMode === 'facture';
+    const opts = (sel) => '<option value="">➕ ' + escapeHtml(tr('Nouveau produit')) + '</option>' + (state.products || []).slice().sort((x, y) => (x.nom || '').localeCompare(y.nom || '')).map(p => `<option value="${escapeHtml(p.id)}"${p.id === sel ? ' selected' : ''}>${escapeHtml(p.nom)}</option>`).join('');
+    const head = isF && (pfMeta.fournisseur || pfMeta.date) ? `<p style="margin:0 0 8px;">🚚 <b>${escapeHtml(pfMeta.fournisseur || '?')}</b>${pfMeta.date ? ' · 📅 ' + escapeHtml(pfMeta.date) : ''}${pfMeta.total ? ' · ' + tr('Total') + ' ' + euros(pfMeta.total) : ''}</p>` : '';
+    box.innerHTML = head + `<div class="pf-scroll"><table><thead><tr><th></th><th>${tr('Produit')}</th><th>${tr('Quantité')}</th><th>${tr('Unité')}</th>${isF ? `<th>${tr('Prix d\'achat')}</th>` : ''}<th>${tr('Prix de vente')}</th><th>${tr('Dans le catalogue')}</th></tr></thead><tbody>` +
+      pfRows.map((r, i) => `<tr data-pfi="${i}">
+        <td><input type="checkbox" data-pf-k="on" ${r.on ? 'checked' : ''} style="width:auto; min-width:0;"></td>
+        <td class="pf-n"><input data-pf-k="nom" value="${escapeHtml(r.nom)}">${r.doute ? `<div class="pf-doute">⚠️ ${tr('Chiffres à vérifier')}</div>` : ''}${!isF && r.matchId ? `<div class="pf-doute">${tr('Déjà dans le catalogue : coché = le stock devient la quantité comptée')}</div>` : ''}</td>
+        <td><input type="number" min="0" step="any" data-pf-k="quantite" value="${escapeHtml(String(r.quantite))}"></td>
+        <td><input data-pf-k="unite" value="${escapeHtml(r.unite)}"></td>
+        ${isF ? `<td><input type="number" min="0" step="1" data-pf-k="prixAchat" value="${r.prixAchat == null ? '' : escapeHtml(String(r.prixAchat))}"></td>` : ''}
+        <td><input type="number" min="0" step="1" data-pf-k="prixVente" value="${r.prixVente == null ? '' : escapeHtml(String(r.prixVente))}" placeholder="?"></td>
+        <td><select data-pf-k="matchId">${opts(r.matchId)}</select></td></tr>`).join('') +
+      `</tbody></table></div>
+      <p class="hint-text">${isF ? tr('Le prix de vente proposé pour un nouveau produit = prix d\'achat + 15 %, à vérifier.') : tr('Les quantités sont comptées sur la photo : vérifie-les avant d\'enregistrer.')}</p>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;"><button type="button" class="primary" id="pfSave">✅ ${tr('Enregistrer dans mon stock')} (${pfRows.filter(r => r.on).length})</button><button type="button" class="ghost" id="pfCancel">${tr('Annuler')}</button></div>`;
+    box.style.display = 'block';
+  }
+  async function pfAnalyse(files) {
+    if (pfBusy || !files.length) return;
+    if (!needOnline('la saisie par photo')) return;
+    pfBusy = true; pfRows = []; pfRender();
+    document.querySelectorAll('.pf-big').forEach(b => b.disabled = true);
+    pfStatus('<span class="bel-dots" style="display:inline-block;"></span> 🧠 ' + escapeHtml(tr(pfMode === 'facture' ? 'Bel lit la facture…' : 'Bel regarde ton étagère…')));
+    try {
+      const images = [];
+      for (const f of [...files].slice(0, 4)) images.push(await pfResize(f));
+      const catalogue = (state.products || []).slice(0, 400).map(p => p.nom).join(' ; ');
+      const { data, error } = await supabaseClient.functions.invoke('ask-ai', { body: { vision: pfMode, images, catalogue, devise: curSym(), lang: UI_LANG } });
+      if (error || !data || !data.resultat) {
+        let msg = 'La lecture de la photo n\'est pas encore activée.';
+        try { const j = error && await error.context.json(); if (j && j.error && !/Question vide/.test(j.error)) msg = j.error; } catch (e) {}
+        throw new Error(msg);
+      }
+      const R = data.resultat;
+      if (pfMode === 'facture') {
+        pfMeta = { fournisseur: R.fournisseur || '', date: R.date || '', total: Number(R.total) || 0 };
+        pfRows = (R.lignes || []).map(l => {
+          const q = Number(l.quantite) || 0, pa = l.prix_achat != null ? Math.round(Number(l.prix_achat)) : (l.total && q ? Math.round(l.total / q) : null);
+          const matchId = pfMatch(l.nom), ex = matchId && state.products.find(p => p.id === matchId);
+          return { on: q > 0, nom: String(l.nom || '').trim(), quantite: q, unite: String(l.unite || (ex && ex.unite) || 'unité'), prixAchat: pa, prixVente: ex ? Number(ex.prixVente) || null : (pa ? Math.round(pa * 1.15 / 25) * 25 : null), matchId, doute: !!l.doute };
+        }).filter(r => r.nom);
+      } else {
+        pfMeta = {};
+        pfRows = (R.produits || []).map(p => {
+          const matchId = pfMatch(p.nom);
+          return { on: !matchId && (Number(p.confiance) || 0) >= 0.4, nom: String(p.nom || '').trim(), quantite: Math.max(0, Math.round(Number(p.quantite) || 0)), unite: String(p.unite || 'pièce'), categorie: String(p.categorie || ''), prixAchat: null, prixVente: p.prix_vente != null ? Math.round(Number(p.prix_vente)) : null, matchId, doute: (Number(p.confiance) || 0) < 0.6 };
+        }).filter(r => r.nom);
+      }
+      pfStatus(pfRows.length ? '✅ ' + escapeHtml(tr('Vérifie la liste, corrige si besoin, puis enregistre.')) + ' (' + pfRows.length + ')' : '😕 ' + escapeHtml(tr('Aucun produit trouvé. Reprends la photo de plus près, avec plus de lumière.')));
+      pfRender();
+    } catch (e) {
+      pfStatus('😕 ' + escapeHtml(isNetErr(e) ? tr('Pas de connexion internet.') : (e.message || 'Erreur')));
+    } finally {
+      pfBusy = false; document.querySelectorAll('.pf-big').forEach(b => b.disabled = false);
+      document.getElementById('pfFile').value = '';
+    }
+  }
+  async function pfSave() {
+    const rows = pfRows.filter(r => r.on && r.nom && Number(r.quantite) >= 0);
+    if (!rows.length) { toast(tr('Coche au moins un produit.')); return; }
+    if (!state.db) { toast('Connexion non disponible — réessaie dans un instant.'); return; }
+    const btn = document.getElementById('pfSave'); if (btn) btn.disabled = true;
+    const isF = pfMode === 'facture', fournisseur = isF ? (pfMeta.fournisseur || '') : '';
+    let crees = 0, maj = 0;
+    const refs = new Set((state.products || []).map(p => p.ref));
+    try {
+      for (const r of rows) {
+        const q = Number(r.quantite) || 0;
+        const ex = r.matchId && state.products.find(p => p.id === r.matchId);
+        if (ex) {
+          const ancien = Number(ex.stock) || 0, nouveau = isF ? ancien + q : q;
+          const up = { stock: nouveau };
+          if (isF && r.prixAchat) up.prixAchat = Number(r.prixAchat);
+          if (r.prixVente && Number(r.prixVente) !== Number(ex.prixVente)) up.prixVente = Number(r.prixVente);
+          if (fournisseur && !ex.fournisseur) up.fournisseur = fournisseur;
+          await state.db.doc('produits/' + ex.id).update(up);
+          if (nouveau !== ancien) logMovement({ productId: ex.id, ref: ex.ref, nom: ex.nom, quantite: nouveau - ancien, ancienStock: ancien, nouveauStock: nouveau, unite: ex.unite || r.unite, source: isF ? 'photo facture' : 'photo étagère' }).catch(() => {});
+          maj++;
+        } else {
+          let base = 'PH-' + pfNorm(r.nom).toUpperCase().replace(/ /g, '-').slice(0, 18), ref = base, n = 2;
+          while (refs.has(ref)) ref = base + '-' + (n++);
+          refs.add(ref);
+          const id = 'p-' + ref.toLowerCase().replace(/[^a-z0-9_.-]/g, '-').slice(0, 60) + '-' + Date.now().toString(36);
+          await state.db.doc('produits/' + id).set({ ref, nom: r.nom, codeBarre: '', fournisseur, categorie: r.categorie || '', emplacement: '', stock: q, unite: r.unite || 'unité', prixAchat: Number(r.prixAchat) || 0, prixVente: Number(r.prixVente) || 0, seuil: Math.max(1, Math.round(q * 0.2)), createdAt: Date.now() });
+          if (q > 0) logMovement({ productId: id, ref, nom: r.nom, quantite: q, ancienStock: 0, nouveauStock: q, unite: r.unite || 'unité', source: isF ? 'photo facture' : 'photo étagère' }).catch(() => {});
+          crees++;
+        }
+      }
+      try { logAction('SAISIE_PHOTO', `${isF ? 'Facture' : 'Étagère'} : ${crees} produit(s) créé(s), ${maj} mis à jour${fournisseur ? ' — ' + fournisseur : ''}`); } catch (e) {}
+      pfRows = []; pfRender();
+      pfStatus('🎉 ' + escapeHtml(`${crees} ${tr('produit(s) créé(s)')}, ${maj} ${tr('mis à jour')}.`) + (isF ? '' : ' 💡 ' + escapeHtml(tr('Ajoute les prix d\'achat pour voir ton vrai bénéfice.'))));
+      toast('📸 ' + crees + ' + ' + maj);
+    } catch (e) {
+      console.error(e); toast("Erreur lors de l'opération.");
+      if (btn) btn.disabled = false;
+    }
+  }
+  (function pfInit() {
+    const card = document.getElementById('photoFillCard'); if (!card) return;
+    const file = document.getElementById('pfFile');
+    card.querySelectorAll('[data-pf]').forEach(b => b.addEventListener('click', () => { pfMode = b.dataset.pf; file.click(); }));
+    file.addEventListener('change', () => pfAnalyse(file.files || []));
+    const rev = document.getElementById('pfReview');
+    rev.addEventListener('input', (e) => {
+      const tr0 = e.target.closest('[data-pfi]'), k = e.target.dataset.pfK; if (!tr0 || !k) return;
+      const r = pfRows[Number(tr0.dataset.pfi)]; if (!r) return;
+      if (k === 'on') r.on = e.target.checked;
+      else if (k === 'quantite' || k === 'prixAchat' || k === 'prixVente') r[k] = e.target.value === '' ? null : Number(e.target.value);
+      else r[k] = e.target.value;
+      if (k === 'on' || k === 'matchId') pfRender();
+    });
+    rev.addEventListener('change', (e) => { if (e.target.dataset.pfK === 'on' || e.target.dataset.pfK === 'matchId') { const tr0 = e.target.closest('[data-pfi]'); const r = tr0 && pfRows[Number(tr0.dataset.pfi)]; if (r) { r[e.target.dataset.pfK] = e.target.dataset.pfK === 'on' ? e.target.checked : e.target.value; pfRender(); } } });
+    rev.addEventListener('click', (e) => { if (e.target.id === 'pfSave') pfSave(); if (e.target.id === 'pfCancel') { pfRows = []; pfRender(); pfStatus(''); } });
+  })();
 
   document.getElementById('btnAddPerte').addEventListener('click', async () => {
     const productId = document.getElementById('ps-produit').value;
