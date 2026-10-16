@@ -1,0 +1,14 @@
+.client-suggest{position:absolute;left:0;right:0;top:100%;z-index:60;max-height:260px;overflow-y:auto;margin-top:6px;padding:6px;
+  background:var(--paper-2);color:var(--ink);border:1.5px solid var(--brick);border-radius:14px;
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--brick) 18%,transparent),0 18px 40px rgba(10,10,40,.45);
+  animation:csPop .18s ease-out;transform-origin:top center;}
+@keyframes csPop{from{opacity:0;transform:translateY(-6px) scale(.98);}to{opacity:1;transform:none;}}
+.client-suggest .cs-item{padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:12px;border-radius:10px;color:var(--ink);
+  transition:background .15s,transform .15s,box-shadow .15s;}
+.client-suggest .cs-item+.cs-item{margin-top:2px;}
+.client-suggest .cs-item:hover,.client-suggest .cs-item.active{background:linear-gradient(90deg,color-mix(in srgb,var(--brick) 30%,transparent),color-mix(in srgb,var(--moss) 18%,transparent));transform:translateX(4px);box-shadow:inset 3px 0 0 var(--brick);}
+.client-suggest .cs-av{flex:0 0 36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;background:linear-gradient(135deg,var(--brick),var(--moss));box-shadow:0 0 12px color-mix(in srgb,var(--brick) 55%,transparent);}
+.client-suggest .cs-txt{display:flex;flex-direction:column;min-width:0;}
+.client-suggest .cs-name{font-weight:700;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.client-suggest .cs-tel{font-size:12.5px;color:var(--ink);opacity:.75;}
+.client-suggest .cs-empty{padding:12px 14px;color:var(--ink);opacity:.85;font-size:13.5px;}

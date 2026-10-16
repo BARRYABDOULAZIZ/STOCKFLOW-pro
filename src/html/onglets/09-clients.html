@@ -1,0 +1,83 @@
+  <section class="panel" id="panel-clients">
+    <div class="cluster">
+      <div class="stat"><div class="num" id="clCount">–</div><div class="lbl">Clients</div></div>
+      <div class="stat"><div class="num alert" id="clDetteTotale">–</div><div class="lbl">💰 Total dû par les clients</div></div>
+      <div class="stat"><div class="num alert" id="clAvecDette">–</div><div class="lbl">Clients avec un solde dû</div></div>
+    </div>
+
+    <div class="card">
+      <div class="row-head"><h2 id="clFormTitle">Ajouter un client</h2></div>
+      <div class="field-grid">
+        <div><label>Nom</label><input id="cl-nom" placeholder="Nom du client"></div>
+        <div><label>Téléphone</label><input id="cl-tel" placeholder="+221 ..."></div>
+        <div><label>Adresse</label><input id="cl-adresse" placeholder="Adresse"></div>
+      </div>
+      <p class="hint-text" style="margin-top:0;">Un client est aussi créé automatiquement dès qu'un nom est saisi sur une vente (onglet Ventes).</p>
+      <div style="display:flex; gap:10px;">
+        <button class="primary" id="btnAddClient">Ajouter le client</button>
+        <button class="ghost" id="btnCancelClEdit" style="display:none;">Annuler la modification</button>
+      </div>
+    </div>
+
+    <div class="row-head"><h2>Liste des clients</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nom</th><th>Téléphone</th><th class="num-cell">Total facturé</th><th class="num-cell">Reste à payer</th><th></th></tr></thead>
+        <tbody id="clBody"></tbody>
+      </table>
+      <div class="empty" id="clEmpty" style="display:none;">Aucun client pour l'instant.</div>
+    </div>
+
+    <!-- Fiche détaillée client -->
+    <div class="card" id="clDetailCard" style="display:none;">
+      <div class="row-head">
+        <h2 id="cld-nom">Client</h2>
+        <button class="ghost" id="btnCloseClDetail">Fermer</button>
+      </div>
+
+      <div class="hero-row" style="margin-bottom:18px;">
+        <div class="hero-card invest"><div class="hlbl">Total facturé</div><div class="hval" id="cld-facture">–</div></div>
+        <div class="hero-card value"><div class="hlbl">Total payé</div><div class="hval" id="cld-paye">–</div></div>
+        <div class="hero-card profit" style="background: var(--danger);"><div class="hlbl">💰 Reste à payer</div><div class="hval" id="cld-reste">–</div></div>
+      </div>
+      <p class="muted" style="margin-bottom:18px;">📞 <span id="cld-tel">—</span> · 📍 <span id="cld-adresse">—</span></p>
+
+      <div class="row-head"><h2>Enregistrer un paiement</h2></div>
+      <div class="field-grid">
+        <div>
+          <label>Facture concernée</label>
+          <select id="cld-facture-select"></select>
+        </div>
+        <div><label>Montant reçu (<span class="cur-sym">FCFA</span>)</label><input id="cld-montant" type="number" min="0" step="1" value="0"></div>
+        <div>
+          <label>Mode de paiement</label>
+          <select id="cld-mode">
+            <option value="Espèces">Espèces</option>
+            <option value="Mobile Money">Mobile Money</option>
+            <option value="Virement">Virement</option>
+            <option value="Chèque">Chèque</option>
+          </select>
+        </div>
+        <div><label>Date</label><input id="cld-date" type="date"></div>
+      </div>
+      <button class="primary" id="btnAddPaiement">Enregistrer le paiement</button>
+
+      <div class="row-head" style="margin-top:22px;"><h2>Factures de ce client</h2></div>
+      <div class="table-wrap short">
+        <table>
+          <thead><tr><th>N°</th><th>Date</th><th class="num-cell">Total</th><th class="num-cell">Payé</th><th class="num-cell">Reste</th></tr></thead>
+          <tbody id="cld-factures"></tbody>
+        </table>
+        <div class="empty" id="cld-factures-empty" style="display:none;">Aucune facture pour ce client.</div>
+      </div>
+
+      <div class="row-head" style="margin-top:22px;"><h2>Historique des paiements</h2></div>
+      <div class="table-wrap short">
+        <table>
+          <thead><tr><th>Date</th><th>Facture</th><th class="num-cell">Montant</th><th>Mode</th></tr></thead>
+          <tbody id="cld-paiements"></tbody>
+        </table>
+        <div class="empty" id="cld-paiements-empty" style="display:none;">Aucun paiement enregistré.</div>
+      </div>
+    </div>
+  </section>

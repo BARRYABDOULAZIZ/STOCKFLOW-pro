@@ -1,0 +1,102 @@
+  <section class="panel" id="panel-donnees">
+    <div class="card">
+      <div class="row-head"><h2>🏪 Mon commerce</h2></div>
+      <p class="hint-text" style="margin-top:0;">Ces informations apparaissent sur les factures imprimées.</p>
+      <div class="field-grid">
+        <div><label>Nom du commerce</label><input id="cm-nom" placeholder="Nom affiché sur les factures"></div>
+        <div><label>Adresse</label><input id="cm-adresse" placeholder="Adresse"></div>
+        <div><label>Téléphone</label><input id="cm-telephone" placeholder="Téléphone"></div>
+        <div><label>Email</label><input id="cm-email" type="email" placeholder="Email"></div>
+        <div><label>Numéro fiscal</label><input id="cm-fiscal" placeholder="Optionnel"></div>
+        <div><label>💱 Devise (monnaie du pays)</label><select id="cm-devise"></select></div>
+        <div><label>🌍 Langue des factures et tickets</label><select id="cm-langue"></select></div>
+      </div>
+
+      <div class="field-grid" style="margin-top:14px;">
+        <div>
+          <label>Logo (affiché sur les factures)</label>
+          <input id="cm-logo-file" type="file" accept="image/*">
+          <div style="margin-top:8px; display:flex; align-items:center; gap:10px;">
+            <img id="cm-logo-preview" alt="Logo" style="display:none; max-height:64px; max-width:140px; border:1px solid var(--line); border-radius:6px; background:#fff; padding:4px;">
+            <button class="ghost" id="btnRemoveLogo" type="button" style="display:none;">Retirer</button>
+          </div>
+        </div>
+        <div>
+          <label>Signature ou cachet (affiché sur les factures)</label>
+          <input id="cm-signature-file" type="file" accept="image/*">
+          <div style="margin-top:8px; display:flex; align-items:center; gap:10px;">
+            <img id="cm-signature-preview" alt="Signature" style="display:none; max-height:64px; max-width:160px; border:1px solid var(--line); border-radius:6px; background:#fff; padding:4px;">
+            <button class="ghost" id="btnRemoveSignature" type="button" style="display:none;">Retirer</button>
+          </div>
+        </div>
+      </div>
+      <div style="margin:14px 0;">
+        <label>Message de remerciement (en bas des factures)</label>
+        <input id="cm-message" maxlength="140" placeholder="Merci pour votre confiance, à bientôt !">
+      </div>
+      <button class="primary" id="btnSaveCommerce">Enregistrer</button>
+      <p class="muted" id="commerceStatus" style="margin-top:10px;"></p>
+    </div>
+
+    <div class="card" id="inviteCard" style="display:none;">
+      <div class="row-head"><h2>🔑 Inviter ton équipe</h2></div>
+      <p class="hint-text" style="margin-top:0;">Donne ce code à tes Caissiers/Employés — ils l'utilisent dans l'onglet "Rejoindre" à la connexion, avec leur propre email et mot de passe.</p>
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <code id="inviteCodeDisplay" style="font-size:18px; font-weight:700; padding:8px 14px; background:var(--paper); color:var(--ink); border:1px solid var(--line); border-radius:8px;">------</code>
+        <button class="ghost" id="btnCopyInvite">Copier</button>
+        <button class="ghost" id="btnRegenInvite">🔄 Renouveler le code</button>
+      </div>
+      <p class="hint-text" style="margin-bottom:0;">Renouvelle le code si tu penses qu'il a été partagé par erreur. L'ancien code cesse de fonctionner ; les membres déjà dans l'équipe ne sont pas touchés.</p>
+    </div>
+
+    <div class="card">
+      <div class="row-head"><h2>Export</h2></div>
+      <p class="hint-text" style="margin-top:0;">Excel et JSON contiennent tout (produits, factures, mouvements). Le CSV exporte le catalogue produits, format le plus courant pour un tableur simple.</p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="primary" id="btnExportExcel">📊 Export Excel (.xlsx)</button>
+        <button class="ghost" id="btnExportCsv">Export CSV</button>
+        <button class="ghost" id="btnExportJson">Export JSON</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row-head"><h2>Import JSON</h2></div>
+      <p class="hint-text" style="margin-top:0;">Réimporte un fichier exporté depuis cette application (ou compatible). Les éléments avec le même identifiant seront remplacés, les autres ajoutés — rien n'est supprimé automatiquement.</p>
+      <input type="file" id="importJsonFile" accept="application/json,.json" style="display:none;">
+      <button class="ghost" id="btnImportJson">📥 Choisir un fichier JSON à importer</button>
+      <p class="muted" id="importStatus" style="margin-top:10px;"></p>
+    </div>
+
+    <div class="card">
+      <div class="row-head"><h2>Sauvegarde locale</h2></div>
+      <p class="hint-text" style="margin-top:0;">Une copie de secours est enregistrée automatiquement dans ce navigateur à chaque changement. Elle reste sur cet appareil — elle ne remplace pas l'export JSON si tu changes d'appareil ou vides le cache.</p>
+      <p class="muted" id="localBackupStatus" style="margin-bottom:14px;">Aucune sauvegarde locale pour l'instant.</p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="primary" id="btnManualBackup">💾 Sauvegarder les données</button>
+        <button class="ghost" id="btnRestoreBackup">♻️ Restaurer les données</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
+      <div class="row-head">
+        <h2>📋 Journal des actions</h2>
+        <button class="ghost" id="btnRefreshAudit">🔄 Actualiser</button>
+      </div>
+      <p class="hint-text">Opérations sensibles : annulations de factures, pertes de stock, suppressions de produits, tentatives refusées. Visible uniquement par le propriétaire et l'admin, impossible à modifier.</p>
+      <div style="overflow-x:auto; margin-top:12px;">
+        <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+          <thead>
+            <tr style="text-align:left; border-bottom:2px solid var(--line);">
+              <th style="padding:8px;">Date / heure</th>
+              <th style="padding:8px;">Utilisateur</th>
+              <th style="padding:8px;">Action</th>
+              <th style="padding:8px;">Détails</th>
+            </tr>
+          </thead>
+          <tbody id="auditLogsTbody">
+            <tr><td colspan="4" style="padding:12px; text-align:center;" class="muted">Aucune action enregistrée.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>

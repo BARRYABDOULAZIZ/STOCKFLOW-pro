@@ -1,0 +1,35 @@
+  <section class="panel" id="panel-parametres">
+    <div class="card">
+      <div class="row-head"><h2>📜 Informations légales</h2></div>
+      <p class="hint-text" style="margin-top:0;">Les règles d'utilisation de l'application et la façon dont les données sont protégées.</p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="ghost" type="button" data-legal="cgu">Conditions d'utilisation</button>
+        <button class="ghost" type="button" data-legal="confidentialite">Politique de confidentialité</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row-head"><h2>🔐 Mon compte</h2></div>
+      <p class="hint-text" style="margin-top:0;">Connecté avec : <strong id="pm-email">—</strong></p>
+      <div class="field-grid">
+        <div><label>Nouveau mot de passe</label><input id="pm-pass1" type="password" placeholder="8 caractères min." autocomplete="new-password"></div>
+        <div><label>Confirmer</label><input id="pm-pass2" type="password" placeholder="Répète le mot de passe" autocomplete="new-password"></div>
+      </div>
+      <button class="primary" id="btnChangePass">Changer le mot de passe</button>
+      <p class="muted" id="pmPassStatus" style="margin-top:10px;"></p>
+    </div>
+
+    <div class="card">
+      <div class="row-head">
+        <h2>👥 Mon équipe</h2>
+        <button class="ghost" id="btnRefreshTeam">Actualiser</button>
+      </div>
+      <p class="hint-text" style="margin-top:0;">Change le rôle ou retire l'accès de quelqu'un. Le code d'invitation pour ajouter de nouveaux membres est dans l'onglet Données.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Nom</th><th>Rôle</th><th></th></tr></thead>
+          <tbody id="pmTeamBody"></tbody>
+        </table>
+        <div class="empty" id="pmTeamEmpty" style="display:none;">Chargement…</div>
+      </div>
+    </div>
+  </section>

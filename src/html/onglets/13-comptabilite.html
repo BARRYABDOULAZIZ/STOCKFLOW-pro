@@ -1,0 +1,63 @@
+  <section class="panel" id="panel-comptabilite">
+    <div class="card">
+      <div class="row-head"><h2>💰 Période</h2></div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+        <button class="ghost cp-preset active" data-preset="mois">Ce mois-ci</button>
+        <button class="ghost cp-preset" data-preset="7j">7 derniers jours</button>
+        <button class="ghost cp-preset" data-preset="tout">Depuis le début</button>
+      </div>
+      <div class="field-grid">
+        <div><label>Du</label><input id="cp-du" type="date"></div>
+        <div><label>Au</label><input id="cp-au" type="date"></div>
+      </div>
+    </div>
+
+    <div class="cluster">
+      <div class="stat"><div class="num" id="cpCa">–</div><div class="lbl">Chiffre d'affaires (facturé, hors TVA)</div></div>
+      <div class="stat"><div class="num alert" id="cpCogs">–</div><div class="lbl">Coût des marchandises vendues</div></div>
+      <div class="stat"><div class="num alert" id="cpDepenses">–</div><div class="lbl">Dépenses générales</div></div>
+      <div class="stat"><div class="num alert" id="cpPertes">–</div><div class="lbl">🗑️ Casse / pertes (valeur)</div></div>
+      <div class="stat"><div class="num" id="cpNet">–</div><div class="lbl">✅ Bénéfice net estimé</div></div>
+    </div>
+    <p class="hint-text">Bénéfice net = Chiffre d'affaires − coût des marchandises vendues − dépenses générales − valeur de la casse/pertes. Approximatif si les prix d'achat ont changé depuis.</p>
+
+    <div class="card">
+      <div class="row-head"><h2>Ajouter une dépense</h2></div>
+      <div class="field-grid">
+        <div>
+          <label>Catégorie</label>
+          <select id="dp-categorie">
+            <option value="Loyer">Loyer</option>
+            <option value="Électricité / Eau">Électricité / Eau</option>
+            <option value="Salaires">Salaires</option>
+            <option value="Transport">Transport</option>
+            <option value="Réparations">Réparations</option>
+            <option value="Fournitures">Fournitures</option>
+            <option value="Autre">Autre</option>
+          </select>
+        </div>
+        <div><label>Montant (<span class="cur-sym">FCFA</span>)</label><input id="dp-montant" type="number" min="0" step="1" value="0"></div>
+        <div><label>Date</label><input id="dp-date" type="date"></div>
+        <div><label>Note (optionnel)</label><input id="dp-note" placeholder="Précision"></div>
+      </div>
+      <button class="primary" id="btnAddDepense">Enregistrer la dépense</button>
+    </div>
+
+    <div class="row-head"><h2>Répartition des dépenses par catégorie</h2></div>
+    <div class="table-wrap short">
+      <table>
+        <thead><tr><th>Catégorie</th><th class="num-cell">Total</th></tr></thead>
+        <tbody id="cpCategBody"></tbody>
+      </table>
+      <div class="empty" id="cpCategEmpty" style="display:none;">Aucune dépense sur cette période.</div>
+    </div>
+
+    <div class="row-head"><h2>Détail des dépenses</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Catégorie</th><th>Note</th><th class="num-cell">Montant</th><th></th></tr></thead>
+        <tbody id="cpDepBody"></tbody>
+      </table>
+      <div class="empty" id="cpDepEmpty" style="display:none;">Aucune dépense enregistrée.</div>
+    </div>
+  </section>

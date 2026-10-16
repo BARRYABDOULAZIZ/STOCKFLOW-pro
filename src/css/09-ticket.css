@@ -1,0 +1,25 @@
+#printTicket{display:none;}
+.tk-opt{display:inline-flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;color:var(--ink);}
+.tk-opt input{width:18px;height:18px;accent-color:var(--brick);}
+@media print {
+  body.print-ticket #printArea, body.print-ticket #printInvSheet { display:none !important; }
+  body.print-ticket * { visibility:hidden; }
+  body.print-ticket #printTicket, body.print-ticket #printTicket * { visibility:visible; }
+  body.print-ticket #printTicket { display:block !important; position:absolute; left:0; top:0; background:#fff !important; color:#000 !important;
+    font-family:'Courier New',Courier,monospace; font-size:12px; line-height:1.35; padding:3mm 3mm 6mm; box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  body.print-ticket #printTicket.tk-w80 { width:80mm; }
+  body.print-ticket #printTicket.tk-w58 { width:58mm; font-size:11px; padding:2mm 2mm 6mm; }
+  #printTicket *{ color:#000 !important; background:none !important; }
+  #printTicket .tk-center{text-align:center;}
+  #printTicket .tk-logo{max-width:40mm;max-height:18mm;display:block;margin:0 auto 2mm;}
+  #printTicket .tk-shop{font-size:1.25em;font-weight:800;text-transform:uppercase;}
+  #printTicket .tk-sep{border-top:1px dashed #000;margin:2mm 0;}
+  #printTicket .tk-row{display:flex;justify-content:space-between;gap:6px;}
+  #printTicket .tk-item{margin-bottom:1.5mm;}
+  #printTicket .tk-name{font-weight:700;word-break:break-word;}
+  #printTicket .tk-total{font-size:1.3em;font-weight:800;margin-top:1mm;}
+  #printTicket .tk-reste{font-weight:800;}
+  #printTicket .tk-small{font-size:.85em;margin-top:1mm;}
+  #printTicket .tk-thanks{font-weight:700;}
+  #printTicket .tk-cut{color:#fff !important;height:6mm;}
+}

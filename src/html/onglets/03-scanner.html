@@ -1,0 +1,58 @@
+  <section class="panel" id="panel-scanner">
+    <div class="filter-bar">
+      <button class="ghost active" data-scanmode="usb">🖨 Scanner USB / Bluetooth</button>
+      <button class="ghost" data-scanmode="camera">📷 Caméra du téléphone</button>
+    </div>
+
+    <div class="card" id="scanUsbCard">
+      <div class="row-head"><h2>Scanner physique</h2></div>
+      <p class="hint-text" style="margin-top:0;">Clique dans le champ ci-dessous puis scanne — le scanner "tape" le code et valide automatiquement, comme un clavier.</p>
+      <input id="scanUsbInput" placeholder="En attente d'un scan…" autocomplete="off" style="font-size:18px; padding:14px; text-align:center;">
+    </div>
+
+    <div class="card" id="scanCameraCard" style="display:none;">
+      <div class="row-head"><h2>Scanner par caméra</h2></div>
+      <p class="hint-text" style="margin-top:0;">EAN-13 et QR Code pris en charge. Autorise l'accès à la caméra si le navigateur le demande.</p>
+      <div style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
+        <button class="primary" id="btnStartCamera">Démarrer la caméra</button>
+        <button class="ghost" id="btnStopCamera" style="display:none;">Arrêter</button>
+        <button class="ghost" id="btnSwitchCamera" style="display:none;">Changer de caméra</button>
+      </div>
+      <div style="max-width:420px; border-radius:var(--radius); overflow:hidden; border:1px solid var(--line); background:#000;">
+        <video id="scanVideo" style="width:100%; display:block;" playsinline muted></video>
+      </div>
+      <p class="muted" id="cameraStatus" style="margin-top:10px;"></p>
+    </div>
+
+    <!-- Fiche produit après un scan réussi -->
+    <div class="card" id="scanResultCard" style="display:none;">
+      <div class="row-head"><h2 id="scanResultTitle">Produit trouvé</h2></div>
+      <div class="field-grid">
+        <div><label>Référence</label><input id="sr-ref" disabled></div>
+        <div><label>Fournisseur</label><input id="sr-fournisseur" disabled></div>
+        <div><label>Stock actuel</label><input id="sr-stock" disabled></div>
+        <div><label>Quantité reçue</label><input id="sr-qte" type="number" min="1" step="any" value="1"></div>
+      </div>
+      <p class="hint-text" id="sr-preview" style="margin-top:-4px;"></p>
+      <div style="display:flex; gap:10px;">
+        <button class="primary" id="btnConfirmReception">✓ Confirmer la réception</button>
+        <button class="ghost" id="btnCancelReception">Annuler</button>
+      </div>
+    </div>
+
+    <!-- Code non reconnu -->
+    <div class="card" id="scanUnknownCard" style="display:none;">
+      <div class="row-head"><h2>Code-barres non reconnu</h2></div>
+      <p class="hint-text" style="margin-top:0;">Aucun produit ne correspond au code <strong id="sr-unknown-code"></strong> dans le catalogue.</p>
+      <div style="display:flex; gap:10px;">
+        <button class="primary" id="btnCreateFromScan">Créer un nouveau produit avec ce code</button>
+        <button class="ghost" id="btnDismissUnknown">Scanner autre chose</button>
+      </div>
+    </div>
+
+    <div class="row-head"><h2>Réceptions récentes</h2></div>
+    <div class="table-wrap short">
+      <ul class="mini-list" id="movementsList"></ul>
+      <div class="empty" id="movementsEmpty" style="display:none;">Aucun mouvement de stock enregistré pour l'instant.</div>
+    </div>
+  </section>

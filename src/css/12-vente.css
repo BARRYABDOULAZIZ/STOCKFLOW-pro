@@ -1,0 +1,38 @@
+/* Vente : type, lettres */
+.sale-type{display:flex;gap:8px;}
+.st-btn{flex:1;padding:11px 10px;border-radius:12px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-weight:800;font-size:14px;cursor:pointer;transition:all .15s;}
+.st-btn.on{background:var(--brick);border-color:var(--brick);color:#fff;box-shadow:0 4px 14px color-mix(in srgb,var(--brick) 40%,transparent);}
+.st-btn[data-st="credit"].on{background:var(--gold);border-color:var(--gold);color:#3a2a00;}
+.inv-lettres{text-align:right;font-style:italic;font-size:13.5px;color:var(--ink);opacity:.85;margin:4px 0 0;min-height:18px;}
+/* Produits : cartes */
+.cat-toolbar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:6px 0 12px;}
+.cat-chips{display:flex;gap:8px;flex-wrap:wrap;}
+.cat-chip{padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-weight:700;font-size:13px;cursor:pointer;}
+.cat-chip em{font-style:normal;opacity:.65;margin-left:3px;}
+.cat-chip.on{background:var(--brick);border-color:var(--brick);color:#fff;}
+.cat-right{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.stock-value-bar{font-size:13.5px;color:var(--ink);padding:6px 12px;border-radius:12px;background:var(--paper);border:1px solid var(--line);}
+.stock-value-bar b{font-size:15px;margin:0 4px;}
+.eye-btn{border:0;background:transparent;color:var(--ink);cursor:pointer;font-size:15px;padding:2px 6px;border-radius:8px;}
+.eye-btn:hover{background:var(--line);}
+.eye-row{display:flex;justify-content:flex-end;margin:0 0 6px;}
+.view-toggle{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+.view-toggle button{padding:7px 12px;border:0;background:var(--paper);color:var(--ink);font-weight:700;font-size:13px;cursor:pointer;}
+.view-toggle button.on{background:var(--brick);color:#fff;}
+.stock-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:10px;margin-bottom:18px;}
+.sc{display:grid;grid-template-columns:1fr auto;grid-template-areas:"main stock" "prices act";gap:6px 12px;align-items:center;padding:13px 15px;border-radius:16px;background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--moss);color:var(--ink);transition:transform .15s,box-shadow .15s;}
+.sc:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.18);}
+.sc.low{border-left-color:var(--gold);}.sc.zero{border-left-color:#dc2626;background:color-mix(in srgb,#dc2626 7%,var(--paper));}
+.sc-main{grid-area:main;min-width:0;}
+.sc-name{font-size:16px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sc-sub{font-size:12.5px;opacity:.7;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sc-stock{grid-area:stock;text-align:right;line-height:1.1;}
+.sc-stock b{display:block;font-size:22px;}
+.sc-stock small{font-size:12px;opacity:.75;}
+.sc.low .sc-stock b{color:var(--gold);}.sc.zero .sc-stock b{color:#ff5a5a;font-size:18px;}
+.sc-prices{grid-area:prices;display:flex;gap:14px;font-size:13.5px;flex-wrap:wrap;}
+.sc-prices .v{color:var(--moss);font-weight:800;}.sc-prices .a{opacity:.7;}
+.sc-act{grid-area:act;display:flex;gap:4px;justify-content:flex-end;}
+.sc-act .icon-btn{opacity:.6;}.sc-act .icon-btn:hover{opacity:1;}
+body.hide-amounts #stockValue,body.hide-amounts #heroInvesti,body.hide-amounts #heroValeur,body.hide-amounts #heroBenefice,body.hide-amounts #statTotalValue,body.hide-amounts .ai-kpi b{filter:blur(9px);user-select:none;}
+@media (max-width:640px){.stock-cards{grid-template-columns:1fr;}.cat-right{width:100%;justify-content:space-between;}}

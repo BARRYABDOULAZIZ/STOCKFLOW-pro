@@ -1,0 +1,74 @@
+  <section class="panel" id="panel-inventaire">
+    <div class="row-head"><h2>Inventaire intelligent</h2></div>
+    <div class="filter-bar">
+      <button class="ghost active" data-filter="tous">Tous les produits</button>
+      <button class="ghost" data-filter="faible">Stock faible</button>
+      <button class="ghost" data-filter="rupture">Rupture</button>
+      <button class="ghost" data-filter="reappro">À réapprovisionner</button>
+      <select id="catFilter"><option value="">Toutes catégories</option></select>
+    </div>
+
+    <div class="card" id="invSheetCard">
+      <div class="row-head"><h2>🖨 Feuille d'inventaire à imprimer</h2></div>
+      <p class="hint-text" style="margin-top:0;">Une feuille sans aucun prix, avec les colonnes : Référence, Code-barres, Produit, Quantité théorique, Quantité comptée (vide) et Observations (vide).</p>
+      <div class="field-grid">
+        <div>
+          <label>Quels produits ?</label>
+          <select id="is-scope">
+            <option value="tous">Tous les produits</option>
+            <option value="reappro">À réapprovisionner (faible + rupture)</option>
+            <option value="faible">Stock faible seulement</option>
+            <option value="rupture">Rupture seulement</option>
+          </select>
+        </div>
+        <div>
+          <label>Trier par</label>
+          <select id="is-sort">
+            <option value="categorie">Catégorie, puis nom</option>
+            <option value="emplacement">Emplacement (parcours du magasin)</option>
+            <option value="nom">Nom</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <label>Catégories (ne rien cocher = toutes)</label>
+        <div id="is-cats" style="display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:6px;"></div>
+      </div>
+      <label style="display:flex; align-items:center; gap:8px; margin-top:12px; font-weight:400;">
+        <input type="checkbox" id="is-blind" style="width:auto;"> Comptage à l'aveugle (masquer la quantité théorique)
+      </label>
+      <div style="margin-top:14px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <button class="primary" id="btnPrintInvSheet">🖨 Imprimer la feuille</button>
+        <span class="muted" id="is-count"></span>
+      </div>
+    </div>
+
+    <div class="card" id="countCard">
+      <div class="row-head"><h2>✅ Comptage dans l'appli</h2></div>
+      <p class="hint-text" style="margin-top:0;">Utilise les mêmes choix que la feuille ci-dessus (produits, catégories, tri, aveugle). Saisis les quantités comptées : l'écart s'affiche tout de suite. Rien ne change dans le stock tant que tu ne cliques pas sur « Valider les écarts ».</p>
+      <button class="primary" id="btnStartCount">▶ Démarrer le comptage</button>
+      <div id="countArea" style="display:none; margin-top:14px;">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Réf.</th><th>Produit</th><th class="num-cell count-theo">Théorique</th><th class="num-cell">Compté</th><th class="num-cell">Écart</th><th>Observation</th></tr></thead>
+            <tbody id="countBody"></tbody>
+          </table>
+        </div>
+        <div id="countSummary" class="muted" style="margin:10px 0;"></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="primary" id="btnValidateCount">✔ Valider les écarts</button>
+          <button class="ghost" id="btnCancelCount">Annuler le comptage</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Produit</th><th class="num-cell">Quantité</th><th class="num-cell">Prix Achat</th><th class="num-cell">Prix Vente</th><th class="num-cell">Valeur Achat</th><th class="num-cell">Valeur Vente</th><th class="num-cell">Marge Potentielle</th><th></th></tr>
+        </thead>
+        <tbody id="invBody"></tbody>
+      </table>
+      <div class="empty" id="invEmpty" style="display:none;">Aucun produit ne correspond à ce filtre.</div>
+    </div>
+  </section>

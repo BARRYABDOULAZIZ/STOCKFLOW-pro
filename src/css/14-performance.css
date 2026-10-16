@@ -1,0 +1,4 @@
+/* Performance : plus d'animation permanente sur l'en-tête (elle redessinait l'écran en continu sur les téléphones modestes) */
+header.top{animation:none !important;background-size:100% 100% !important;}
+.sync .dot,.sync .dot::before,.sync .dot::after{animation:none !important;}
+.stk.low{animation:none !important;}

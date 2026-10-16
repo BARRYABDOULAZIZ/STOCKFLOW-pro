@@ -1,0 +1,73 @@
+  <section class="panel" id="panel-fournisseurs">
+    <div class="cluster">
+      <div class="stat"><div class="num" id="fsCount">–</div><div class="lbl">Fournisseurs</div></div>
+      <div class="stat"><div class="num alert" id="fsDetteTotale">–</div><div class="lbl">💰 Dette totale</div></div>
+      <div class="stat"><div class="num alert" id="fsAvecDette">–</div><div class="lbl">Fournisseurs avec dette</div></div>
+    </div>
+
+    <div class="card">
+      <div class="row-head"><h2 id="fsFormTitle">Ajouter un fournisseur</h2></div>
+      <div class="field-grid">
+        <div><label>Nom</label><input id="fs-nom" placeholder="Nom du fournisseur"></div>
+        <div><label>Téléphone</label><input id="fs-tel" placeholder="+221 ..."></div>
+        <div><label>Email</label><input id="fs-email" placeholder="contact@fournisseur.com"></div>
+        <div><label>Adresse</label><input id="fs-adresse" placeholder="Adresse"></div>
+      </div>
+      <p class="hint-text" style="margin-top:0;">Les produits sont associés automatiquement quand leur champ "Fournisseur" (onglet Produits) correspond à ce nom.</p>
+      <div style="display:flex; gap:10px;">
+        <button class="primary" id="btnAddFournisseur">Ajouter le fournisseur</button>
+        <button class="ghost" id="btnCancelFsEdit" style="display:none;">Annuler la modification</button>
+      </div>
+    </div>
+
+    <div class="row-head"><h2>Liste des fournisseurs</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nom</th><th>Téléphone</th><th>Email</th><th class="num-cell">Dette</th><th>Dernière commande</th><th></th></tr></thead>
+        <tbody id="fsBody"></tbody>
+      </table>
+      <div class="empty" id="fsEmpty" style="display:none;">Aucun fournisseur pour l'instant.</div>
+    </div>
+
+    <!-- Fiche détaillée fournisseur -->
+    <div class="card" id="fsDetailCard" style="display:none;">
+      <div class="row-head">
+        <h2 id="fsd-nom">Fournisseur</h2>
+        <button class="ghost" id="btnCloseFsDetail">Fermer</button>
+      </div>
+
+      <div class="hero-row" style="margin-bottom:18px;">
+        <div class="hero-card invest"><div class="hlbl">Total commandé</div><div class="hval" id="fsd-commande">–</div></div>
+        <div class="hero-card value"><div class="hlbl">Total payé</div><div class="hval" id="fsd-paye">–</div></div>
+        <div class="hero-card profit" style="background: var(--danger);"><div class="hlbl">💰 Dette fournisseur (reste à payer)</div><div class="hval" id="fsd-dette">–</div></div>
+      </div>
+
+      <p class="muted" style="margin-bottom:4px;">📅 Date dernière commande : <strong id="fsd-derniere">—</strong></p>
+      <p class="muted" style="margin-bottom:18px;">📞 <span id="fsd-tel">—</span> · ✉️ <span id="fsd-email">—</span> · 📍 <span id="fsd-adresse">—</span></p>
+
+      <div class="row-head"><h2>📦 Produits associés</h2></div>
+      <div class="table-wrap short" style="margin-bottom:22px;">
+        <ul class="mini-list" id="fsd-produits"></ul>
+        <div class="empty" id="fsd-produits-empty" style="display:none;">Aucun produit rattaché à ce fournisseur pour l'instant.</div>
+      </div>
+
+      <div class="row-head"><h2>Ajouter une commande / un paiement</h2></div>
+      <div class="field-grid">
+        <div><label>Date</label><input id="fo-date" type="date"></div>
+        <div><label>Montant commandé (<span class="cur-sym">FCFA</span>)</label><input id="fo-commande" type="number" min="0" step="1" value="0"></div>
+        <div><label>Montant payé (<span class="cur-sym">FCFA</span>)</label><input id="fo-paye" type="number" min="0" step="1" value="0"></div>
+        <div><label>Note</label><input id="fo-note" placeholder="Facultatif"></div>
+      </div>
+      <p class="hint-text" style="margin-top:-4px;">Laisse "Montant commandé" à 0 pour enregistrer un simple paiement sur la dette existante.</p>
+      <button class="primary" id="btnAddCommande">Enregistrer</button>
+
+      <div class="row-head" style="margin-top:22px;"><h2>Historique</h2></div>
+      <div class="table-wrap short">
+        <table>
+          <thead><tr><th>Date</th><th class="num-cell">Commandé</th><th class="num-cell">Payé</th><th>Note</th></tr></thead>
+          <tbody id="fsd-historique"></tbody>
+        </table>
+        <div class="empty" id="fsd-historique-empty" style="display:none;">Aucune commande enregistrée.</div>
+      </div>
+    </div>
+  </section>

@@ -1,0 +1,48 @@
+  /* ===== Navigation : menu latéral (ordinateur) / barre du bas (téléphone) ===== */
+  #bottomBar, #menuBackdrop { display:none; }
+  @media (min-width:900px) {
+    .shell { max-width:1380px; display:grid; grid-template-columns:236px minmax(0,1fr); column-gap:24px; align-items:start; padding:20px 24px 60px; }
+    .shell > header.top { grid-column:1 / -1; }
+    .shell > section.panel { grid-column:2; min-width:0; }
+    nav.tabs { grid-column:1; position:sticky; top:16px; align-self:start; display:flex; flex-direction:column; gap:6px; margin:0; padding:12px; overflow-y:auto; overflow-x:hidden;
+      max-height:calc(100vh - 32px); border-radius:22px; background:var(--paper-2); border:1px solid var(--line); box-shadow:var(--shadow); backdrop-filter:none; }
+    nav.tabs button { width:100%; text-align:left; border-radius:14px; border:1px solid transparent; background:transparent; padding:12px 14px 12px 20px; min-height:44px; font-size:14px; }
+    nav.tabs button:hover { background:color-mix(in srgb, var(--glow2) 14%, transparent); border-color:color-mix(in srgb, var(--glow2) 45%, transparent); transform:translateX(3px); box-shadow:none; }
+    nav.tabs button.active { color:#fff; border-color:transparent; padding-left:22px; }
+    nav.tabs button.active:hover { transform:none; background:linear-gradient(120deg, rgba(34,211,238,.22), rgba(91,61,245,.92) 38%, #8f4bff 70%, #ff3d8b); }
+  }
+  @media (max-width:899px) {
+    .shell { padding-bottom:110px; }
+    #menuBackdrop { position:fixed; inset:0; z-index:58; background:rgba(15,10,50,.45); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); }
+    body.menu-open #menuBackdrop { display:block; animation:panelIn .2s ease; }
+    nav.tabs { display:none; position:fixed; left:12px; right:12px; bottom:calc(84px + env(safe-area-inset-bottom, 0px)); top:auto; z-index:59; margin:0; padding:14px;
+      grid-template-columns:repeat(3, 1fr); gap:10px; max-height:62vh; overflow-y:auto; border-radius:24px; background:var(--paper-2); border:1px solid var(--line); box-shadow:0 24px 60px rgba(20,10,80,.45); }
+    body.menu-open nav.tabs { display:grid; animation:sheetUp .28s cubic-bezier(.2,.9,.3,1); }
+    nav.tabs button { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; text-align:center; white-space:normal; line-height:1.15; padding:14px 6px; min-height:74px; border-radius:18px; font-size:12px; }
+    nav.tabs button.active { padding-left:6px; }
+    nav.tabs button.active::before { display:none; }
+    #bottomBar { display:flex; position:fixed; left:10px; right:10px; bottom:calc(10px + env(safe-area-inset-bottom, 0px)); z-index:60; height:66px; padding:6px; gap:4px; border-radius:24px;
+      background:color-mix(in srgb, var(--paper-2) 92%, transparent); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid var(--line); box-shadow:0 12px 34px rgba(30,20,120,.30); }
+    #bottomBar button { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; border:none; background:transparent; color:var(--ink); border-radius:18px;
+      font:600 10.5px/1.1 'Plus Jakarta Sans',sans-serif; cursor:pointer; transition:background .2s, transform .15s, box-shadow .2s; -webkit-tap-highlight-color:transparent; }
+    #bottomBar button .bi { font-size:21px; line-height:1; transition:transform .2s; }
+    #bottomBar button:active { transform:scale(.92); }
+    #bottomBar button.active { color:#fff; background:linear-gradient(120deg,#5b3df5,#8f4bff 60%,#ff3d8b); box-shadow:0 0 0 1px rgba(34,211,238,.6), 0 0 16px rgba(34,211,238,.55); }
+    #bottomBar button.active .bi { transform:translateY(-2px) scale(1.12); }
+    .toast { bottom:calc(92px + env(safe-area-inset-bottom, 0px)); }
+  }
+  @keyframes sheetUp { from { opacity:0; transform:translateY(24px) scale(.97); } to { opacity:1; transform:none; } }
+  @media print { #bottomBar, #menuBackdrop { display:none !important; } }
+  
+  /* ===== Impression : toujours papier blanc + texte noir (même en mode sombre) ===== */
+  @media print {
+    :root, :root:not([data-theme="light"]), :root[data-theme="dark"], :root[data-theme="light"] { --ink:#000 !important; --paper:#fff !important; --paper-2:#fff !important; --line:#cfcfcf !important; --brick:#000 !important; --moss:#000 !important; --danger:#000 !important; }
+    html, body { background:#fff !important; background-image:none !important; color:#000 !important; height:auto !important; color-scheme:light !important; }
+    #printArea, #printInvSheet { background:#fff !important; color:#000 !important; }
+    #printArea h1, #printArea .pi-meta, #printArea .pi-client, #printArea .pi-total, #printArea .pi-table td, #printArea .pi-table .num-cell { color:#000 !important; opacity:1 !important; }
+    #printArea .pi-table th { color:#000 !important; opacity:1 !important; border-bottom:1px solid #000 !important; font-weight:700 !important; background:none !important; }
+    #printArea .pi-table td { background:none !important; box-shadow:none !important; }
+    #printArea .pi-table tr:hover { background:none !important; box-shadow:none !important; }
+    #printInvSheet th, #printInvSheet td { color:#000 !important; }
+    #printArea::before, #printArea::after { display:none !important; }
+  }

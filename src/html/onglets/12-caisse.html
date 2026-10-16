@@ -1,0 +1,85 @@
+  <section class="panel" id="panel-caisse">
+    <div class="card">
+      <div class="row-head"><h2>🧾 Caisse — encaissements</h2></div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+        <button class="ghost cs-preset active" data-preset="jour">Aujourd'hui</button>
+        <button class="ghost cs-preset" data-preset="7j">7 derniers jours</button>
+        <button class="ghost cs-preset" data-preset="mois">Ce mois-ci</button>
+      </div>
+      <div class="field-grid">
+        <div><label>Du</label><input id="cs-du" type="date"></div>
+        <div><label>Au</label><input id="cs-au" type="date"></div>
+      </div>
+    </div>
+
+    <div class="cluster">
+      <div class="stat"><div class="num" id="csEsp">–</div><div class="lbl">💵 Espèces</div></div>
+      <div class="stat"><div class="num" id="csMobile">–</div><div class="lbl">📱 Mobile Money</div></div>
+      <div class="stat"><div class="num" id="csVirement">–</div><div class="lbl">🏦 Virement</div></div>
+      <div class="stat"><div class="num" id="csCheque">–</div><div class="lbl">📄 Chèque</div></div>
+      <div class="stat"><div class="num" id="csTotal">–</div><div class="lbl">Total encaissé</div></div>
+    </div>
+    <p class="hint-text" id="csHint"></p>
+
+    <div class="card" id="clotureCard">
+      <div class="row-head"><h2>🔒 Clôture de caisse — aujourd'hui</h2><span class="muted" id="clDate"></span></div>
+      <div class="cl-grid">
+        <div>
+          <h3 class="cl-h">1. Ce que l'appli attend dans le tiroir</h3>
+          <div class="cl-line"><span>💵 Espèces encaissées aujourd'hui</span><b id="clEsp">0</b></div>
+          <div class="cl-line"><span>➖ Dépenses payées en espèces</span><input id="clDep" type="number" min="0" step="any" placeholder="0"></div>
+          <div class="cl-line"><span>➕ Fond de caisse du matin</span><input id="clFond" type="number" min="0" step="any" placeholder="0"></div>
+          <div class="cl-line cl-big"><span>Espèces attendues</span><b id="clAttendu">0</b></div>
+          <div class="cl-line cl-muted"><span>📱🏦📄 Autres modes (à vérifier sur le téléphone / la banque)</span><b id="clAutres">0</b></div>
+          <div class="cl-line cl-muted"><span>🧾 Nombre de ventes encaissées</span><b id="clNb">0</b></div>
+        </div>
+        <div>
+          <h3 class="cl-h">2. Ce que tu comptes réellement</h3>
+          <div id="clDenoms"></div>
+          <div class="cl-line cl-big"><span>Total compté</span><b id="clCompte">0</b></div>
+        </div>
+      </div>
+      <div class="cl-verdict" id="clVerdict" data-state="idle">
+        <div class="cl-vt" id="clVerdictTitle">Compte les billets et les pièces pour voir l'écart.</div>
+        <div class="cl-ecart" id="clEcart"></div>
+        <div class="cl-vh" id="clVerdictHint"></div>
+      </div>
+      <div class="cl-actions">
+        <button class="primary" id="clPrint" type="button">🖨 Imprimer le rapport</button>
+        <button class="ghost" id="clSave" type="button">💾 Enregistrer la clôture</button>
+        <button class="ghost" id="clReset" type="button">Remettre le comptage à zéro</button>
+      </div>
+      <div id="clHistory"></div>
+      <p class="hint-text" style="margin-bottom:0;">Chaque clôture enregistrée est aussi notée dans le <b>Journal des actions</b> (onglet Données) : tu la retrouves depuis n'importe quel appareil.</p>
+    </div>
+
+    <div class="card">
+      <div class="row-head"><h2>Par vendeur</h2></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Vendeur</th><th class="num-cell">Espèces</th><th class="num-cell">Autres modes</th><th class="num-cell">Total</th></tr></thead>
+          <tbody id="csVendeurs"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row-head">
+        <h2>Détail des paiements</h2>
+        <select id="cs-mode-filter" style="max-width:220px;">
+          <option value="">Tous les modes</option>
+          <option value="Espèces">Espèces seulement</option>
+          <option value="Mobile Money">Mobile Money seulement</option>
+          <option value="Virement">Virement seulement</option>
+          <option value="Chèque">Chèque seulement</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Facture</th><th>Client</th><th>Mode</th><th class="num-cell">Montant</th><th>Encaissé par</th></tr></thead>
+          <tbody id="csPaiements"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="csEmpty" style="display:none;">Aucun paiement sur cette période.</div>
+    </div>
+  </section>

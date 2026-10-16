@@ -1,0 +1,19 @@
+  <section class="panel" id="panel-documents">
+    <div class="row-head">
+      <h2>Devis, bons de commande & bons de livraison</h2>
+      <select id="docs-filter" style="max-width:230px;">
+        <option value="">Tous les documents</option>
+        <option value="devis">Devis seulement</option>
+        <option value="bon_commande">Bons de commande seulement</option>
+        <option value="bon_livraison">Bons de livraison seulement</option>
+      </select>
+    </div>
+    <p class="hint-text">Ces documents ne touchent ni le stock, ni la caisse, ni les dettes. Le stock bouge seulement quand tu les transformes en facture. Le bon de livraison s'imprime sans prix : il sert à faire signer la réception des marchandises.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>N°</th><th>Date</th><th>Client</th><th class="num-cell">Total</th><th>Statut</th><th></th></tr></thead>
+        <tbody id="docsBody"></tbody>
+      </table>
+      <div class="empty" id="docsEmpty" style="display:none;">Aucun devis ni bon de commande pour l'instant. Crée-en un dans l'onglet Ventes, en choisissant le type de document en haut.</div>
+    </div>
+  </section>

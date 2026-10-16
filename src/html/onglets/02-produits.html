@@ -1,0 +1,129 @@
+  <section class="panel" id="panel-produits">
+    <div class="cluster">
+      <div class="stat"><div class="num" id="statCount">–</div><div class="lbl">Produits en catalogue</div></div>
+      <div class="stat"><div class="num alert" id="statAlert">–</div><div class="lbl">Sous le seuil d'alerte</div></div>
+      <div class="stat"><div class="num" id="statCategories">–</div><div class="lbl">Catégories</div></div>
+    </div>
+
+    <div class="card" id="photoFillCard" style="display:none;">
+      <div class="row-head"><h2>📸 Remplir mon stock par photo <span class="muted" style="font-size:12px; font-weight:500;">(test)</span></h2></div>
+      <p class="hint-text" style="margin-top:0;">Prends une photo : l'IA trouve les produits, les quantités et les prix. Tu vérifies, rien n'est enregistré sans toi.</p>
+      <div class="pf-btns">
+        <button type="button" class="pf-big" data-pf="etagere"><span class="e">🏪</span><b>Photo de mon étagère</b><small>crée les produits</small></button>
+        <button type="button" class="pf-big" data-pf="facture"><span class="e">🧾</span><b>Photo d'une facture</b><small>ajoute au stock et note les prix d'achat</small></button>
+      </div>
+      <input type="file" id="pfFile" accept="image/*" multiple style="display:none;">
+      <div id="pfStatus" class="muted" style="margin-top:10px;"></div>
+      <div id="pfReview" style="display:none; margin-top:10px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="row-head"><h2>Ajouter / réapprovisionner un produit</h2></div>
+      <div class="field-grid">
+        <div><label>Nom du produit</label><input id="p-nom" placeholder="Ciment, fer à béton, parpaing…"></div>
+        <div><label>Référence interne</label><input id="p-ref" placeholder="REF-001"></div>
+        <div><label>Code-barres</label><div style="display:flex; gap:6px;"><input id="p-barcode" placeholder="EAN / code-barres"><button class="ghost" id="btnScanBarcodeField" type="button" title="Scanner le code-barres" style="padding:8px 12px;">📷</button></div></div>
+        <div><label>Fournisseur</label><input id="p-fournisseur" placeholder="Nom du fournisseur"></div>
+        <div><label>Catégorie</label><input id="p-categorie" list="cat-suggestions" autocomplete="off" placeholder="Gros œuvre, plomberie, électricité…"><datalist id="cat-suggestions"></datalist></div>
+        <div><label>Emplacement</label><input id="p-emplacement" placeholder="Rayon 3, étagère A2…"></div>
+      </div>
+      <div class="field-grid">
+        <div><label id="lbl-stock">Quantité en stock</label><input id="p-stock" type="number" min="0" step="any" value="0"></div>
+        <div>
+          <label>Unité de mesure</label>
+          <input id="p-unite" list="unit-suggestions" placeholder="sac 50kg, m³, ml, tonne…">
+          <datalist id="unit-suggestions">
+            <option value="unité"></option><option value="pièce"></option><option value="kg"></option><option value="gramme"></option><option value="tonne"></option>
+            <option value="litre"></option><option value="millilitre"></option>
+            <option value="sac 50 kg"></option><option value="sac 25 kg"></option><option value="sac 40 kg"></option>
+            <option value="m³ (mètre cube)"></option><option value="m² (mètre carré)"></option><option value="mètre"></option>
+            <option value="ml (mètre linéaire)"></option>
+            <option value="carton"></option><option value="palette"></option><option value="paquet"></option><option value="boîte"></option>
+            <option value="bouteille"></option><option value="rouleau"></option><option value="tube"></option><option value="barre"></option>
+            <option value="bidon"></option><option value="seau"></option><option value="lot"></option><option value="pack"></option>
+            <option value="bobine"></option><option value="ballot"></option><option value="paire"></option>
+            <option value="botte"></option>
+          </datalist>
+        </div>
+        <div class="cost-col"><label>Prix d'achat unitaire (<span class="cur-sym">FCFA</span>)</label><input id="p-prixachat" type="number" min="0" step="1" value="0"></div>
+        <div><label>Prix de vente unitaire (<span class="cur-sym">FCFA</span>)</label><input id="p-prixvente" type="number" min="0" step="1" value="0"></div>
+        <div><label>Seuil d'alerte (stock mini)</label><input id="p-seuil" type="number" min="0" step="any" value="5"></div>
+      </div>
+      <p class="hint-text">Si la référence existe déjà, la quantité saisie s'ajoutera au stock actuel (réapprovisionnement).</p>
+      <p class="hint-text" id="restockHint" style="display:none; color: var(--gold);"></p>
+      <div style="display:flex; gap:10px;">
+        <button class="primary" id="btnAddProduct">Ajouter au catalogue</button>
+        <button class="ghost" id="btnCancelEdit" style="display:none;">Annuler la modification</button>
+      </div>
+    </div>
+
+    <details class="card" id="catMgr" style="display:none;">
+      <summary class="cm-sum"><span>🗂️ Gérer les catégories</span><span class="muted" id="cmSummary"></span></summary>
+      <p class="hint-text" style="margin-top:10px;">Fusionne plusieurs catégories en une seule, ou renomme-en une. Tous les produits concernés sont mis à jour d'un coup. Tu peux annuler la dernière fusion.</p>
+      <div class="cm-tools">
+        <input id="cmSearch" placeholder="🔎 Chercher une catégorie…">
+        <select id="cmSort"><option value="az">A → Z</option><option value="count">Les plus remplies d'abord</option><option value="small">Les moins remplies d'abord</option></select>
+        <button class="ghost" id="cmDupBtn" type="button">✨ Voir les doublons évidents</button>
+      </div>
+      <div id="cmDups" style="display:none;"></div>
+      <div class="cm-list" id="cmList"></div>
+      <div class="cm-bar">
+        <span id="cmSelInfo">Aucune catégorie cochée</span>
+        <input id="cmTarget" list="cat-suggestions" autocomplete="off" placeholder="Nom de la catégorie finale">
+        <button class="primary" id="cmMergeBtn" type="button">Fusionner</button>
+        <button class="ghost" id="cmClearBtn" type="button">Tout décocher</button>
+        <button class="ghost" id="cmUndoBtn" type="button" style="display:none;">↩️ Annuler la dernière fusion</button>
+      </div>
+      <p class="hint-text" id="cmStatus" style="margin-bottom:0;"></p>
+    </details>
+
+    <div class="row-head">
+      <h2>Catalogue <span class="muted" id="catalogCount"></span></h2>
+      <div class="search-box" style="display:flex; gap:6px;">
+        <input id="stockSearch" placeholder="Nom, référence ou code-barres…">
+        <button class="ghost" id="btnScanCatalog" type="button" title="Scanner pour chercher" style="padding: 8px 12px;">📷</button>
+      </div>
+    </div>
+    <div class="cat-toolbar">
+      <div id="catChips" class="cat-chips"></div>
+      <div class="cat-right">
+        <div class="cost-col stock-value-bar">📦 Valeur du stock <b id="stockValue">–</b> <button type="button" class="eye-btn" data-eye title="Masquer / afficher les montants">👁</button></div>
+        <div class="view-toggle"><button type="button" data-view="cards">▦ Cartes</button><button type="button" data-view="table">☰ Tableau</button></div>
+      </div>
+    </div>
+    <div id="stockCards" class="stock-cards"></div>
+    <div class="table-wrap" id="stockTableWrap">
+      <table>
+        <thead>
+          <tr><th>Référence</th><th>Nom</th><th>Code-barres</th><th>Fournisseur</th><th>Catégorie</th><th>Emplacement</th><th class="num-cell cost-col">Achat</th><th class="num-cell">Vente</th><th class="num-cell">Stock</th><th>Unité</th><th></th></tr>
+        </thead>
+        <tbody id="stockBody"></tbody>
+      </table>
+      <div class="empty" id="stockEmpty" style="display:none;">Aucun produit pour l'instant — ajoute ton premier article ci-dessus.</div>
+    </div>
+
+    <div class="card">
+      <div class="row-head"><h2>🗑️ Déclarer une casse / perte</h2></div>
+      <p class="hint-text" style="margin-top:0;">Pour du stock cassé, abîmé, détruit, périmé ou volé — ça sort du stock sans passer par une vente.</p>
+      <div class="field-grid">
+        <div>
+          <label>Produit</label>
+          <select id="ps-produit"></select>
+        </div>
+        <div><label>Quantité perdue</label><input id="ps-qte" type="number" min="0" step="any" value="1"></div>
+        <div>
+          <label>Raison</label>
+          <select id="ps-raison">
+            <option value="Casse">Casse</option>
+            <option value="Abîmé">Abîmé</option>
+            <option value="Détruit">Détruit</option>
+            <option value="Périmé">Périmé</option>
+            <option value="Volé">Volé</option>
+            <option value="Autre">Autre</option>
+          </select>
+        </div>
+        <div><label>Note (optionnel)</label><input id="ps-note" placeholder="Précision"></div>
+      </div>
+      <button class="primary" id="btnAddPerte" style="background:var(--danger);">Enregistrer la perte</button>
+    </div>
+  </section>

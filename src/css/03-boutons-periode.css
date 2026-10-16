@@ -1,0 +1,4 @@
+    .tablike { background:transparent; border:1px solid var(--line); border-radius:8px; padding:6px 4px; font-size:12px; cursor:pointer; }
+    .rp-preset.active { background:#1d4ed8; color:#fff; border-color:transparent; }
+    .cp-preset.active { background:#1d4ed8; color:#fff; border-color:transparent; }
+    .tablike.active { background:var(--accent, #2563eb); color:#fff; border-color:transparent; }

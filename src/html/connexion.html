@@ -1,0 +1,73 @@
+  <div id="loginOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:100; align-items:center; justify-content:center; padding:20px;">
+    <div class="card" style="max-width:400px; width:100%; margin:0;">
+      <div class="lang-row" id="loginLangRow" data-noi18n></div>
+      <div class="row-head"><h2 id="authTitle">Connexion</h2></div>
+
+      <div id="authTabsRow" style="display:flex; gap:8px; margin-bottom:14px;">
+        <button type="button" class="tablike active" id="authTabLogin" style="flex:1;">Se connecter</button>
+        <button type="button" class="tablike" id="authTabSignup" style="flex:1;">Créer mon commerce</button>
+        <button type="button" class="tablike" id="authTabJoin" style="flex:1;">Rejoindre</button>
+      </div>
+
+      <!-- Connexion -->
+      <div id="authPaneLogin">
+        <div class="field-grid">
+          <div><label>Email</label><input id="login-email" type="email" placeholder="toi@exemple.com" autocomplete="username"></div>
+          <div><label>Mot de passe</label><input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+        </div>
+        <button class="primary" id="btnLogin" style="width:100%; margin-top:10px;">Se connecter</button>
+        <div style="text-align:center; margin-top:12px;"><a href="#" id="linkForgot" style="font-size:13px;">Mot de passe oublié ?</a></div>
+      </div>
+
+      <!-- Mot de passe oublié -->
+      <div id="authPaneForgot" style="display:none;">
+        <p class="hint-text" style="margin-top:0;">Entre l'email de ton compte : tu recevras un lien pour choisir un nouveau mot de passe.</p>
+        <div class="field-grid">
+          <div><label>Email</label><input id="forgot-email" type="email" placeholder="toi@exemple.com" autocomplete="username"></div>
+        </div>
+        <button class="primary" id="btnForgotSend" style="width:100%; margin-top:10px;">Envoyer le lien</button>
+        <p class="muted" id="forgotInfo" style="margin-top:10px; font-size:13px;"></p>
+        <div style="text-align:center; margin-top:8px;"><a href="#" id="linkForgotBack" style="font-size:13px;">← Retour à la connexion</a></div>
+      </div>
+
+      <!-- Nouveau mot de passe (après clic sur le lien reçu par email) -->
+      <div id="authPaneRecovery" style="display:none;">
+        <p class="hint-text" style="margin-top:0;">Choisis ton nouveau mot de passe (8 caractères minimum).</p>
+        <div class="field-grid">
+          <div><label>Nouveau mot de passe</label><input id="recovery-p1" type="password" placeholder="8 caractères min." autocomplete="new-password"></div>
+          <div><label>Confirme le mot de passe</label><input id="recovery-p2" type="password" placeholder="Répète le mot de passe" autocomplete="new-password"></div>
+        </div>
+        <button class="primary" id="btnRecoverySave" style="width:100%; margin-top:10px;">Enregistrer et me connecter</button>
+      </div>
+
+      <!-- Créer un commerce (Propriétaire) -->
+      <div id="authPaneSignup" style="display:none;">
+        <p class="hint-text" style="margin-top:0;">Tu crées le compte principal de ton commerce (Propriétaire).</p>
+        <div class="field-grid">
+          <div><label>Nom du commerce</label><input id="signup-commerce" placeholder="ex : Quincaillerie Sow et Frères"></div>
+          <div><label>Ton nom</label><input id="signup-nom" placeholder="Ton prénom"></div>
+          <div><label>Email</label><input id="signup-email" type="email" placeholder="toi@exemple.com" autocomplete="username"></div>
+          <div><label>Mot de passe</label><input id="signup-password" type="password" placeholder="8 caractères min." autocomplete="new-password"></div>
+        </div>
+        <button class="primary" id="btnSignup" style="width:100%; margin-top:10px;">Créer mon commerce</button>
+        <p class="muted" style="font-size:11.5px; margin:8px 0 0; text-align:center;">En continuant, tu acceptes les <a href="#" data-legal="cgu">Conditions d'utilisation</a> et la <a href="#" data-legal="confidentialite">Politique de confidentialité</a>.</p>
+      </div>
+
+      <!-- Rejoindre un commerce (Caissier/Employé) -->
+      <div id="authPaneJoin" style="display:none;">
+        <p class="hint-text" style="margin-top:0;">Ton Propriétaire ou Admin te donne un code d'invitation (onglet Données). Tu rejoins en tant que <b>Caissier</b> ; il pourra changer ton rôle ensuite.</p>
+        <div class="field-grid">
+          <div><label>Code d'invitation</label><input id="join-code" placeholder="ex : 3f9a1c7e5b2d4a60" style="text-transform:lowercase;"></div>
+          <div><label>Ton nom</label><input id="join-nom" placeholder="Ton prénom"></div>
+          <input type="hidden" id="join-role" value="caissier">
+          <div><label>Email</label><input id="join-email" type="email" placeholder="toi@exemple.com" autocomplete="username"></div>
+          <div><label>Mot de passe</label><input id="join-password" type="password" placeholder="8 caractères min." autocomplete="new-password"></div>
+        </div>
+        <button class="primary" id="btnJoin" style="width:100%; margin-top:10px;">Rejoindre le commerce</button>
+        <p class="muted" style="font-size:11.5px; margin:8px 0 0; text-align:center;">En continuant, tu acceptes les <a href="#" data-legal="cgu">Conditions d'utilisation</a> et la <a href="#" data-legal="confidentialite">Politique de confidentialité</a>.</p>
+      </div>
+
+      <div id="loginError" style="display:none; color:#dc2626; font-size:13px; margin:10px 0 2px;"></div>
+      <div style="text-align:center; margin-top:14px; font-size:12px;" class="muted"><a href="#" data-legal="cgu">Conditions d'utilisation</a> · <a href="#" data-legal="confidentialite">Confidentialité</a></div>
+    </div>
+  </div>

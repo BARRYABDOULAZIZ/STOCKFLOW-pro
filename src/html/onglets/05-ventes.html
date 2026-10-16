@@ -1,0 +1,103 @@
+  <section class="panel" id="panel-ventes">
+    <div class="card sale2">
+      <div class="row-head" style="margin-bottom:10px;">
+        <h2 id="ventesTitle">Nouvelle vente</h2>
+        <select id="f-doctype" style="max-width:230px;" title="Type de document">
+          <option value="facture">🧾 Facture (vente)</option>
+          <option value="devis">📝 Devis</option>
+          <option value="bon_commande">📦 Bon de commande</option>
+          <option value="bon_livraison">🚚 Bon de livraison</option>
+        </select>
+      </div>
+      <div id="voiceSale" class="voice-sale" style="display:none;">
+        <button type="button" id="vsMic" class="vs-mic" aria-label="Vendre à la voix">🎤</button>
+        <div class="vs-body">
+          <b>Vendre à la voix</b> <span class="muted" style="font-size:12px;">(test)</span>
+          <small>Touche 🎤 et dis par exemple : « 2 sacs de riz et 1 huile à Moussa, à crédit »</small>
+          <div class="vs-row"><input id="vsText" placeholder="… ou écris la vente ici" autocomplete="off"><button type="button" class="primary" id="vsGo">OK</button></div>
+          <div id="vsStatus" class="muted" style="font-size:13px; margin-top:4px;"></div>
+        </div>
+      </div>
+      <div class="sale-grid">
+        <div class="sale-left">
+          <div class="sale-step"><span class="sn">1</span> Articles vendus</div>
+          <div class="il-head"><span>Article</span><span>Stock</span><span>Quantité</span><span>Unité</span><span>Prix de 1</span><span>Total <span class="cur-sym">FCFA</span></span><span></span></div>
+          <div class="inv-lines" id="invLines"></div>
+          <div class="sale-addrow">
+            <button class="ghost" id="btnAddLine" type="button">＋ Ajouter une ligne</button>
+            <button class="ghost" id="btnQuickScanSale" type="button" style="color:var(--brick); border-color:var(--brick);">📷 Scanner</button>
+          </div>
+        </div>
+
+        <div class="sale-right">
+          <div class="sale-step"><span class="sn">2</span> Client <em>(facultatif)</em></div>
+          <div style="position:relative;"><input id="f-client" placeholder="Nom du client" autocomplete="off"><div id="clientSuggest" class="client-suggest" style="display:none;"></div></div>
+
+          <div id="saleStep3">
+            <div class="sale-step"><span class="sn">3</span> Paiement</div>
+            <div id="f-extra-wrap">
+              <div class="sale-type"><button type="button" class="st-btn on" data-st="comptant">💵 Paie maintenant</button><button type="button" class="st-btn" data-st="credit">🧾 Crédit</button></div>
+              <div id="f-echeance-wrap" style="display:none; margin-top:8px;"><label>À payer avant le</label><input id="f-echeance" type="date"></div>
+            </div>
+            <div id="f-paye-wrap" style="margin-top:8px;">
+              <label>Montant payé (<span class="cur-sym">FCFA</span>)</label>
+              <input id="f-paye" type="number" min="0" step="1" placeholder="Vide = il paie tout">
+              <div id="f-rendu-info" style="font-size:13px; font-weight:800; margin-top:4px;"></div>
+            </div>
+            <div id="f-mode-wrap" style="margin-top:8px;">
+              <div class="mode-chips" id="modeChips">
+                <button type="button" class="mode-chip on" data-mode="Espèces">💵 Espèces</button>
+                <button type="button" class="mode-chip" data-mode="Mobile Money">📱 Mobile Money</button>
+                <button type="button" class="mode-chip" data-mode="Virement">🏦 Virement</button>
+                <button type="button" class="mode-chip" data-mode="Chèque">📄 Chèque</button>
+              </div>
+              <select id="f-mode-paiement" style="display:none;">
+                <option value="Espèces">Espèces</option>
+                <option value="Mobile Money">Mobile Money</option>
+                <option value="Virement">Virement</option>
+                <option value="Chèque">Chèque</option>
+              </select>
+            </div>
+          </div>
+
+          <details id="saleMore" class="sale-more">
+            <summary>⚙️ Plus d'options <small>(date, remise, TVA, remarque, ticket)</small></summary>
+            <div class="field-grid" style="margin-top:10px;">
+              <div><label>Date de la vente</label><input id="f-date" type="date"></div>
+              <div id="f-validite-wrap" style="display:none;"><label>Devis valable jusqu'au</label><input id="f-validite" type="date"></div>
+            </div>
+            <div id="fiscalBlock" class="field-grid" style="margin-top:8px;">
+              <div>
+                <label>Remise</label>
+                <div style="display:flex; gap:6px;">
+                  <input id="f-remise" type="number" min="0" step="any" placeholder="0">
+                  <select id="f-remise-unit" style="max-width:84px;"><option value="fcfa">FCFA</option><option value="pct">%</option></select>
+                </div>
+              </div>
+              <div>
+                <label>TVA</label>
+                <div style="display:flex; gap:6px;">
+                  <select id="f-tva-mode"><option value="none">Sans TVA</option><option value="add">TVA en plus</option><option value="incl">TVA incluse</option></select>
+                  <input id="f-tva-taux" type="number" min="0" max="100" step="any" value="18" style="max-width:70px; display:none;" title="Taux de TVA en %">
+                </div>
+              </div>
+            </div>
+            <div id="f-remarque-wrap" style="margin-top:8px;"><label>Remarque sur la facture</label><input id="f-remarque" maxlength="200" placeholder="Ex : paiement par Wave au 77…"></div>
+            <div class="sale-tk">
+              <label class="tk-opt"><input type="checkbox" id="tkAuto"> 🧾 Imprimer le ticket après la vente</label>
+              <label class="tk-opt"><input type="checkbox" id="tkWa"> 💬 Ticket par WhatsApp après la vente</label>
+              <select id="tkWidth" title="Largeur du papier du ticket"><option value="80">Ticket 80 mm</option><option value="58">Ticket 58 mm</option></select>
+            </div>
+          </details>
+
+          <div class="sale-footer">
+            <div id="invBreakdown" style="text-align:right; font-size:12.5px; line-height:1.5;"></div>
+            <div class="inv-total-row"><span class="lbl" id="invTotalLbl">Total à payer</span><span class="amt" id="invGrandTotal">0 FCFA</span></div>
+            <div id="invLettres" class="inv-lettres"></div>
+            <p class="muted" id="finalizeHint" style="margin:6px 0;"></p>
+            <button class="primary sale-go" id="btnFinalize">✓ Finaliser la vente</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>

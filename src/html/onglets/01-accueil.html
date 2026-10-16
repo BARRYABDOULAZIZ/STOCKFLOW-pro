@@ -1,0 +1,151 @@
+  <section class="panel active" id="panel-dashboard">
+
+    <div id="backupReminder" style="display:none; margin-bottom:12px; padding:10px 14px; border-radius:12px; background:rgba(234,179,8,.14); border:1px solid rgba(234,179,8,.45); align-items:center; gap:10px; flex-wrap:wrap;">
+      <span style="flex:1; min-width:200px;">💾 <b>Copie de secours</b> — <span id="backupReminderTxt"></span></span>
+      <button type="button" class="primary" id="btnBackupNow" style="padding:6px 12px;">Télécharger une copie</button>
+      <button type="button" class="ghost" id="btnBackupLater" style="padding:6px 10px;">Plus tard</button>
+    </div>
+
+    <div class="card boss-card" id="bossCard" style="display:none;">
+      <div class="row-head" style="flex-wrap:wrap; gap:8px;">
+        <h2>👁 Le point du patron <span class="muted" style="font-size:12px; font-weight:500;">(test)</span></h2>
+        <div class="boss-days"><button type="button" class="tablike active" data-bossday="0">Aujourd'hui</button><button type="button" class="tablike" data-bossday="1">Hier</button></div>
+      </div>
+      <div id="bossBody"></div>
+      <div class="boss-actions">
+        <button type="button" class="primary" id="bossListen">🔊 Écouter le résumé</button>
+        <button type="button" class="ghost" id="bossWa">📤 Envoyer sur WhatsApp</button>
+      </div>
+    </div>
+
+    <div class="eye-row cost-col"><button type="button" class="eye-btn" data-eye title="Masquer / afficher les montants">👁 Montants</button></div>
+    <div class="hero-row" id="dashboardHeroRow">
+      <div class="hero-card invest">
+        <div class="hlbl">💰 Montant investi dans le stock — payé aux fournisseurs</div>
+        <div class="hval" id="heroInvesti">–</div>
+      </div>
+      <div class="hero-card value">
+        <div class="hlbl">💵 Valeur potentielle du stock — à la vente</div>
+        <div class="hval" id="heroValeur">–</div>
+      </div>
+      <div class="hero-card profit">
+        <div class="hlbl">📈 Bénéfice potentiel — si tout est vendu</div>
+        <div class="hval" id="heroBenefice">–</div>
+      </div>
+    </div>
+
+    <div class="card ai-card" id="aiCard">
+      <div class="row-head"><h2>🧠 Conseils intelligents du jour</h2><span class="muted" id="aiSub"></span></div>
+      <div id="aiHead"></div>
+      <div id="aiInsights"></div>
+      <div id="aiAsk" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--line);">
+        <style>
+          #aiAsk .bel-head { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+          #aiAsk .bel-name { font-weight:800; font-size:20px; line-height:1.1; }
+          #aiAsk .bel-sub { font-size:12px; opacity:.75; }
+          #aiAsk .bel-say { position:relative; flex:1; background:linear-gradient(135deg, rgba(245,158,11,.16), rgba(16,185,129,.12)); border-radius:14px; padding:8px 12px; font-size:14px; }
+          #aiAsk .bel-iconbtn { width:44px; height:44px; border-radius:50%; font-size:20px; padding:0; display:inline-flex; align-items:center; justify-content:center; flex:none; }
+          #aiAsk .bel-tiles { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:10px; }
+          #aiAsk .bel-tile { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; min-height:84px; padding:8px 4px; border-radius:16px; border:2px solid var(--line); background:var(--paper, #fff); color:inherit; cursor:pointer; font-weight:700; font-size:12.5px; line-height:1.15; text-align:center; transition:transform .12s, box-shadow .12s, border-color .12s; }
+          #aiAsk .bel-tile .e { font-size:34px; line-height:1; }
+          #aiAsk .bel-tile:hover, #aiAsk .bel-tile:focus-visible { transform:translateY(-2px); border-color:#f59e0b; box-shadow:0 6px 16px rgba(245,158,11,.25); }
+          #aiAsk .bel-tile:active { transform:scale(.96); }
+          #aiAsk .bel-tile[disabled] { opacity:.5; cursor:wait; }
+          #aiAskAnswer { display:none; margin-bottom:10px; max-height:560px; overflow:auto; line-height:1.55; }
+          #aiAsk .bel-row { display:flex; gap:8px; align-items:flex-end; margin:8px 0; }
+          #aiAsk .bel-row.me { justify-content:flex-end; }
+          #aiAsk .bel-bub { max-width:88%; padding:10px 12px; border-radius:16px; font-size:14.5px; }
+          #aiAsk .me .bel-bub { background:#2563eb; color:#fff; border-bottom-right-radius:4px; font-weight:600; }
+          #aiAsk .bot .bel-bub { background:rgba(127,127,127,.10); border-bottom-left-radius:4px; }
+          #aiAsk .bel-bub.err { background:rgba(220,38,38,.10); }
+          #aiAsk .bel-speak { margin-top:8px; padding:6px 12px; border-radius:20px; font-size:15px; }
+          #aiAsk .bel-dots span { display:inline-block; width:8px; height:8px; margin:0 2px; border-radius:50%; background:#f59e0b; animation:belDot 1s infinite ease-in-out; }
+          #aiAsk .bel-dots span:nth-child(2) { animation-delay:.15s; } #aiAsk .bel-dots span:nth-child(3) { animation-delay:.3s; }
+          @keyframes belDot { 0%,80%,100% { transform:translateY(0); opacity:.4; } 40% { transform:translateY(-6px); opacity:1; } }
+          /* Avatar de Bel */
+          .bel-av { flex:none; display:inline-block; }
+          .bel-av svg { display:block; overflow:visible; }
+          .bel-av .bel-body { animation:belFloat 3.2s ease-in-out infinite; transform-origin:50% 100%; }
+          .bel-av .bel-lids { animation:belBlink 4.5s infinite; transform-origin:50% 44%; transform-box:view-box; }
+          .bel-av .bel-bulb { animation:belGlow 2.4s ease-in-out infinite; }
+          .bel-av .smile-big, .bel-av .mouth-o { display:none; }
+          .bel-av[data-mood="happy"] .smile { display:none; } .bel-av[data-mood="happy"] .smile-big { display:inline; }
+          .bel-av[data-mood="happy"] .bel-body { animation:belJump .6s ease-out 2, belFloat 3.2s ease-in-out .6s infinite; }
+          .bel-av[data-mood="think"] .smile { display:none; } .bel-av[data-mood="think"] .mouth-o { display:inline; }
+          .bel-av[data-mood="think"] .bel-pupils { animation:belLook 1.6s ease-in-out infinite; }
+          .bel-av[data-mood="think"] .bel-bulb { animation:belGlow .6s ease-in-out infinite; }
+          .bel-av[data-mood="sad"] .smile { transform:scaleY(-1); transform-origin:50% 66%; transform-box:view-box; }
+          @keyframes belFloat { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-3px); } }
+          @keyframes belJump { 0% { transform:translateY(0) scale(1); } 40% { transform:translateY(-8px) scale(1.05); } 100% { transform:translateY(0) scale(1); } }
+          @keyframes belBlink { 0%,92%,100% { transform:scaleY(0); } 95% { transform:scaleY(1); } }
+          @keyframes belLook { 0%,100% { transform:translateX(0); } 30% { transform:translateX(-2.5px) translateY(-1.5px); } 70% { transform:translateX(2.5px) translateY(-1.5px); } }
+          @keyframes belGlow { 0%,100% { opacity:.55; } 50% { opacity:1; } }
+          @media (prefers-reduced-motion: reduce) { .bel-av *, #aiAsk .bel-dots span { animation:none !important; } }
+          @media (max-width: 420px) { #aiAsk .bel-tile { min-height:78px; } #aiAsk .bel-tile .e { font-size:30px; } }
+        </style>
+        <div class="bel-head">
+          <span class="bel-av" id="belFace" data-mood="idle"></span>
+          <div style="flex:1; min-width:0;">
+            <div class="bel-name">Bel <span class="muted" style="font-weight:400; font-size:11px;">(test)</span></div>
+            <div class="bel-sub">🧠 Ton assistant boutique</div>
+          </div>
+          <button type="button" class="ghost bel-iconbtn" id="aiAskReset" title="Nouvelle conversation" style="display:none;">🗑</button>
+        </div>
+        <div class="bel-say" id="belSay" style="margin-bottom:10px;">👋 Salut ! Moi c'est <b>Bel</b>. Touche une image 👇 ou pose ta question 🎤✍️</div>
+        <div class="bel-tiles" id="aiAskChips"></div>
+        <div id="aiAskAnswer"></div>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button type="button" class="ghost bel-iconbtn" id="belMic" title="Parler à Bel" style="display:none;">🎤</button>
+          <input id="aiAskInput" type="text" maxlength="1000" placeholder="✍️ Écris ta question…" style="flex:1; min-width:0; min-height:44px;">
+          <button id="aiAskBtn" type="button" class="primary bel-iconbtn" title="Envoyer">➤</button>
+        </div>
+        <div class="muted" style="font-size:11px; margin-top:6px;">⚠️ Bel peut se tromper : vérifie les gros montants. Bel ne change rien dans l'appli.</div>
+      </div>
+    </div>
+
+    <div class="cluster">
+      <div class="stat"><div class="num" id="dbProduits">–</div><div class="lbl">📦 Produits en stock</div></div>
+      <div class="stat"><div class="num alert" id="dbRupture">–</div><div class="lbl">⚠ Produits en rupture</div></div>
+      <div class="stat"><div class="num alert" id="dbReappro">–</div><div class="lbl">⚠ À réapprovisionner</div></div>
+      <div class="stat"><div class="num good" id="dbVentesJour">–</div><div class="lbl">Ventes aujourd'hui</div></div>
+      <div class="stat"><div class="num" id="dbVentesMois">–</div><div class="lbl">Ventes ce mois-ci</div></div>
+    </div>
+
+    <div id="dashboardStatsBlock">
+    <div class="row-head"><h2>Statistiques</h2></div>
+    <div class="three-col">
+      <div class="kpi-card">
+        <div class="kl">🏆 Produit le plus rentable</div>
+        <div class="kv" id="statTopMargin">–</div>
+        <div class="ks" id="statTopMarginSub"></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kl">🔥 Produit le plus vendu</div>
+        <div class="kv" id="statTopSold">–</div>
+        <div class="ks" id="statTopSoldSub"></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kl">📦 Valeur totale du stock (vente)</div>
+        <div class="kv" id="statTotalValue">–</div>
+        <div class="ks">= bénéfice potentiel total : <span id="statTotalProfit"></span></div>
+      </div>
+    </div>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div class="row-head"><h2>Dernières factures</h2></div>
+        <div class="table-wrap short">
+          <ul class="mini-list" id="dbRecentInvoices"></ul>
+          <div class="empty" id="dbRecentEmpty" style="display:none;">Aucune facture pour l'instant.</div>
+        </div>
+      </div>
+      <div>
+        <div class="row-head"><h2>Stock à surveiller</h2></div>
+        <div class="table-wrap short">
+          <ul class="mini-list" id="dbLowStock"></ul>
+          <div class="empty" id="dbLowStockEmpty" style="display:none;">Aucun produit sous le seuil d'alerte 👍</div>
+        </div>
+      </div>
+    </div>
+  </section>
