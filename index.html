@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>StockFlow Pro</title>
+<title>BoromBoutik</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#5b3df5">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="StockFlow">
+<meta name="apple-mobile-web-app-title" content="Borom">
 <link rel="icon" type="image/png" href="stockflow-logo-192.png">
 <link rel="apple-touch-icon" href="stockflow-logo-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -236,7 +236,7 @@
 <div class="shell">
 
   <header class="top">
-    <div class="mark"><h1>StockFlow Pro</h1><span class="tag" id="commerceTag">Chargement…</span></div>
+    <div class="mark"><h1>BoromBoutik</h1><span class="tag" id="commerceTag">Chargement…</span></div>
     <button type="button" id="belHeadBtn" class="bel-av" data-mood="idle" title="Parler à Bel" aria-label="Ouvrir Bel, ton assistant" style="display:none; background:none; border:none; padding:0; margin:0 8px; cursor:pointer; align-self:center;"></button>
     <div style="display:flex; align-items:center; gap:14px;">
       <div class="lang-wrap" data-noi18n>
@@ -372,7 +372,7 @@
     box-shadow:0 12px 30px rgba(91,61,245,.35); align-items:center; }
   header.top .mark { align-items:center; }
   header.top h1 { font-size:22px; font-weight:800; letter-spacing:-.02em; display:flex; align-items:center; gap:10px; }
-  header.top h1::before { content:'SF'; display:inline-grid; place-items:center; width:38px; height:38px; border-radius:12px; font-size:15px; font-weight:800; color:#fff;
+  header.top h1::before { content:'BB'; display:inline-grid; place-items:center; width:38px; height:38px; border-radius:12px; font-size:15px; font-weight:800; color:#fff;
     background:linear-gradient(135deg,#00d4a0,#0891ff); box-shadow:0 4px 12px rgba(0,0,0,.25); }
   header.top .tag { color:#fff; font-style:normal; font-size:12px; font-weight:600; background:rgba(255,255,255,.18); padding:4px 10px; border-radius:20px; }
   .sync { color:#fff; font-weight:600; background:rgba(255,255,255,.16); padding:5px 10px; border-radius:20px; }
@@ -1635,7 +1635,7 @@
     <div>
       <img id="pi-logo" alt="" style="display:none; max-height:70px; max-width:170px; margin-bottom:8px;">
       <h1 id="pi-title">Facture</h1>
-      <div style="font-family:'Inter',sans-serif; font-size:15px; font-weight:800; margin-top:4px; color:#1d4ed8;" id="pi-commerce-nom">StockFlow Pro</div>
+      <div style="font-family:'Inter',sans-serif; font-size:15px; font-weight:800; margin-top:4px; color:#1d4ed8;" id="pi-commerce-nom">BoromBoutik</div>
       <div style="font-family:'Inter',sans-serif; font-size:11px; color:#555;" id="pi-commerce-adresse"></div>
     </div>
     <div class="pi-meta"><div id="pi-num"></div><div id="pi-date"></div></div>
@@ -2505,7 +2505,7 @@
 
   function updateCommerceForm() {
     if (!state.commerce) return;
-    document.getElementById('commerceTag').textContent = state.commerce.nom || 'StockFlow Pro';
+    document.getElementById('commerceTag').textContent = state.commerce.nom || 'BoromBoutik';
     const setIfIdle = (id, val) => { const el = document.getElementById(id); if (el && document.activeElement !== el) el.value = val || ''; };
     setIfIdle('cm-nom', state.commerce.nom);
     setIfIdle('cm-adresse', state.commerce.adresse);
@@ -2597,7 +2597,7 @@
     if (!supabaseClient || !state.currentUser) return;
     const statusEl = document.getElementById('commerceStatus');
     const payload = {
-      nom: document.getElementById('cm-nom').value.trim() || 'StockFlow Pro',
+      nom: document.getElementById('cm-nom').value.trim() || 'BoromBoutik',
       adresse: document.getElementById('cm-adresse').value.trim(),
       telephone: document.getElementById('cm-telephone').value.trim(),
       email: document.getElementById('cm-email').value.trim(),
@@ -3033,7 +3033,7 @@
     const den = CL_DENOMS.filter(([k]) => S.counts[k]).map(([k, lab, v]) => `<div class="tk-row"><span>${lab} × ${S.counts[k]}</span><span>${n0(S.counts[k] * v)}</span></div>`).join('');
     const totalAll = S.T.espSum + S.T.autresSum;
     const html = `
-      <div class="tk-center"><div class="tk-shop">${escapeHtml(c.nom || 'StockFlow Pro')}</div><div class="tk-thanks">CLÔTURE DE CAISSE</div></div>
+      <div class="tk-center"><div class="tk-shop">${escapeHtml(c.nom || 'BoromBoutik')}</div><div class="tk-thanks">CLÔTURE DE CAISSE</div></div>
       <div class="tk-sep"></div>
       <div class="tk-row"><span>Date</span><span>${new Date().toLocaleDateString('fr-FR')} ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span></div>
       <div>Clôturée par : ${escapeHtml(S.by)}</div>
@@ -4156,7 +4156,7 @@
     const scopeSel = document.getElementById('is-scope');
     const scopeLabel = scopeSel.options[scopeSel.selectedIndex].text;
     const cats = Array.from(document.querySelectorAll('#is-cats input:checked')).map(i => i.value === NO_CAT ? 'Sans catégorie' : i.value);
-    const commerceNom = (state.commerce && state.commerce.nom) || 'StockFlow Pro';
+    const commerceNom = (state.commerce && state.commerce.nom) || 'BoromBoutik';
     const cols = blind ? 6 : 7;
     let rows = '', lastCat = null;
     list.forEach(p => {
@@ -4521,7 +4521,7 @@
     const L = [];
     const lg = invLang(), X = invT(lg), sp = lg === 'fr' ? ' : ' : ': ', m0 = (n) => invMoney(n, lg);
     const nn = (n) => invNum(n, lg);
-    L.push('🧾 *' + (c.nom || 'StockFlow Pro') + '*');
+    L.push('🧾 *' + (c.nom || 'BoromBoutik') + '*');
     if (c.adresse) L.push(c.adresse);
     if (c.telephone) L.push(X.tel + sp + bidiIso(c.telephone, lg));
     L.push('─────────────');
@@ -4590,7 +4590,7 @@
     const logo = isImageData(c.logoUrl) ? `<img class="tk-logo" src="${c.logoUrl}" alt="">` : '';
     const nbArt = (inv.lignes || []).reduce((t, l) => t + (Number(l.qte) || 0), 0);
     document.getElementById('printTicket').innerHTML = `
-      <div class="tk-center">${logo}<div class="tk-shop">${escapeHtml(c.nom || 'StockFlow Pro')}</div>
+      <div class="tk-center">${logo}<div class="tk-shop">${escapeHtml(c.nom || 'BoromBoutik')}</div>
         ${c.adresse ? `<div>${escapeHtml(c.adresse)}</div>` : ''}${c.telephone ? `<div>${X.tel}${sp}${iso(escapeHtml(c.telephone))}</div>` : ''}${c.numeroFiscal ? `<div>${X.fiscal}${sp}${iso(escapeHtml(c.numeroFiscal))}</div>` : ''}</div>
       <div class="tk-sep"></div>
       <div class="tk-row"><span>${X.ticket} ${iso(num)}</span><span>${iso(escapeHtml(dateTxt))}</span></div>
@@ -4639,7 +4639,7 @@
     const numPrefix = kind === 'devis' ? 'DEV' : (kind === 'bon_commande' ? 'BC' : (isBL ? 'BL' : 'FAC'));
     document.getElementById('pi-num').textContent = X.num + ' ' + iso(numPrefix + '-' + String(inv.num).padStart(4, '0'));
     document.getElementById('pi-date').textContent = inv.date ? X.date + sp + iso(frDate(inv.date)) : '';
-    document.getElementById('pi-commerce-nom').textContent = (state.commerce && state.commerce.nom) || 'StockFlow Pro';
+    document.getElementById('pi-commerce-nom').textContent = (state.commerce && state.commerce.nom) || 'BoromBoutik';
     document.getElementById('pi-commerce-adresse').textContent = state.commerce ? [state.commerce.adresse, state.commerce.telephone && iso(state.commerce.telephone), state.commerce.numeroFiscal && (X.fiscal + sp + iso(state.commerce.numeroFiscal))].filter(Boolean).join(' · ') : '';
     document.getElementById('pi-client').textContent = inv.client || '—';
     // Logo, message de remerciement et signature (réglés dans Données > Mon commerce)
@@ -5142,7 +5142,7 @@
     const icon = d.type === 'devis' ? '📋' : (isBL ? '🚚' : '📦');
     const lg = invLang(), X = invT(lg), sp = lg === 'fr' ? ' : ' : ': ', iso = (s) => bidiIso(s, lg);
     const L = [];
-    L.push(icon + ' *' + (c.nom || 'StockFlow Pro') + '*');
+    L.push(icon + ' *' + (c.nom || 'BoromBoutik') + '*');
     if (c.adresse) L.push(c.adresse);
     if (c.telephone) L.push(X.tel + sp + iso(c.telephone));
     L.push('─────────────');
@@ -5735,7 +5735,7 @@
   // ================= Pages légales =================
   // ⚙️ Pour changer le nom de l'application, l'éditeur ou le contact : modifier UNIQUEMENT ces lignes.
   const LEGAL = {
-    app: 'StockFlow Pro',
+    app: 'BoromBoutik',
     editeur: 'Abdoul Aziz Barry',
     pays: 'Sénégal',
     email: 'siradjisow23@gmail.com',
@@ -6362,7 +6362,7 @@
 
       const arrayBuf = window.XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
       const blob = new Blob([arrayBuf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const ok = await saveFile(`rapport-stockflow-${du}-au-${au}.xlsx`, blob);
+      const ok = await saveFile(`rapport-boromboutik-${du}-au-${au}.xlsx`, blob);
       if (ok) toast('Rapport prêt.');
     } catch (err) {
       console.error(err);
@@ -6691,7 +6691,7 @@
   function buildFullDataset() {
     return {
       exportedAt: new Date().toISOString(),
-      app: 'StockFlow Pro',
+      app: 'BoromBoutik',
       produits: state.products,
       factures: state.invoices,
       mouvements: state.movements,
@@ -6804,7 +6804,7 @@
 
       const arrayBuf = window.XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
       const blob = new Blob([arrayBuf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const ok = await saveFile(`stockflow-pro-${todayStr()}.xlsx`, blob);
+      const ok = await saveFile(`boromboutik-${todayStr()}.xlsx`, blob);
       if (ok) { markExported(); toast('Export Excel prêt.'); }
     } catch (err) {
       console.error(err);
@@ -6814,13 +6814,13 @@
 
   document.getElementById('btnExportCsv').addEventListener('click', async () => {
     const csv = buildProductsCsv();
-    const ok = await saveFile(`stockflow-pro-produits-${todayStr()}.csv`, csv);
+    const ok = await saveFile(`boromboutik-produits-${todayStr()}.csv`, csv);
     if (ok) toast('Export CSV prêt.');
   });
 
   document.getElementById('btnExportJson').addEventListener('click', async () => {
     const json = JSON.stringify(buildFullDataset(), null, 2);
-    const ok = await saveFile(`stockflow-pro-${todayStr()}.json`, json);
+    const ok = await saveFile(`boromboutik-${todayStr()}.json`, json);
     if (ok) { markExported(); toast('Export JSON prêt.'); }
   });
 

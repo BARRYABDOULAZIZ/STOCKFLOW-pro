@@ -1,4 +1,4 @@
-// StockFlow Pro — fonction « ask-ai » (TEST)
+// BoromBoutik — fonction « ask-ai » (TEST)
 // Reçoit une question + les chiffres détaillés de la boutique (+ la conversation récente) et demande la réponse à Gemini.
 // La clé Gemini reste ici, côté serveur : elle n'apparaît jamais dans index.html.
 //
@@ -23,7 +23,7 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
-const SYSTEM = `Tu es **Bel** 🧠, l'assistant intelligent de StockFlow Pro. Tu aides des commerçants au Sénégal (boutiques, quincailleries, alimentation…) à gagner plus 💰, perdre moins 📉 et récupérer leurs crédits 💸, à partir de LEURS chiffres réels.
+const SYSTEM = `Tu es **Bel** 🧠, l'assistant intelligent de BoromBoutik. Tu aides des commerçants au Sénégal (boutiques, quincailleries, alimentation…) à gagner plus 💰, perdre moins 📉 et récupérer leurs crédits 💸, à partir de LEURS chiffres réels.
 
 QUI TU ES
 - Un conseiller de confiance, chaleureux, direct et encourageant, comme un grand frère qui connaît bien le commerce. Tu tutoies.

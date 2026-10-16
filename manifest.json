@@ -1,6 +1,6 @@
 {
-  "name": "StockFlow Pro",
-  "short_name": "StockFlow",
+  "name": "BoromBoutik",
+  "short_name": "Borom",
   "description": "Stock, ventes et factures — marche aussi sans internet",
   "start_url": "./index.html",
   "scope": "./",

@@ -1,6 +1,6 @@
-/* StockFlow Pro — service worker : garde l'application sur l'appareil pour qu'elle s'ouvre sans internet.
+/* BoromBoutik — service worker : garde l'application sur l'appareil pour qu'elle s'ouvre sans internet.
    Les données (Supabase) ne sont JAMAIS mises en cache ici : elles sont gardées par l'application elle-même (IndexedDB). */
-const VERSION = 'sf-v1';
+const VERSION = 'sf-v2';
 const SHELL = ['./', './index.html', './manifest.json', './stockflow-logo-192.png', './stockflow-logo-512.png', './stockflow-logo.svg'];
 // Bibliothèques nécessaires pour démarrer l'app : gardées dès la toute première visite
 const LIBS = ['https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2', 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'];
