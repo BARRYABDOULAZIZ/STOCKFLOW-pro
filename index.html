@@ -244,6 +244,15 @@
   #pfReview .pf-scroll { overflow-x:auto; }
   #pfReview .pf-doute { color:#b45309; font-size:11.5px; }
   @media (max-width: 520px) { .pf-btns { grid-template-columns:1fr; } }
+  /* Vente à la voix */
+  .voice-sale { display:flex; gap:12px; align-items:center; padding:12px; margin-bottom:12px; border-radius:16px; background:linear-gradient(135deg, rgba(91,61,245,.10), rgba(255,61,139,.10)); border:1px solid rgba(91,61,245,.25); }
+  .vs-mic { flex:none; width:64px; height:64px; border-radius:50%; border:none; font-size:30px; cursor:pointer; color:#fff; background:linear-gradient(135deg,#5b3df5,#ff3d8b); box-shadow:0 6px 18px rgba(91,61,245,.35); }
+  .vs-mic.rec { animation:vsPulse 1s ease-in-out infinite; }
+  @keyframes vsPulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.08); box-shadow:0 0 0 10px rgba(255,61,139,.15); } }
+  .vs-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+  .vs-body small { opacity:.75; font-size:12px; }
+  .vs-row { display:flex; gap:6px; margin-top:6px; }
+  .vs-row input { flex:1; min-width:0; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -1031,6 +1040,15 @@
           <option value="bon_commande">📦 Bon de commande</option>
           <option value="bon_livraison">🚚 Bon de livraison</option>
         </select>
+      </div>
+      <div id="voiceSale" class="voice-sale" style="display:none;">
+        <button type="button" id="vsMic" class="vs-mic" aria-label="Vendre à la voix">🎤</button>
+        <div class="vs-body">
+          <b>Vendre à la voix</b> <span class="muted" style="font-size:12px;">(test)</span>
+          <small>Touche 🎤 et dis par exemple : « 2 sacs de riz et 1 huile à Moussa, à crédit »</small>
+          <div class="vs-row"><input id="vsText" placeholder="… ou écris la vente ici" autocomplete="off"><button type="button" class="primary" id="vsGo">OK</button></div>
+          <div id="vsStatus" class="muted" style="font-size:13px; margin-top:4px;"></div>
+        </div>
       </div>
       <div class="sale-grid">
         <div class="sale-left">
@@ -2343,6 +2361,17 @@
     ["Signature / cachet", "Signature / stamp", "التوقيع / الختم"],
     ["Désignation", "Description", "البيان"],
     ["Prix", "Price", "السعر"],
+    // Vente à la voix
+    ["Vendre à la voix", "Sell by voice", "البيع بالصوت"],
+    ["Touche 🎤 et dis par exemple : « 2 sacs de riz et 1 huile à Moussa, à crédit »", "Tap 🎤 and say for example: « 2 bags of rice and 1 oil for Moussa, on credit »", "المس 🎤 وقل مثلاً: « كيسان من الأرز وزيت واحد لموسى، بالدَّين »"],
+    ["… ou écris la vente ici", "… or type the sale here", "… أو اكتب البيع هنا"],
+    ["Bel prépare la facture…", "Bel is preparing the invoice…", "بِل يجهّز الفاتورة…"],
+    ["Facture remplie : vérifie puis touche « Finaliser la vente ».", "Invoice filled: check it, then tap « Complete the sale ».", "تم ملء الفاتورة: تحقّق ثم المس « إتمام البيع »."],
+    ["article(s) hors catalogue", "item(s) not in the catalogue", "مادة/مواد خارج الكتالوج"],
+    ["Je n'ai trouvé aucun article. Redis la vente avec le nom des produits.", "I found no item. Say the sale again with the product names.", "لم أجد أي مادة. أعد قول البيع مع أسماء المنتجات."],
+    ["Le micro n'est pas disponible sur ce navigateur : écris la vente dans la case.", "The microphone is not available on this browser: type the sale in the box.", "الميكروفون غير متاح في هذا المتصفح: اكتب البيع في الخانة."],
+    ["Je t'écoute… dis la vente.", "I'm listening… say the sale.", "أنا أستمع… قل البيع."],
+    ["Je n'ai pas entendu. Touche 🎤 et réessaie.", "I didn't hear you. Tap 🎤 and try again.", "لم أسمعك. المس 🎤 وحاول مجدداً."],
     // Saisie par photo
     ["📸 Remplir mon stock par photo", "📸 Fill my stock with a photo", "📸 املأ مخزوني بصورة"],
     ["(test)", "(test)", "(تجربة)"],
@@ -3485,9 +3514,9 @@
   async function aiAskInit() {
     const box = document.getElementById('aiAsk'); if (!box) return;
     const hbtn = document.getElementById('belHeadBtn');
-    if (!isOwnerOrAdmin() || !supabaseClient) { box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; const c0 = document.getElementById('photoFillCard'); if (c0) c0.style.display = 'none'; belClosePage(); return; }
+    if (!isOwnerOrAdmin() || !supabaseClient) { box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; const c0 = document.getElementById('photoFillCard'); if (c0) c0.style.display = 'none'; const v0 = document.getElementById('voiceSale'); if (v0) v0.style.display = 'none'; belClosePage(); return; }
     const pfc = document.getElementById('photoFillCard');
-    if (aiAskFor !== CURRENT_USER_ID) { aiAskFor = CURRENT_USER_ID; aiAskOk = false; box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; if (pfc) pfc.style.display = 'none'; belClosePage(); }
+    if (aiAskFor !== CURRENT_USER_ID) { aiAskFor = CURRENT_USER_ID; aiAskOk = false; box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; if (pfc) pfc.style.display = 'none'; const vs0 = document.getElementById('voiceSale'); if (vs0) vs0.style.display = 'none'; belClosePage(); }
     if (aiAskOk || navigator.onLine === false) return;   // déjà vérifié pour ce compte : pas de nouvelle vérification (évite que le cadre clignote)
     try {
       const { data, error } = await supabaseClient.functions.invoke('ask-ai', { body: { ping: true } });
@@ -3495,6 +3524,7 @@
       aiAskOk = true;
       box.style.display = '';
       if (pfc) pfc.style.display = '';
+      const vsc = document.getElementById('voiceSale'); if (vsc) vsc.style.display = '';
       const face = document.getElementById('belFace'); if (face && !face.innerHTML) face.innerHTML = belAvatarSvg(56);
       const hb = document.getElementById('belHeadBtn'); if (hb) { if (!hb.innerHTML) hb.innerHTML = belAvatarSvg(42); hb.style.display = 'inline-block'; }
       if (aiAskReady) return; aiAskReady = true;
@@ -5780,6 +5810,68 @@
     });
     rev.addEventListener('change', (e) => { if (e.target.dataset.pfK === 'on' || e.target.dataset.pfK === 'matchId') { const tr0 = e.target.closest('[data-pfi]'); const r = tr0 && pfRows[Number(tr0.dataset.pfi)]; if (r) { r[e.target.dataset.pfK] = e.target.dataset.pfK === 'on' ? e.target.checked : e.target.value; pfRender(); } } });
     rev.addEventListener('click', (e) => { if (e.target.id === 'pfSave') pfSave(); if (e.target.id === 'pfCancel') { pfRows = []; pfRender(); pfStatus(''); } });
+  })();
+
+  // ================= Vente à la voix (test) : la phrase remplit la facture, le commerçant vérifie et finalise =================
+  let vsBusy = false;
+  function vsStatus(html) { const s = document.getElementById('vsStatus'); if (s) s.innerHTML = html; }
+  async function vsParse(phrase) {
+    phrase = String(phrase || '').replace(/^🎤\s*/, '').trim();
+    if (!phrase || vsBusy) return;
+    if (!needOnline('la vente à la voix')) return;
+    vsBusy = true; document.getElementById('vsGo').disabled = true;
+    vsStatus('🧠 ' + escapeHtml(tr('Bel prépare la facture…')) + ' « ' + escapeHtml(phrase) + ' »');
+    try {
+      const catalogue = (state.products || []).slice(0, 1500).map(p => `${p.id} | ${p.nom} | ${p.unite || ''} | ${Number(p.prixVente) || 0}`).join('\n');
+      const clients = (state.clients || []).slice(0, 400).map(c => c.nom).filter(Boolean).join(' ; ');
+      const { data, error } = await supabaseClient.functions.invoke('ask-ai', { body: { vente: phrase, catalogue, clients, devise: curSym(), lang: UI_LANG } });
+      if (error || !data || !data.resultat) {
+        let msg = 'La vente à la voix n\'est pas encore activée.';
+        try { const j = error && error.context && typeof error.context.json === 'function' && await error.context.json(); if (j && j.error && !/Question vide/.test(j.error)) msg = j.error; } catch (e) {}
+        throw new Error(msg);
+      }
+      const R = data.resultat, lignes = Array.isArray(R.lignes) ? R.lignes : [];
+      if (!lignes.length) throw new Error(tr('Je n\'ai trouvé aucun article. Redis la vente avec le nom des produits.'));
+      const dt = document.getElementById('f-doctype'); if (dt && dt.value !== 'facture') { dt.value = 'facture'; dt.dispatchEvent(new Event('change')); }
+      invoiceLines = lignes.map(l => {
+        const p = l.id && (state.products || []).find(x => x.id === l.id);
+        const q = Number(l.quantite) || 1;
+        return p ? { ref: p.ref, nom: p.nom, qte: q, prix: l.prix != null ? Number(l.prix) : Number(p.prixVente) || 0, unite: p.unite || '', matched: true }
+                 : { ref: '', nom: String(l.nom || '').trim(), qte: q, prix: Number(l.prix) || 0, unite: '', matched: false };
+      }).filter(l => l.nom);
+      renderInvoiceLines();
+      const cl = document.getElementById('f-client'); if (cl && R.client) cl.value = R.client;
+      setSaleType(R.credit ? 'credit' : 'comptant');
+      const chip = document.querySelector(`#modeChips .mode-chip[data-mode="${R.mode === 'Mobile Money' ? 'Mobile Money' : 'Espèces'}"]`); if (chip) chip.click();
+      const pay = document.getElementById('f-paye'); if (pay) pay.value = R.paye != null ? Math.round(Number(R.paye)) : '';
+      try { updateGrandTotal(); } catch (e) {}
+      const inconnus = invoiceLines.filter(l => l.nom && l.nom.trim() && !l.matched).length;
+      vsStatus('✅ ' + escapeHtml(tr('Facture remplie : vérifie puis touche « Finaliser la vente ».')) + (inconnus ? ' ⚠️ ' + inconnus + ' ' + escapeHtml(tr('article(s) hors catalogue')) : ''));
+      document.getElementById('vsText').value = '';
+      const fin = document.getElementById('btnFinalize'); if (fin) fin.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (e) {
+      vsStatus('😕 ' + escapeHtml(isNetErr(e) ? tr('Pas de connexion internet.') : (e.message || 'Erreur')));
+    } finally { vsBusy = false; document.getElementById('vsGo').disabled = false; }
+  }
+  (function vsInit() {
+    const mic = document.getElementById('vsMic'), txt = document.getElementById('vsText'), go = document.getElementById('vsGo');
+    if (!mic) return;
+    go.addEventListener('click', () => vsParse(txt.value));
+    txt.addEventListener('keydown', (e) => { if (e.key === 'Enter') vsParse(txt.value); });
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { mic.addEventListener('click', () => { vsStatus('ℹ️ ' + escapeHtml(tr('Le micro n\'est pas disponible sur ce navigateur : écris la vente dans la case.'))); txt.focus(); }); return; }
+    let rec = null;
+    mic.addEventListener('click', () => {
+      if (rec) { try { rec.stop(); } catch (e) {} return; }
+      rec = new SR(); rec.lang = ({ fr: 'fr-FR', en: 'en-US', ar: 'ar-SA' })[UI_LANG] || 'fr-FR'; rec.interimResults = true; rec.maxAlternatives = 1;
+      mic.classList.add('rec'); mic.textContent = '⏺';
+      vsStatus('🎤 ' + escapeHtml(tr('Je t\'écoute… dis la vente.')));
+      let final = '';
+      rec.onresult = (ev) => { let t = ''; for (let i = 0; i < ev.results.length; i++) t += ev.results[i][0].transcript; txt.value = t; if (ev.results[ev.results.length - 1].isFinal) final = t; };
+      rec.onerror = () => { vsStatus('🙉 ' + escapeHtml(tr('Je n\'ai pas entendu. Touche 🎤 et réessaie.'))); };
+      rec.onend = () => { rec = null; mic.classList.remove('rec'); mic.textContent = '🎤'; const t = final || txt.value; if (t && t.trim()) vsParse(t); };
+      try { rec.start(); } catch (e) { rec = null; mic.classList.remove('rec'); mic.textContent = '🎤'; }
+    });
   })();
 
   document.getElementById('btnAddPerte').addEventListener('click', async () => {

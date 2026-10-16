@@ -87,7 +87,50 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    if (body.ping) return json({ actif: true, vision: true });
+    if (body.ping) return json({ actif: true, vision: true, vente: true });
+
+    // ----- Vente à la voix : « 2 sacs de riz à Moussa, à crédit » → lignes de facture (le commerçant valide ensuite) -----
+    if (typeof body.vente === "string") {
+      const k = Deno.env.get("GEMINI_API_KEY");
+      if (!k) return json({ error: "Clé Gemini manquante dans les Secrets Supabase" }, 500);
+      const phrase = body.vente.trim().slice(0, 600);
+      if (!phrase) return json({ error: "Phrase vide" }, 400);
+      const catalogue = String(body.catalogue || "").slice(0, 60000);
+      const clients = String(body.clients || "").slice(0, 8000);
+      const consigne = `Tu transformes une phrase dite par un commerçant d'Afrique de l'Ouest (français, wolof, anglais ou arabe, parfois mélangés, avec des fautes de reconnaissance vocale) en vente structurée.
+CATALOGUE (id | nom | unité | prix de vente en ${String(body.devise || "FCFA").slice(0, 10)}) :
+${catalogue || "vide"}
+CLIENTS CONNUS : ${clients || "aucun"}
+PHRASE : « ${phrase} »
+Règles : associe chaque article au produit du catalogue le plus probable (id exact) ; si aucun ne correspond, id = null et garde le nom dit.
+Quantités en chiffres (« deux » = 2, « une demi » = 0.5). Prix seulement s'il est dit explicitement, sinon null.
+credit = true si la phrase parle de crédit, « il paiera plus tard », « à crédit », « bor » ; mode = "Mobile Money" si Wave, Orange Money, Free Money, mobile ; "Espèces" par défaut.
+paye = montant déjà payé s'il est dit (ex : « il a donné 5000 »), sinon null. client = le nom du client tel qu'il apparaît dans CLIENTS CONNUS si c'est lui, sinon le nom dit, sinon null.
+Réponds UNIQUEMENT en JSON : {"client":string|null,"credit":boolean,"mode":string,"paye":number|null,"lignes":[{"id":string|null,"nom":string,"quantite":number,"prix":number|null}],"compris":boolean}`;
+      const sModels = [...new Set([Deno.env.get("GEMINI_MODEL") || "gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"])];
+      let res: any = null, lastS = 0;
+      outerS: for (const model of sModels) {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+            method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": k },
+            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: consigne }] }], generationConfig: { temperature: 0, maxOutputTokens: 4096, responseMimeType: "application/json" } }),
+          });
+          lastS = r.status;
+          const rb = await r.json().catch(() => ({}));
+          if (r.ok) {
+            const txt = (rb.candidates?.[0]?.content?.parts ?? []).filter((p: any) => !p.thought).map((p: any) => p.text ?? "").join("").trim();
+            try { res = JSON.parse(txt.replace(/^```(json)?|```$/g, "")); } catch (_) { res = null; }
+            if (res) break outerS;
+            continue outerS;
+          }
+          console.error("Vente", model, r.status, JSON.stringify(rb).slice(0, 300));
+          if ([429, 500, 503].includes(r.status) && attempt < 2) { await new Promise((z) => setTimeout(z, 1200 * (attempt + 1))); continue; }
+          continue outerS;
+        }
+      }
+      if (!res) return json({ error: [429, 500, 503].includes(lastS) ? "L'IA est très demandée. Réessaie dans une minute." : "Je n'ai pas compris la vente. Redis-la plus lentement." }, 502);
+      return json({ resultat: res });
+    }
 
     // ----- Saisie par photo : étagère (créer le catalogue) ou facture fournisseur (réassort) -----
     if (body.vision === "etagere" || body.vision === "facture") {
