@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5b3df5"/>
+      <stop offset="1" stop-color="#ff3d8b"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".18"/>
+      <stop offset=".5" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <!-- fond -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="112" fill="url(#shine)"/>
+  <!-- auvent de boutique (rayures blanches et orange, bas arrondi) -->
+  <g transform="translate(116 118)">
+    <rect x="0" y="0" width="280" height="22" rx="8" fill="#fff"/>
+    <path d="M0 22 H56 V62 A28 28 0 0 1 0 62 Z" fill="#f59e0b"/>
+    <path d="M56 22 H112 V62 A28 28 0 0 1 56 62 Z" fill="#fff"/>
+    <path d="M112 22 H168 V62 A28 28 0 0 1 112 62 Z" fill="#f59e0b"/>
+    <path d="M168 22 H224 V62 A28 28 0 0 1 168 62 Z" fill="#fff"/>
+    <path d="M224 22 H280 V62 A28 28 0 0 1 224 62 Z" fill="#f59e0b"/>
+  </g>
+  <!-- lettre B -->
+  <path fill="#fff" d="M176 222 H262 C306 222 330 242 330 274 C330 294 319 308 301 314 C324 320 338 337 338 361 C338 397 311 418 264 418 H176 Z
+    M220 260 V300 H256 C274 300 284 293 284 280 C284 267 274 260 256 260 Z
+    M220 336 V380 H260 C280 380 292 372 292 358 C292 344 280 336 260 336 Z" fill-rule="evenodd"/>
+  <!-- petite pastille verte : tout va bien -->
+  <circle cx="352" cy="404" r="30" fill="#00e5c0" stroke="#fff" stroke-width="8"/>
+  <path d="M338 404 L348 414 L367 394" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
