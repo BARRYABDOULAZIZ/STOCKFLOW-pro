@@ -1,5 +1,5 @@
   // ================= Appli plus intelligente (test) : prévision de rupture + commande, anti-erreur à la caisse, 3 actions du jour =================
-  // Tout est calculé sur l'appareil à partir des ventes : marche sans internet, ne coûte rien. Réservé au compte de test (aiAskOk).
+  // Tout est calculé sur l'appareil à partir des ventes : marche sans internet, ne coûte rien. Ouvert à tous les patrons (smartOk).
   const SMART_DAY = 86400000;
   let smartQty = {};            // quantités à commander modifiées à la main (id produit → quantité)
   let saleGuardAck = '';         // anomalies déjà confirmées par le vendeur pour la vente en cours
@@ -51,7 +51,7 @@
   }
   function smartOrderRender() {
     const card = document.getElementById('smartOrderCard'); if (!card) return;
-    if (!aiAskOk) { card.style.display = 'none'; return; }
+    if (!smartOk) { card.style.display = 'none'; return; }
     card.style.display = '';
     const F = smartForecast(), body = document.getElementById('smartOrderBody');
     document.getElementById('smartOrderSub').textContent = F.list.length ? F.list.length + ' ' + tr(F.list.length > 1 ? 'produits' : 'produit') : '';
@@ -91,7 +91,7 @@
   }
   function saleGuardRender() {
     const box = document.getElementById('saleGuard'); if (!box) return;
-    const issues = aiAskOk && currentDocType() === 'facture' ? saleGuardIssues(invoiceLines) : [];
+    const issues = smartOk && currentDocType() === 'facture' ? saleGuardIssues(invoiceLines) : [];
     if (!issues.length) { box.style.display = 'none'; box.innerHTML = ''; saleGuardAck = ''; return; }
     const sig = JSON.stringify(issues);
     if (saleGuardAck && saleGuardAck !== sig) saleGuardAck = '';
@@ -105,7 +105,7 @@
   }
   // Appelé au moment de finaliser : true = on peut enregistrer la vente
   function saleGuardCheck(lines) {
-    if (!aiAskOk) return true;
+    if (!smartOk) return true;
     const issues = saleGuardIssues(lines);
     if (!issues.length) return true;
     const sig = JSON.stringify(issues);
@@ -183,7 +183,7 @@
   }
   function smartActionsRender() {
     const card = document.getElementById('smartActionsCard'); if (!card) return;
-    if (!aiAskOk) { card.style.display = 'none'; return; }
+    if (!smartOk) { card.style.display = 'none'; return; }
     card.style.display = '';
     const acts = smartActions(), done = smartDone(), body = document.getElementById('smartActionsBody');
     Object.keys(smartActs).forEach(k => delete smartActs[k]);

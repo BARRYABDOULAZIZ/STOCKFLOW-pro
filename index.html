@@ -3611,6 +3611,17 @@
   // Visible seulement si le serveur dit que ce compte est autorisé (comptes de test, propriétaire/admin).
   // L'IA lit un RÉSUMÉ des chiffres préparé ici ; elle ne modifie jamais rien.
   let aiAskReady = false, aiAskOk = false, aiAskFor = null;
+  // Fonctions « intelligentes » calculées sur l'appareil (À commander, anti-erreur caisse, 3 actions du jour,
+  // point du patron) : gratuites, aucune donnée envoyée, ouvertes à tous les patrons (propriétaire / admin).
+  // L'IA (Bel, stock par photo, voix) reste réservée aux comptes de test (aiAskOk, vérifié par le serveur).
+  let smartOk = false;
+  function smartInit() {
+    smartOk = isOwnerOrAdmin();
+    const bsc = document.getElementById('bossCard');
+    if (bsc) { bsc.style.display = smartOk ? '' : 'none'; if (smartOk) { try { bossRender(); } catch (e) { console.error(e); } } }
+    const bl = document.getElementById('bossListen'); if (bl) bl.style.display = aiAskOk ? '' : 'none';
+    try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) { console.error(e); }
+  }
   // Page spéciale de Bel : on y déplace la discussion (même contenu, rien n'est dupliqué)
   let belHome = null;
   function belOpenPage() {
@@ -3633,9 +3644,10 @@
   async function aiAskInit() {
     const box = document.getElementById('aiAsk'); if (!box) return;
     const hbtn = document.getElementById('belHeadBtn');
-    if (!isOwnerOrAdmin() || !supabaseClient) { box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; const c0 = document.getElementById('photoFillCard'); if (c0) c0.style.display = 'none'; const v0 = document.getElementById('voiceSale'); if (v0) v0.style.display = 'none'; const b0 = document.getElementById('bossCard'); if (b0) b0.style.display = 'none'; aiAskOk = false; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} belClosePage(); return; }
+    smartInit();
+    if (!isOwnerOrAdmin() || !supabaseClient) { box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; const c0 = document.getElementById('photoFillCard'); if (c0) c0.style.display = 'none'; const v0 = document.getElementById('voiceSale'); if (v0) v0.style.display = 'none'; aiAskOk = false; const bl0 = document.getElementById('bossListen'); if (bl0) bl0.style.display = 'none'; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} belClosePage(); return; }
     const pfc = document.getElementById('photoFillCard');
-    if (aiAskFor !== CURRENT_USER_ID) { aiAskFor = CURRENT_USER_ID; aiAskOk = false; box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; if (pfc) pfc.style.display = 'none'; const vs0 = document.getElementById('voiceSale'); if (vs0) vs0.style.display = 'none'; const bs0 = document.getElementById('bossCard'); if (bs0) bs0.style.display = 'none'; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} belClosePage(); }
+    if (aiAskFor !== CURRENT_USER_ID) { aiAskFor = CURRENT_USER_ID; aiAskOk = false; box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; if (pfc) pfc.style.display = 'none'; const vs0 = document.getElementById('voiceSale'); if (vs0) vs0.style.display = 'none'; const bl1 = document.getElementById('bossListen'); if (bl1) bl1.style.display = 'none'; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} belClosePage(); }
     if (aiAskOk || navigator.onLine === false) return;   // déjà vérifié pour ce compte : pas de nouvelle vérification (évite que le cadre clignote)
     try {
       const { data, error } = await supabaseClient.functions.invoke('ask-ai', { body: { ping: true } });
@@ -3643,7 +3655,7 @@
       aiAskOk = true;
       box.style.display = '';
       if (pfc) pfc.style.display = '';
-      const bsc = document.getElementById('bossCard'); if (bsc) { bsc.style.display = ''; try { bossRender(); } catch (e) { console.error(e); } }
+      const blb = document.getElementById('bossListen'); if (blb) blb.style.display = '';
       try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) { console.error(e); }
       try { aboRender(); } catch (e) { console.error(e); }
       // Vente à la voix : prête mais mise en pause (à rallumer : remettre display = '')
@@ -6142,7 +6154,7 @@
   }
 
   // ================= Appli plus intelligente (test) : prévision de rupture + commande, anti-erreur à la caisse, 3 actions du jour =================
-  // Tout est calculé sur l'appareil à partir des ventes : marche sans internet, ne coûte rien. Réservé au compte de test (aiAskOk).
+  // Tout est calculé sur l'appareil à partir des ventes : marche sans internet, ne coûte rien. Ouvert à tous les patrons (smartOk).
   const SMART_DAY = 86400000;
   let smartQty = {};            // quantités à commander modifiées à la main (id produit → quantité)
   let saleGuardAck = '';         // anomalies déjà confirmées par le vendeur pour la vente en cours
@@ -6194,7 +6206,7 @@
   }
   function smartOrderRender() {
     const card = document.getElementById('smartOrderCard'); if (!card) return;
-    if (!aiAskOk) { card.style.display = 'none'; return; }
+    if (!smartOk) { card.style.display = 'none'; return; }
     card.style.display = '';
     const F = smartForecast(), body = document.getElementById('smartOrderBody');
     document.getElementById('smartOrderSub').textContent = F.list.length ? F.list.length + ' ' + tr(F.list.length > 1 ? 'produits' : 'produit') : '';
@@ -6234,7 +6246,7 @@
   }
   function saleGuardRender() {
     const box = document.getElementById('saleGuard'); if (!box) return;
-    const issues = aiAskOk && currentDocType() === 'facture' ? saleGuardIssues(invoiceLines) : [];
+    const issues = smartOk && currentDocType() === 'facture' ? saleGuardIssues(invoiceLines) : [];
     if (!issues.length) { box.style.display = 'none'; box.innerHTML = ''; saleGuardAck = ''; return; }
     const sig = JSON.stringify(issues);
     if (saleGuardAck && saleGuardAck !== sig) saleGuardAck = '';
@@ -6248,7 +6260,7 @@
   }
   // Appelé au moment de finaliser : true = on peut enregistrer la vente
   function saleGuardCheck(lines) {
-    if (!aiAskOk) return true;
+    if (!smartOk) return true;
     const issues = saleGuardIssues(lines);
     if (!issues.length) return true;
     const sig = JSON.stringify(issues);
@@ -6326,7 +6338,7 @@
   }
   function smartActionsRender() {
     const card = document.getElementById('smartActionsCard'); if (!card) return;
-    if (!aiAskOk) { card.style.display = 'none'; return; }
+    if (!smartOk) { card.style.display = 'none'; return; }
     card.style.display = '';
     const acts = smartActions(), done = smartDone(), body = document.getElementById('smartActionsBody');
     Object.keys(smartActs).forEach(k => delete smartActs[k]);

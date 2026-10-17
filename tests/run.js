@@ -226,7 +226,7 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
 
   await test('À commander : prévision de rupture et quantité pour 2 semaines', async () => {
     const p = await open(browser);
-    const r = await p.app(`(() => { document.getElementById('loginOverlay').style.display = 'none'; Object.assign(state, ${JSON.stringify(smartData())}); aiAskOk = true;
+    const r = await p.app(`(() => { document.getElementById('loginOverlay').style.display = 'none'; Object.assign(state, ${JSON.stringify(smartData())}); smartOk = true;
       const F = smartForecast(); smartOrderRender();
       return { list: F.list.map(o => [o.p.nom, o.days === null ? null : Math.round(o.days * 10) / 10, o.qty]), groups: F.groups.map(g => [g.nom, g.items.length]),
         txt: smartOrderText(F.groups[0]), shown: document.getElementById('smartOrderCard').style.display, rows: document.querySelectorAll('#smartOrderBody .so-row').length }; })()`);
@@ -234,8 +234,8 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     eq(r.groups, [['Grossiste Ndiaye', 2]], 'regroupement par fournisseur');
     expect(r.txt.includes('- 18 sac Riz 25 kg') && r.txt.includes('- 8 kg Sucre 1 kg'), 'message de commande : ' + r.txt);
     eq([r.shown, r.rows], ['', 2], 'carte affichée');
-    const hidden = await p.app(`(() => { aiAskOk = false; smartOrderRender(); return document.getElementById('smartOrderCard').style.display; })()`);
-    eq(hidden, 'none', 'carte cachée pour un compte qui n\'est pas de test');
+    const hidden = await p.app(`(() => { smartOk = false; smartOrderRender(); return document.getElementById('smartOrderCard').style.display; })()`);
+    eq(hidden, 'none', 'carte cachée quand la fonction est fermée');
     eq(p.errors, [], 'erreurs');
     await p.close2();
   });
@@ -243,7 +243,7 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
   await test('Anti-erreur à la caisse : vente à perte, prix à 0, zéro en trop', async () => {
     const p = await open(browser);
     const r = await p.app(`(async () => { document.getElementById('loginOverlay').style.display = 'none'; document.querySelector('[data-tab="ventes"]').click();
-      Object.assign(state, ${JSON.stringify(smartData())}); aiAskOk = true;
+      Object.assign(state, ${JSON.stringify(smartData())}); smartOk = true;
       const L = (prix, qte = 1) => ({ ref: 'R1', nom: 'Riz 25 kg', qte, prix, unite: 'sac', matched: true });
       const kinds = (lines) => saleGuardIssues(lines).map(i => i.k);
       const res = { ok: kinds([L(17500)]), perte: kinds([L(15000, 2)]), cher: kinds([L(175000)]), zero: kinds([{ nom: 'Sachet', qte: 1, prix: 0 }]), bas: kinds([{ ...L(8000), ref: 'S1', nom: 'x' }]) };
@@ -256,7 +256,7 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
       document.getElementById('sgYes').click(); await new Promise(r => setTimeout(r, 300));
       res.saved = writes.filter(w => w.startsWith('factures/')).length;
       // Compte qui n'est pas de test : aucun blocage (comme avant)
-      aiAskOk = false; invoiceLines = [L(15000)]; renderInvoiceLines(); writes.length = 0;
+      smartOk = false; invoiceLines = [L(15000)]; renderInvoiceLines(); writes.length = 0;
       await finalizeInvoice(); res.free = writes.filter(w => w.startsWith('factures/')).length;
       return res; })()`);
     eq([r.ok, r.perte, r.cher, r.zero], [[], ['perte'], ['cher'], ['zero']], 'anomalies détectées');
@@ -267,7 +267,7 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
 
   await test('Mes 3 actions du jour : les plus utiles d\'abord', async () => {
     const p = await open(browser);
-    const r = await p.app(`(() => { document.getElementById('loginOverlay').style.display = 'none'; Object.assign(state, ${JSON.stringify(smartData())}); aiAskOk = true;
+    const r = await p.app(`(() => { document.getElementById('loginOverlay').style.display = 'none'; Object.assign(state, ${JSON.stringify(smartData())}); smartOk = true;
       try { localStorage.removeItem('sf_actions_faites_' + todayStr()); } catch (e) {}
       smartActionsRender();
       const titles = () => [...document.querySelectorAll('#smartActionsBody .sa-tx b')].map(b => b.textContent);
@@ -294,6 +294,20 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     try { localStorage.removeItem('sf_abo:c-test'); } catch (e) {}
   })()`;
   const plusJours = (k) => day(-k);
+
+  await test('Fonctions intelligentes ouvertes à tous les patrons, l\'IA reste réservée au compte de test', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(() => { document.getElementById('loginOverlay').style.display = 'none'; Object.assign(state, ${JSON.stringify(smartData())});
+      const vis = (id) => document.getElementById(id).style.display;
+      const snap = () => ({ smart: smartOk, ordre: vis('smartOrderCard'), actions: vis('smartActionsCard'), patron: vis('bossCard'), ecouter: vis('bossListen'), photo: vis('photoFillCard'), bel: vis('aiAsk') });
+      aiAskOk = false; state.currentUser = { id: 'u1', nom: 'Patron', role: 'proprietaire' }; smartInit(); const patron = snap();
+      state.currentUser = { id: 'u2', nom: 'Caissier', role: 'caissier' }; smartInit(); const caissier = snap();
+      return { patron, caissier }; })()`);
+    eq(r.patron, { smart: true, ordre: '', actions: '', patron: '', ecouter: 'none', photo: 'none', bel: 'none' }, 'patron sans IA');
+    eq(r.caissier, { smart: false, ordre: 'none', actions: 'none', patron: 'none', ecouter: 'none', photo: 'none', bel: 'none' }, 'caissier');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
 
   // Sans abonnement : aucun blocage, mais le patron voit la carte « Mon abonnement » (tarifs + comment payer)
   await test('Abonnement : sans abonnement enregistré, rien ne change (aucun blocage)', async () => {
