@@ -11,6 +11,7 @@
     const role = state.currentUser ? state.currentUser.role : 'employe';
     const allowed = ROLE_TABS[role] || ROLE_TABS.employe;
     document.querySelectorAll('nav.tabs button[data-tab]').forEach(btn => {
+      if (btn.dataset.platform) return;   // onglet Admin : géré par l'abonnement (aboRender)
       const ok = allowed.includes(btn.dataset.tab);
       btn.style.display = ok ? '' : 'none';
     });

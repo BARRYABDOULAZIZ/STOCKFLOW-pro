@@ -17,6 +17,7 @@
       if (btn.dataset.tab !== 'scanner') stopCameraScan();
       closeGlobalScanner();
       if (btn.dataset.tab === 'fournisseurs') renderFournisseurs();
+      if (btn.dataset.tab === 'admin') adminLoad();
     });
   });
 

@@ -231,6 +231,8 @@
     }
     async function enqueue(op, opts) {
       opts = opts || {};
+      // Abonnement terminé (après le délai de grâce) : lecture seule, aucune nouvelle saisie (le journal reste écrit)
+      if (!(op.k === 'insert' && op.table === 'audit_logs') && aboReadOnly()) throw new Error(ABO_RO_MSG);
       await ensureOutbox();
       op.qid = 'q' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
       op.cid = CURRENT_COMMERCE_ID; op.ts = Date.now();

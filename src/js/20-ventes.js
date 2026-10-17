@@ -259,6 +259,7 @@
   async function finalizeInvoice() {
     const validLines = invoiceLines.filter(l => l.nom && Number(l.qte) > 0);
     if (validLines.length === 0) { toast('Ajoute au moins une ligne valide (désignation + quantité).'); return; }
+    if (aboReadOnly()) { toast('🔒 ' + ABO_RO_MSG); aboGoto(); return; }
     const shortage = validLines.find(l => { if (!l.matched) return false; const prod = state.products.find(p => p.ref === l.ref); return prod && Number(l.qte) > Number(prod.stock); });
     if (shortage) { toast(`Stock insuffisant pour ${shortage.nom}.`); return; }
     if (!saleGuardCheck(validLines)) return;   // anti-erreur : vente à perte, prix à 0, prix anormal (compte de test)

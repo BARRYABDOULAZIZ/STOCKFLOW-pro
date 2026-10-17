@@ -74,6 +74,7 @@
     document.getElementById('userBadge').style.display = 'none';
     document.getElementById('commerceTag').textContent = 'Non connecté';
     document.getElementById('loginOverlay').style.display = 'flex';
+    abo.row = null; abo.admin = false; try { aboRender(); } catch (e) {}
     showAuthTab('login');
     try { netBarUpdate(); } catch (e) {}
   }

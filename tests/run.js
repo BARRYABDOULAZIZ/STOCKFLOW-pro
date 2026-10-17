@@ -59,7 +59,7 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
   await test('L\'appli démarre sans erreur et montre la connexion', async () => {
     const p = await open(browser);
     const r = await p.evaluate(() => ({ login: !!document.getElementById('loginOverlay'), panels: document.querySelectorAll('section.panel').length, title: document.title }));
-    eq(r, { login: true, panels: 14, title: 'BoromBoutik' }, 'page de départ');
+    eq(r, { login: true, panels: 15, title: 'BoromBoutik' }, 'page de départ');
     eq(p.errors, [], 'erreurs');
     await p.close2();
   });
@@ -276,6 +276,86 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
       return { before, done: document.querySelectorAll('#smartActionsBody .sa-item.done').length, shown: document.getElementById('smartActionsCard').style.display }; })()`);
     eq(r.before, ['💸 Corriger le prix de Sucre 1 kg', '🙋 Relancer Moussa Diop', '🛒 Commander chez Grossiste Ndiaye'], 'les 3 actions');
     eq([r.done, r.shown], [1, ''], 'cocher « fait »');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
+  // Faux serveur Supabase pour les abonnements (aucune requête ne sort)
+  const aboSetup = (row, opts = {}) => `(() => {
+    document.getElementById('loginOverlay').style.display = 'none';
+    window.__calls = [];
+    const tables = { abonnements: ${JSON.stringify(row)}, plateforme_config: ${JSON.stringify(opts.cfg || [])}, paiements_abonnement: [] };
+    const rpcs = { est_admin_plateforme: () => ${opts.admin ? 'true' : 'false'}, admin_boutiques: () => ${JSON.stringify(opts.boutiques || [])}, admin_prolonger: () => '2026-12-31', admin_paiements: () => [] };
+    const res = (t) => Promise.resolve({ data: tables[t], error: null });
+    supabaseClient = { from: (t) => { const q = { select: () => q, eq: () => q, order: () => q, limit: () => res(t), maybeSingle: () => res(t), then: (a, b) => res(t).then(a, b) }; return q; },
+      rpc: async (fn, args) => { window.__calls.push([fn, args]); return rpcs[fn] ? { data: rpcs[fn](args), error: null } : { data: null, error: { message: 'absent' } }; },
+      functions: { invoke: async () => ({ data: null, error: { message: 'hors ligne' } }) } };
+    CURRENT_COMMERCE_ID = 'c-test'; state.currentUser = { id: 'u1', nom: 'Abdoul Test', role: 'proprietaire', commerceId: 'c-test' }; state.commerce = { nom: 'Boutique Test', devise: 'XOF' };
+    try { localStorage.removeItem('sf_abo:c-test'); } catch (e) {}
+  })()`;
+  const plusJours = (k) => day(-k);
+
+  await test('Abonnement : sans abonnement enregistré, rien ne change (aucun blocage)', async () => {
+    const p = await open(browser);
+    await p.app(aboSetup(null));
+    const r = await p.app(`(async () => { await aboLoad(); const writes = [];
+      state.db = { queueStock: async () => 0, doc: (path) => ({ set: async () => writes.push(path), update: async () => {} }), collection: (c) => ({ doc: (id) => ({ set: async () => writes.push(c + '/' + id) }) }) };
+      document.querySelector('[data-tab="ventes"]').click(); invoiceLines = [{ ref: '', nom: 'Bonbons', qte: 2, prix: 50, unite: '', matched: false }]; renderInvoiceLines(); await finalizeInvoice();
+      return { mode: aboStatus().mode, ro: aboReadOnly(), banner: document.getElementById('aboBanner').style.display, card: document.getElementById('aboCard').style.display,
+        admin: document.querySelector('[data-tab="admin"]').style.display, saved: writes.filter(w => w.startsWith('factures/')).length }; })()`);
+    eq(r, { mode: 'none', ro: false, banner: 'none', card: 'none', admin: 'none', saved: 1 }, 'boutique sans abonnement');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
+  await test('Abonnement : rappel avant la fin, délai de grâce, puis lecture seule', async () => {
+    const p = await open(browser);
+    const out = {};
+    for (const [k, d] of [['actif', 20], ['bientot', 3], ['grace', -2], ['lecture', -5]]) {
+      await p.app(aboSetup({ commerce_id: 'c-test', actif_jusqua: plusJours(d), essai: false }));
+      out[k] = await p.app(`(async () => { await aboLoad(); return [aboStatus().mode, aboReadOnly(), document.getElementById('aboBanner').style.display === 'none' ? '' : document.getElementById('aboBanner').className.replace('abo-banner', '').trim()]; })()`);
+    }
+    eq(out, { actif: ['actif', false, ''], bientot: ['bientot', false, 'warn'], grace: ['grace', false, 'bad'], lecture: ['lecture', true, 'bad'] }, '[état, lecture seule, bandeau]');
+    // En lecture seule : la vente est refusée et rien n'est écrit, même en appelant la base directement
+    const r = await p.app(`(async () => { const writes = [];
+      document.querySelector('[data-tab="ventes"]').click(); invoiceLines = [{ ref: '', nom: 'Bonbons', qte: 2, prix: 50, unite: '', matched: false }]; renderInvoiceLines();
+      state.db = { queueStock: async () => 0, doc: (path) => ({ set: async () => writes.push(path) }), collection: (c) => ({ doc: (id) => ({ set: async () => writes.push(c + '/' + id) }) }) };
+      await finalizeInvoice();
+      return { writes: writes.length, onParams: document.getElementById('panel-parametres').classList.contains('active'), card: document.getElementById('aboCard').style.display }; })()`);
+    eq(r, { writes: 0, onParams: true, card: '' }, 'vente bloquée et redirection vers « Mon abonnement »');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
+  await test('Mon abonnement : tarifs, économie sur 12 mois, comment payer', async () => {
+    const p = await open(browser);
+    await p.app(aboSetup({ commerce_id: 'c-test', actif_jusqua: plusJours(10) }, { cfg: [{ cle: 'tarifs', valeur: { XOF: { m1: 5000, m3: 14000, m12: 50000 } } }, { cle: 'paiement', valeur: { wave: '77 000 00 00', whatsapp: '77 000 00 00' } }] }));
+    const r = await p.app(`(async () => { await aboLoad(); const b = document.getElementById('aboBody'); return { prix: [...b.querySelectorAll('.abo-p b')].map(x => x.textContent), eco: [...b.querySelectorAll('.abo-p em')].map(x => x.textContent), wave: b.textContent.includes('77 000 00 00'), paid: !!document.getElementById('aboPaid') }; })()`);
+    eq(r.prix.map(x => x.replace(/\D/g, '')), ['5000', '14000', '50000'], 'prix');
+    expect(r.eco.length === 2 && /1\s?000/.test(r.eco[0]) && /10\s?000/.test(r.eco[1]), 'économies : ' + JSON.stringify(r.eco));
+    eq([r.wave, r.paid], [true, true], 'numéro Wave et bouton « J\'ai payé »');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
+  await test('Page Admin : visible pour l\'admin seulement, +1 mois enregistre le paiement', async () => {
+    const p = await open(browser, { viewport: { width: 1280, height: 900 } });
+    const boutiques = [{ commerce_id: 'c1', nom: 'Boutique Siradji', devise: 'XOF', telephone: '77 1', proprietaire: 'Siradji', email: 's@x', nb_factures: 120, derniere_vente: day(0), actif_jusqua: null, essai: false },
+      { commerce_id: 'c2', nom: 'Chez Moussa', devise: 'GNF', telephone: '', proprietaire: 'Moussa', email: 'm@x', nb_factures: 3, derniere_vente: day(1), actif_jusqua: plusJours(2), essai: true }];
+    await p.app(aboSetup(null, { admin: true, boutiques, cfg: [{ cle: 'tarifs', valeur: { XOF: { m1: 5000 } } }] }));
+    const r = await p.app(`(async () => { await aboLoad();
+      const tab = document.querySelector('[data-tab="admin"]'); const vis = tab.style.display; tab.click(); await new Promise(r => setTimeout(r, 50));
+      const rows = [...document.querySelectorAll('.adm-row')].map(x => x.querySelector('.adm-id b').textContent);
+      const relancer = document.querySelector('[data-adf="relancer"]').textContent;
+      const row = document.querySelector('.adm-row[data-adr="c1"]'); row.querySelector('[data-adadd="1"]').click();
+      const montant = row.querySelector('[data-adm-montant]').value; row.querySelector('[data-adm-ref]').value = 'TX42';
+      row.querySelector('[data-adok="1"]').click(); await new Promise(r => setTimeout(r, 100));
+      const call = window.__calls.find(c => c[0] === 'admin_prolonger');
+      return { vis, rows, relancer, montant, call: call && [call[1].p_commerce, call[1].p_mois, call[1].p_montant, call[1].p_moyen, call[1].p_reference] }; })()`);
+    eq(r.vis, '', 'onglet Admin visible');
+    expect(r.rows.length === 2 && /\(1\)/.test(r.relancer), 'boutiques à relancer : ' + r.relancer);
+    eq(r.montant, '5000', 'montant pré-rempli avec le tarif');
+    eq(r.call, ['c1', 1, 5000, 'Wave', 'TX42'], 'paiement envoyé à la base');
     eq(p.errors, [], 'erreurs');
     await p.close2();
   });

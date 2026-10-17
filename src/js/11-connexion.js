@@ -183,5 +183,6 @@
     try { localStorage.setItem('sf_last_user', user.id); } catch (e) {}
     if (state.db && !state.syncStarted) { state.syncStarted = true; startDataSync(state.db); }
     aiAskInit();
+    aboLoad();
   }
 
