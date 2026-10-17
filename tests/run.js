@@ -295,6 +295,7 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
   })()`;
   const plusJours = (k) => day(-k);
 
+  // Sans abonnement : aucun blocage, mais le patron voit la carte « Mon abonnement » (tarifs + comment payer)
   await test('Abonnement : sans abonnement enregistré, rien ne change (aucun blocage)', async () => {
     const p = await open(browser);
     await p.app(aboSetup(null));
@@ -303,7 +304,7 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
       document.querySelector('[data-tab="ventes"]').click(); invoiceLines = [{ ref: '', nom: 'Bonbons', qte: 2, prix: 50, unite: '', matched: false }]; renderInvoiceLines(); await finalizeInvoice();
       return { mode: aboStatus().mode, ro: aboReadOnly(), banner: document.getElementById('aboBanner').style.display, card: document.getElementById('aboCard').style.display,
         admin: document.querySelector('[data-tab="admin"]').style.display, saved: writes.filter(w => w.startsWith('factures/')).length }; })()`);
-    eq(r, { mode: 'none', ro: false, banner: 'none', card: 'none', admin: 'none', saved: 1 }, 'boutique sans abonnement');
+    eq(r, { mode: 'none', ro: false, banner: 'none', card: '', admin: 'none', saved: 1 }, 'boutique sans abonnement');
     eq(p.errors, [], 'erreurs');
     await p.close2();
   });

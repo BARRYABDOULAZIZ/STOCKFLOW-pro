@@ -72,10 +72,11 @@
       ban.style.display = h ? '' : 'none';
     }
     document.body.classList.toggle('abo-lecture', S.mode === 'lecture');
-    // Carte « Mon abonnement » (Paramètres) : patron seulement, si un abonnement existe (ou compte de test / admin)
+    // Carte « Mon abonnement » (Paramètres) : visible pour tous les patrons (propriétaire / admin du commerce).
+    // Sans abonnement enregistré, elle montre juste les tarifs et comment payer : rien n'est bloqué.
     const card = document.getElementById('aboCard');
     if (card) {
-      const show = boss && (S.mode !== 'none' || aiAskOk || abo.admin);
+      const show = boss;
       card.style.display = show ? '' : 'none';
       if (show) aboCardRender(S);
     }
