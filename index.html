@@ -651,14 +651,27 @@
       <button type="button" class="ghost" id="btnBackupLater" style="padding:6px 10px;">Plus tard</button>
     </div>
 
+    <div class="card bel-morning" id="belMorning" style="display:none;">
+      <div class="bel-morning-in">
+        <span class="bel-morning-face" id="belMorningFace"></span>
+        <div class="bel-morning-txt"><b class="bel-morning-h">Le message de Bel</b><div id="belMorningBody"></div></div>
+      </div>
+      <div class="bel-act-btns">
+        <button type="button" class="primary" id="belMorningOk">👍 Merci Bel</button>
+        <button type="button" class="ghost" id="belMorningListen">🔊 Écouter</button>
+        <button type="button" class="ghost" id="belMorningOrder">🛒 À commander</button>
+        <button type="button" class="ghost" id="belMorningCredit">💸 Crédits</button>
+      </div>
+    </div>
+
     <div class="card smart-card" id="smartActionsCard" style="display:none;">
-      <div class="row-head"><h2>☀️ Mes 3 actions du jour <span class="muted" style="font-size:12px; font-weight:500;">(test)</span></h2></div>
+      <div class="row-head"><h2>☀️ Mes 3 actions du jour</h2></div>
       <div id="smartActionsBody"></div>
     </div>
 
     <div class="card boss-card" id="bossCard" style="display:none;">
       <div class="row-head" style="flex-wrap:wrap; gap:8px;">
-        <h2>👁 Le point du patron <span class="muted" style="font-size:12px; font-weight:500;">(test)</span></h2>
+        <h2>👁 Le point du patron</h2>
         <div class="boss-days"><button type="button" class="tablike active" data-bossday="0">Aujourd'hui</button><button type="button" class="tablike" data-bossday="1">Hier</button></div>
       </div>
       <div id="bossBody"></div>
@@ -749,7 +762,7 @@
           <input id="aiAskInput" type="text" maxlength="1000" placeholder="✍️ Écris ta question…" style="flex:1; min-width:0; min-height:44px;">
           <button id="aiAskBtn" type="button" class="primary bel-iconbtn" title="Envoyer">➤</button>
         </div>
-        <div class="muted" style="font-size:11px; margin-top:6px;">⚠️ Bel peut se tromper : vérifie les gros montants. Bel ne change rien dans l'appli.</div>
+        <div class="muted" style="font-size:11px; margin-top:6px;">⚠️ Bel peut se tromper : vérifie les gros montants. Bel n'enregistre rien sans ton « Confirmer ».</div>
       </div>
     </div>
 
@@ -821,7 +834,7 @@
     </div>
 
     <div class="card smart-card" id="smartOrderCard" style="display:none;">
-      <div class="row-head"><h2>🛒 À commander <span class="muted" style="font-size:12px; font-weight:500;">(test)</span></h2><span class="muted" id="smartOrderSub"></span></div>
+      <div class="row-head"><h2>🛒 À commander</h2><span class="muted" id="smartOrderSub"></span></div>
       <p class="hint-text" style="margin-top:0;">Calculé d'après tes ventes : ce qui sera bientôt fini, et la quantité pour tenir 2 semaines. Tu peux changer les quantités.</p>
       <div id="smartOrderBody"></div>
     </div>
@@ -1928,7 +1941,21 @@
     ["🧠 Ton assistant boutique", "🧠 Your shop assistant", "🧠 مساعد متجرك"],
     ["👋 Salut ! Moi c'est", "👋 Hi! I'm", "👋 مرحباً! أنا"],
     [". Touche une image 👇 ou pose ta question 🎤✍️", ". Tap a picture 👇 or ask your question 🎤✍️", ". المس صورة 👇 أو اطرح سؤالك 🎤✍️"],
-    ["⚠️ Bel peut se tromper : vérifie les gros montants. Bel ne change rien dans l'appli.", "⚠️ Bel can make mistakes: check large amounts. Bel never changes anything in the app.", "⚠️ قد يخطئ بِل: تحقّق من المبالغ الكبيرة. بِل لا يغيّر شيئاً في التطبيق."],
+    ["⚠️ Bel peut se tromper : vérifie les gros montants. Bel n'enregistre rien sans ton « Confirmer ».", "⚠️ Bel can make mistakes: check large amounts. Bel saves nothing until you tap “Confirm”.", "⚠️ قد يخطئ بِل: تحقّق من المبالغ الكبيرة. بِل لا يسجّل شيئاً قبل أن تضغط «تأكيد»."],
+    ["Le message de Bel", "Bel's message", "رسالة بِل"],
+    ["👍 Merci Bel", "👍 Thanks Bel", "👍 شكراً بِل"],
+    ["💸 Crédits", "💸 Credits", "💸 الديون"],
+    ["Dépense", "Expense", "مصروف"],
+    ["Paiement reçu", "Payment received", "دفعة مستلمة"],
+    ["a payé", "paid", "دفع"],
+    ["Commande fournisseur", "Supplier order", "طلب من المورّد"],
+    ["commandé", "ordered", "تم طلب"],
+    ["payé", "paid", "مدفوع"],
+    ["Enregistré", "Saved", "تم الحفظ"],
+    ["Enregistrement…", "Saving…", "جارٍ الحفظ…"],
+    ["Enregistré par Bel.", "Saved by Bel.", "سجّله بِل."],
+    ["Annulé", "Cancelled", "أُلغي"],
+    ["Écouter", "Listen", "استمع"],
     ["Parler à Bel", "Talk to Bel", "تحدّث مع بِل"],
     ["Ouvrir Bel, ton assistant", "Open Bel, your assistant", "افتح بِل، مساعدك"],
     ["Nouvelle conversation", "New conversation", "محادثة جديدة"],
@@ -3666,9 +3693,9 @@
     const box = document.getElementById('aiAsk'); if (!box) return;
     const hbtn = document.getElementById('belHeadBtn');
     smartInit();
-    if (!isOwnerOrAdmin() || !supabaseClient) { box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; const c0 = document.getElementById('photoFillCard'); if (c0) c0.style.display = 'none'; const v0 = document.getElementById('voiceSale'); if (v0) v0.style.display = 'none'; aiAskOk = false; const bl0 = document.getElementById('bossListen'); if (bl0) bl0.style.display = 'none'; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} belClosePage(); return; }
+    if (!isOwnerOrAdmin() || !supabaseClient) { box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; const c0 = document.getElementById('photoFillCard'); if (c0) c0.style.display = 'none'; const v0 = document.getElementById('voiceSale'); if (v0) v0.style.display = 'none'; aiAskOk = false; const bl0 = document.getElementById('bossListen'); if (bl0) bl0.style.display = 'none'; const bm0 = document.getElementById('belMorning'); if (bm0) bm0.style.display = 'none'; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} belClosePage(); return; }
     const pfc = document.getElementById('photoFillCard');
-    if (aiAskFor !== CURRENT_USER_ID) { aiAskFor = CURRENT_USER_ID; aiAskOk = false; box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; if (pfc) pfc.style.display = 'none'; const vs0 = document.getElementById('voiceSale'); if (vs0) vs0.style.display = 'none'; const bl1 = document.getElementById('bossListen'); if (bl1) bl1.style.display = 'none'; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} belClosePage(); }
+    if (aiAskFor !== CURRENT_USER_ID) { aiAskFor = CURRENT_USER_ID; aiAskOk = false; box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; if (pfc) pfc.style.display = 'none'; const vs0 = document.getElementById('voiceSale'); if (vs0) vs0.style.display = 'none'; const bl1 = document.getElementById('bossListen'); if (bl1) bl1.style.display = 'none'; const bm1 = document.getElementById('belMorning'); if (bm1) bm1.style.display = 'none'; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} belClosePage(); }
     if (aiAskOk || navigator.onLine === false) return;   // déjà vérifié pour ce compte : pas de nouvelle vérification (évite que le cadre clignote)
     try {
       const { data, error } = await supabaseClient.functions.invoke('ask-ai', { body: { ping: true } });
@@ -3679,6 +3706,7 @@
       const blb = document.getElementById('bossListen'); if (blb) blb.style.display = '';
       try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) { console.error(e); }
       try { aboRender(); } catch (e) { console.error(e); }
+      try { belMorningRender(); } catch (e) { console.error(e); }
       // Vente à la voix : prête mais mise en pause (à rallumer : remettre display = '')
       const vsc = document.getElementById('voiceSale'); if (vsc) vsc.style.display = 'none';
       const face = document.getElementById('belFace'); if (face && !face.innerHTML) face.innerHTML = belAvatarSvg(56);
@@ -3836,6 +3864,7 @@
   function belPlain(txt) {
     return String(txt || '')
       .replace(/\[\[WHATSAPP\|([^|\]]{1,80})\|[^\]]*\]\]/g, (m, nom) => ({ fr: 'Je t\'ai préparé un message WhatsApp pour ', en: 'I prepared a WhatsApp message for ', ar: 'جهّزت لك رسالة واتساب إلى ' })[UI_LANG] + nom.trim() + '.')
+      .replace(BEL_ACT_RE, () => ({ fr: 'Je t\'ai préparé une opération à confirmer.', en: 'I prepared an entry for you to confirm.', ar: 'جهّزت لك عملية لتأكيدها.' })[UI_LANG])
       .replace(/\*\*/g, '').replace(/^#{1,4}\s*/gm, '').replace(/^\s*[-*•] /gm, '')
       .replace(/\p{Extended_Pictographic}/gu, '').replace(/[‍️⃣]/g, '')
       .split(curSym()).join(UI_LANG === 'ar' ? DEVISES[curCode()].ar : DEVISES[curCode()][UI_LANG === 'en' ? 'en' : 'fr'][1]).replace(/[ \t]+/g, ' ').replace(/^ +| +$/gm, '').replace(/\n\s*\n+/g, '\n').trim();
@@ -3926,9 +3955,11 @@
     const f = (state.fournisseurs || []).find(x => (x.nom || '').trim().toLowerCase() === k);
     return f && f.telephone ? f.telephone : '';
   }
-  function aiFormat(txt) {
+  function aiFormat(txt, hi, hEntry) {
     // Le texte de l'IA est d'abord échappé : aucun HTML venant de l'IA n'est exécuté
-    let h = escapeHtml(txt);
+    // Les opérations proposées par Bel (dépense, paiement, commande) sont mises de côté, puis remises en cartes « à confirmer »
+    const X = belExtractActs(txt);
+    let h = escapeHtml(X.out);
     h = h.replace(/\[\[WHATSAPP\|([^|\]]{1,80})\|([^\]]{1,1000})\]\]/g, (m, nom, msg) => {
       const i = aiWaActions.push({ nom: nom.trim().replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"'), msg: msg.trim().replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>') }) - 1;
       return '<div style="margin:6px 0; padding:8px 10px; border:1px solid rgba(34,197,94,.45); border-radius:10px; background:rgba(34,197,94,.08);">'
@@ -3936,7 +3967,7 @@
         + '<button type="button" class="primary" data-aiwa="' + i + '" style="padding:4px 10px; font-size:12px;">📱 Ouvrir dans WhatsApp</button></div>';
     });
     h = h.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/^#{1,4}\s*(.+)$/gm, '<b>$1</b>').replace(/^\s*[-*] /gm, '• ');
-    return h.replace(/\n/g, '<br>');
+    return belInsertActs(h.replace(/\n/g, '<br>'), X.acts, hi, hEntry);
   }
   function aiRender(pendingQ) {
     const out = document.getElementById('aiAskAnswer');
@@ -3945,7 +3976,7 @@
     const bot = (inner, cls, live) => `<div class="bel-row bot"><span class="bel-av${live ? ' live' : ''}" data-mood="${live ? 'think' : 'idle'}">${belAvatarSvg(30)}</span><div class="bel-bub ${cls || ''}">${inner}</div></div>`;
     const parts = aiHistory.map((h, i) => me(h.q) + (h.err
       ? bot('😕 ' + escapeHtml(h.a), 'err')
-      : bot(aiFormat(h.a) + `<div><button type="button" class="bel-speak" data-belvoice="${i}">${belVoiceLabel(i)}</button></div>`)));
+      : bot(aiFormat(h.a, i, h) + `<div><button type="button" class="bel-speak" data-belvoice="${i}">${belVoiceLabel(i)}</button></div>`)));
     if (pendingQ) parts.push(me(pendingQ) + bot('<span class="bel-dots"><span></span><span></span><span></span></span> <span class="muted" style="font-size:12.5px;">🧠 Je regarde tes chiffres…</span>', '', true));
     out.innerHTML = parts.join('');
     out.style.display = parts.length ? 'block' : 'none';
@@ -3986,6 +4017,207 @@
       setTimeout(() => { if (!aiBusy) belMood('idle'); }, 2500);
     }
   }
+  // ================= Bel qui agit (TEST) : Bel PROPOSE, le patron CONFIRME =================
+  // Bel écrit une ligne spéciale dans sa réponse ; l'appli la montre comme une carte avec « ✓ Confirmer ».
+  // Rien n'est enregistré sans le clic du patron. Formats compris (une ligne chacun) :
+  //   [[DEPENSE|montant|catégorie|note]]
+  //   [[PAIEMENT|nom du client|montant|mode]]
+  //   [[COMMANDE|nom du fournisseur|montant commandé|montant payé|note]]
+  const BEL_DEP_CATS = ['Loyer', 'Électricité / Eau', 'Salaires', 'Transport', 'Réparations', 'Fournitures', 'Autre'];
+  const BEL_MODES = ['Espèces', 'Mobile Money', 'Virement', 'Chèque'];
+  const BEL_ACT_RE = /\[\[(DEPENSE|PAIEMENT|COMMANDE)\|([^\]]{1,600})\]\]/g;
+  const BEL_ACT_MAX = 5;
+
+  // Montant écrit par l'IA : « 5000 », « 5 000 », « 5000 FCFA », « 12,5 »
+  function belAmount(s) {
+    const t = String(s || '').replace(/[\s  ]/g, '').replace(/[^\d.,]/g, '');
+    if (/^\d+([.,]\d{1,2})?$/.test(t)) return Math.round(Number(t.replace(',', '.')) * 100) / 100;
+    return Number(t.replace(/[^\d]/g, '')) || 0;
+  }
+  const belNorm = (s) => String(s || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ');
+  function belPick(list, val, def) { const k = belNorm(val); return list.find(x => belNorm(x) === k) || list.find(x => k && belNorm(x).startsWith(k.slice(0, 4))) || def; }
+  // Retrouve un client / fournisseur par son nom (exact, sinon un seul nom qui ressemble)
+  function belFind(list, nom) {
+    const k = belNorm(nom); if (!k) return null;
+    const exact = (list || []).filter(x => belNorm(x.nom) === k);
+    if (exact.length === 1) return exact[0];
+    if (exact.length > 1) return null;
+    const near = (list || []).filter(x => belNorm(x.nom).includes(k) || (belNorm(x.nom) && k.includes(belNorm(x.nom))));
+    return near.length === 1 ? near[0] : null;
+  }
+  // Factures du client encore à payer, la plus ancienne d'abord
+  function belClientDue(clientId) {
+    return (state.invoices || []).filter(i => i.clientId === clientId && !i.annulee)
+      .map(i => ({ i, r: Math.round(((Number(i.total) || 0) - (Number(i.montantPaye) || 0)) * 100) / 100 }))
+      .filter(o => o.r > 0)
+      .sort((a, b) => (a.i.date || '').localeCompare(b.i.date || '') || (Number(a.i.num) || 0) - (Number(b.i.num) || 0));
+  }
+
+  // Transforme une ligne spéciale en action vérifiée (ok = peut être confirmée)
+  function belParseAct(kind, raw) {
+    const f = raw.split('|').map(x => x.trim());
+    if (kind === 'DEPENSE') {
+      const montant = belAmount(f[0]), categorie = belPick(BEL_DEP_CATS, f[1], 'Autre'), note = (f[2] || '').slice(0, 120);
+      return { kind, montant, categorie, note, ok: montant > 0, why: montant > 0 ? '' : 'Montant manquant.' };
+    }
+    if (kind === 'PAIEMENT') {
+      const c = belFind(state.clients, f[0]), montant = belAmount(f[1]), mode = belPick(BEL_MODES, f[2], 'Espèces');
+      if (!c) return { kind, nom: f[0] || '?', montant, mode, ok: false, why: 'Client introuvable : vérifie le nom dans l\'onglet Clients.' };
+      const due = belClientDue(c.id), reste = due.reduce((s, o) => s + o.r, 0);
+      if (!(montant > 0)) return { kind, nom: c.nom, montant, mode, ok: false, why: 'Montant manquant.' };
+      if (reste <= 0) return { kind, nom: c.nom, montant, mode, ok: false, why: 'Ce client ne doit rien.' };
+      const paye = Math.min(montant, reste);
+      return { kind, clientId: c.id, nom: c.nom, montant: paye, demande: montant, reste, mode, ok: true,
+        why: montant > reste ? `Il ne doit que ${euros(reste)} : j'enregistre ${euros(paye)}.` : '' };
+    }
+    if (kind === 'COMMANDE') {
+      const fo = belFind(state.fournisseurs, f[0]), commande = belAmount(f[1]), paye = belAmount(f[2]), note = (f[3] || '').slice(0, 160);
+      if (!fo) return { kind, nom: f[0] || '?', commande, paye, note, ok: false, why: 'Fournisseur introuvable : ajoute-le d\'abord dans l\'onglet Fournisseurs.' };
+      const ok = commande > 0 || paye > 0;
+      return { kind, fournisseurId: fo.id, nom: fo.nom, commande, paye, note, ok, why: ok ? '' : 'Montant manquant.' };
+    }
+    return { kind, ok: false, why: '?' };
+  }
+
+  // Remplace les lignes spéciales par des repères, avant que le texte soit échappé
+  function belExtractActs(txt) {
+    const acts = [];
+    const out = String(txt || '').replace(BEL_ACT_RE, (m, kind, raw) => {
+      if (acts.length >= BEL_ACT_MAX) return '';
+      acts.push(belParseAct(kind, raw));
+      return '\u0000BELACT' + (acts.length - 1) + '\u0000';
+    });
+    return { out, acts };
+  }
+  function belActTitle(a) {
+    if (a.kind === 'DEPENSE') return `💳 <b>${escapeHtml(tr('Dépense'))}</b> : <b>${euros(a.montant)}</b> · ${escapeHtml(a.categorie)}${a.note ? ' · ' + escapeHtml(a.note) : ''}`;
+    if (a.kind === 'PAIEMENT') return `💸 <b>${escapeHtml(tr('Paiement reçu'))}</b> : <b>${escapeHtml(a.nom)}</b> ${escapeHtml(tr('a payé'))} <b>${euros(a.montant)}</b> · ${escapeHtml(a.mode)}`;
+    return `🚚 <b>${escapeHtml(tr('Commande fournisseur'))}</b> : <b>${escapeHtml(a.nom)}</b>${a.commande > 0 ? ' · ' + escapeHtml(tr('commandé')) + ' <b>' + euros(a.commande) + '</b>' : ''}${a.paye > 0 ? ' · ' + escapeHtml(tr('payé')) + ' <b>' + euros(a.paye) + '</b>' : ''}${a.note ? ' · ' + escapeHtml(a.note) : ''}`;
+  }
+  // Carte « à confirmer » ; st = état gardé dans la conversation (done / no / busy / err)
+  function belActCard(a, key, st) {
+    let foot;
+    if (st === 'done') foot = `<div class="bel-act-st ok">✅ ${escapeHtml(tr('Enregistré'))}</div>`;
+    else if (st === 'no') foot = `<div class="bel-act-st">✗ ${escapeHtml(tr('Annulé'))}</div>`;
+    else if (st === 'busy') foot = `<div class="bel-act-st">⏳ ${escapeHtml(tr('Enregistrement…'))}</div>`;
+    else if (!a.ok) foot = `<div class="bel-act-st bad">⚠️ ${escapeHtml(tr(a.why))}</div>`;
+    else foot = (a.why ? `<div class="bel-act-st warn">ℹ️ ${escapeHtml(a.why)}</div>` : '')
+      + `<div class="bel-act-btns"><button type="button" class="primary" data-belok="${key}">✓ ${escapeHtml(tr('Confirmer'))}</button><button type="button" class="ghost" data-belno="${key}">✗ ${escapeHtml(tr('Annuler'))}</button></div>`;
+    return `<div class="bel-act${st === 'done' ? ' done' : ''}"><div class="bel-act-t">${belActTitle(a)}</div>${foot}</div>`;
+  }
+  // Utilisé par aiFormat (12-bel.js) : le texte arrive déjà échappé, avec les repères
+  function belInsertActs(html, acts, hi, h) {
+    return html.replace(/(?:<br>)*\u0000BELACT(\d+)\u0000(?:<br>)*/g, (m, n) => {
+      const a = acts[Number(n)]; if (!a) return '';
+      return belActCard(a, hi + ':' + n, ((h && h.acts) || {})[n]);
+    });
+  }
+
+  // Enregistrement, une fois confirmé (mêmes enregistrements que les formulaires de l'appli)
+  async function belRunAct(a) {
+    if (!state.db) throw new Error('Connexion non disponible.');
+    const date = todayStr(), who = state.currentUser ? state.currentUser.nom : '';
+    const id = (p) => p + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+    if (a.kind === 'DEPENSE') {
+      await state.db.doc('depenses/' + id('dp-')).set({ categorie: a.categorie, montant: a.montant, date, note: a.note || 'Noté par Bel', operateur: who, createdAt: Date.now() });
+      return;
+    }
+    if (a.kind === 'PAIEMENT') {
+      // On répartit sur les factures dues, la plus ancienne d'abord (recalculé au moment du clic)
+      let left = a.montant;
+      for (const o of belClientDue(a.clientId)) {
+        if (left <= 0) break;
+        const part = Math.min(left, o.r);
+        await state.db.doc('paiements/' + id('pa-')).set({ factureId: o.i.id, clientId: a.clientId, montant: part, mode: a.mode, date, operateur: who, createdAt: Date.now() });
+        await state.db.doc('factures/' + o.i.id).update({ montantPaye: Math.round(((Number(o.i.montantPaye) || 0) + part) * 100) / 100 });
+        left = Math.round((left - part) * 100) / 100;
+      }
+      return;
+    }
+    if (a.kind === 'COMMANDE') {
+      await state.db.doc('commandes_fournisseurs/' + id('co-')).set({ fournisseurId: a.fournisseurId, fournisseurNom: a.nom, date, montantCommande: a.commande, montantPaye: a.paye, note: a.note || 'Noté par Bel', createdAt: Date.now() });
+    }
+  }
+
+  (function belActsInit() {
+    const out = document.getElementById('aiAskAnswer'); if (!out) return;
+    out.addEventListener('click', async (e) => {
+      const ok = e.target.closest('[data-belok]'), no = e.target.closest('[data-belno]');
+      const key = (ok && ok.dataset.belok) || (no && no.dataset.belno); if (!key) return;
+      const [hi, n] = key.split(':').map(Number), h = aiHistory[hi]; if (!h || h.err) return;
+      h.acts = h.acts || {};
+      if (h.acts[n] === 'done' || h.acts[n] === 'busy') return;
+      if (no) { h.acts[n] = 'no'; aiRender(); return; }
+      const m = [...String(h.a).matchAll(BEL_ACT_RE)][n]; if (!m) return;
+      const a = belParseAct(m[1], m[2]);   // revérifié au moment du clic (données à jour)
+      if (!a.ok) { aiRender(); return; }
+      h.acts[n] = 'busy'; aiRender();
+      try { await belRunAct(a); h.acts[n] = 'done'; toast('✅ ' + tr('Enregistré par Bel.')); belMood('happy'); setTimeout(() => { if (!aiBusy) belMood('idle'); }, 2000); }
+      catch (err) { delete h.acts[n]; console.error(err); toast('😕 ' + ((err && err.message) || 'Erreur')); }
+      aiRender();
+    });
+  })();
+
+  // ================= Bel prévient tout seul : le message du matin (TEST) =================
+  // Calculé sur l'appareil (gratuit) : produits qui vont manquer, crédits en retard, ventes d'hier.
+  // Affiché une fois par jour sur l'Accueil, jusqu'à ce que le patron appuie sur « Merci Bel ».
+  const belMornKey = () => 'sf_bel_matin:' + (CURRENT_COMMERCE_ID || '') + ':' + todayStr();
+  function belMorningData() {
+    const today = todayStr(), y = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const F = smartForecast();
+    const manque = F.list.filter(o => o.stock <= 0 || (o.days !== null && o.days <= 3));
+    const retard = {};
+    (state.invoices || []).filter(i => !i.annulee && i.echeance && i.echeance < today).forEach(i => {
+      const r = (Number(i.total) || 0) - (Number(i.montantPaye) || 0); if (r <= 0.5) return;
+      const k = i.clientId || belNorm(i.client); const g = retard[k] || (retard[k] = { nom: i.client || '?', r: 0 }); g.r += r;
+    });
+    const ret = Object.values(retard).sort((a, b) => b.r - a.r);
+    const hier = (state.invoices || []).filter(i => !i.annulee && i.date === y && (i.type || 'facture') === 'facture');
+    return { manque, ret, hierN: hier.length, hierM: hier.reduce((s, i) => s + (Number(i.total) || 0), 0) };
+  }
+  function belMorningLines(D, forVoice) {
+    const L = [], nom = (state.currentUser && state.currentUser.nom) || '';
+    const list = (arr, f) => arr.slice(0, 3).map(f).join(', ') + (arr.length > 3 ? '…' : '');
+    L.push((forVoice ? '' : '☀️ ') + `Bonjour${nom ? ' ' + nom : ''} !`);
+    if (D.hierN) L.push((forVoice ? '' : '💰 ') + `Hier : ${D.hierN} vente${D.hierN > 1 ? 's' : ''}, ${euros(D.hierM)}.`);
+    if (D.manque.length) L.push((forVoice ? '' : '🔥 ') + `${D.manque.length} produit${D.manque.length > 1 ? 's vont' : ' va'} manquer d'ici 3 jours : ${list(D.manque, o => o.p.nom)}.`);
+    if (D.ret.length) L.push((forVoice ? '' : '💸 ') + `${D.ret.length} client${D.ret.length > 1 ? 's ont' : ' a'} dépassé l'échéance : ${list(D.ret, g => g.nom + ' ' + euros(g.r))}.`);
+    if (!D.manque.length && !D.ret.length) L.push((forVoice ? '' : '✅ ') + 'Rien d\'urgent ce matin. Bonne journée !');
+    return L;
+  }
+  function belMorningRender() {
+    const card = document.getElementById('belMorning'); if (!card) return;
+    let seen = false; try { seen = localStorage.getItem(belMornKey()) === '1'; } catch (e) {}
+    if (!aiAskOk || seen || !(state.products || []).length) { card.style.display = 'none'; return; }
+    const D = belMorningData();
+    document.getElementById('belMorningFace').innerHTML = belAvatarSvg(46);
+    document.getElementById('belMorningBody').innerHTML = belMorningLines(D, false).map(l => `<div>${escapeHtml(l)}</div>`).join('');
+    document.getElementById('belMorningOrder').style.display = D.manque.length ? '' : 'none';
+    document.getElementById('belMorningCredit').style.display = D.ret.length ? '' : 'none';
+    card.style.display = '';
+  }
+  (function belMorningInit() {
+    const card = document.getElementById('belMorning'); if (!card) return;
+    document.getElementById('belMorningOk').addEventListener('click', () => { try { localStorage.setItem(belMornKey(), '1'); } catch (e) {} card.style.display = 'none'; });
+    document.getElementById('belMorningOrder').addEventListener('click', () => { try { smartOrderGoto(); } catch (e) { console.error(e); } });
+    document.getElementById('belMorningCredit').addEventListener('click', () => { const b = document.querySelector('nav.tabs button[data-tab="clients"]'); if (b) b.click(); });
+    let audio = null;
+    document.getElementById('belMorningListen').addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      if (audio) { try { audio.pause(); } catch (x) {} audio = null; btn.textContent = '🔊 ' + tr('Écouter'); return; }
+      if (!needOnline('la voix de Bel')) return;
+      btn.disabled = true; btn.textContent = '⏳ ' + tr('Bel prépare sa voix…');
+      try {
+        const txt = belMorningLines(belMorningData(), true).join(' ').split(curSym()).join(DEVISES[curCode()].fr[1]);
+        const { data, error } = await supabaseClient.functions.invoke('ask-ai', { body: { tts: txt, lang: 'fr' } });
+        if (error || !data || !data.audio) throw new Error('Voix indisponible pour le moment');
+        audio = new Audio(URL.createObjectURL(belPcmToWav(data.audio, data.mime)));
+        audio.onended = () => { audio = null; btn.textContent = '🔊 ' + tr('Écouter'); };
+        btn.textContent = '⏹ ' + tr('Arrêter'); await audio.play();
+      } catch (x) { btn.textContent = '😕 ' + (x.message || 'Erreur'); setTimeout(() => { btn.textContent = '🔊 ' + tr('Écouter'); }, 4000); }
+      finally { btn.disabled = false; }
+    });
+  })();
   async function forgetLocal(userId, commerceId) {
     try { localStorage.removeItem('sf_last_user'); } catch (e) {}
     try { if (state.db && state.db.wipe && userId) await state.db.wipe(userId, commerceId); } catch (e) {}
@@ -4152,6 +4384,7 @@
     try { updateBackupReminder(); } catch (e) {}
     try { bossRender(); } catch (e) { console.error(e); }
     try { smartActionsRender(); } catch (e) { console.error(e); }
+    try { belMorningRender(); } catch (e) { console.error(e); }
     const g = computeGlobals();
     document.getElementById('heroInvesti').textContent = euros(g.montantInvesti);
     document.getElementById('heroValeur').textContent = euros(g.valeurPotentielle);
@@ -8943,6 +9176,24 @@ header.top{animation:none !important;background-size:100% 100% !important;}
   .sale-guard .sg-line { margin-top:4px; }
   .sale-guard .sg-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
   .sale-guard .sg-yes { background:#dc2626 !important; border-color:#dc2626 !important; }
+
+  /* Bel qui agit : cartes « à confirmer » dans la discussion */
+  .bel-act { margin:8px 0; padding:9px 11px; border:1.5px solid rgba(91,61,245,.45); border-radius:12px; background:rgba(91,61,245,.06); }
+  .bel-act.done { border-color:rgba(5,150,105,.5); background:rgba(5,150,105,.07); }
+  .bel-act-t { font-size:13.5px; line-height:1.4; }
+  .bel-act-st { margin-top:6px; font-size:12.5px; color:var(--muted, #6b7280); }
+  .bel-act-st.ok { color:#059669; font-weight:600; }
+  .bel-act-st.bad { color:#b91c1c; }
+  .bel-act-st.warn { color:#b45309; }
+  .bel-act-btns { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .bel-act-btns button { padding:6px 12px; font-size:13px; }
+
+  /* Le message du matin de Bel (Accueil) */
+  .bel-morning { border:2px solid rgba(245,158,11,.55) !important; background:linear-gradient(135deg, rgba(255,209,102,.16), rgba(52,211,153,.08)) !important; }
+  .bel-morning-in { display:flex; gap:12px; align-items:flex-start; }
+  .bel-morning-face { flex:0 0 auto; line-height:0; }
+  .bel-morning-txt { flex:1; min-width:0; font-size:14px; line-height:1.5; }
+  .bel-morning-h { display:block; font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:#b45309; margin-bottom:2px; }
 </style>
 <style id="abo-css">
   /* ===== Abonnement : bandeau, carte « Mon abonnement », page Admin ===== */

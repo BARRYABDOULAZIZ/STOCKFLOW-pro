@@ -13,6 +13,7 @@
     try { updateBackupReminder(); } catch (e) {}
     try { bossRender(); } catch (e) { console.error(e); }
     try { smartActionsRender(); } catch (e) { console.error(e); }
+    try { belMorningRender(); } catch (e) { console.error(e); }
     const g = computeGlobals();
     document.getElementById('heroInvesti').textContent = euros(g.montantInvesti);
     document.getElementById('heroValeur').textContent = euros(g.valeurPotentielle);

@@ -6,14 +6,27 @@
       <button type="button" class="ghost" id="btnBackupLater" style="padding:6px 10px;">Plus tard</button>
     </div>
 
+    <div class="card bel-morning" id="belMorning" style="display:none;">
+      <div class="bel-morning-in">
+        <span class="bel-morning-face" id="belMorningFace"></span>
+        <div class="bel-morning-txt"><b class="bel-morning-h">Le message de Bel</b><div id="belMorningBody"></div></div>
+      </div>
+      <div class="bel-act-btns">
+        <button type="button" class="primary" id="belMorningOk">👍 Merci Bel</button>
+        <button type="button" class="ghost" id="belMorningListen">🔊 Écouter</button>
+        <button type="button" class="ghost" id="belMorningOrder">🛒 À commander</button>
+        <button type="button" class="ghost" id="belMorningCredit">💸 Crédits</button>
+      </div>
+    </div>
+
     <div class="card smart-card" id="smartActionsCard" style="display:none;">
-      <div class="row-head"><h2>☀️ Mes 3 actions du jour <span class="muted" style="font-size:12px; font-weight:500;">(test)</span></h2></div>
+      <div class="row-head"><h2>☀️ Mes 3 actions du jour</h2></div>
       <div id="smartActionsBody"></div>
     </div>
 
     <div class="card boss-card" id="bossCard" style="display:none;">
       <div class="row-head" style="flex-wrap:wrap; gap:8px;">
-        <h2>👁 Le point du patron <span class="muted" style="font-size:12px; font-weight:500;">(test)</span></h2>
+        <h2>👁 Le point du patron</h2>
         <div class="boss-days"><button type="button" class="tablike active" data-bossday="0">Aujourd'hui</button><button type="button" class="tablike" data-bossday="1">Hier</button></div>
       </div>
       <div id="bossBody"></div>
@@ -104,7 +117,7 @@
           <input id="aiAskInput" type="text" maxlength="1000" placeholder="✍️ Écris ta question…" style="flex:1; min-width:0; min-height:44px;">
           <button id="aiAskBtn" type="button" class="primary bel-iconbtn" title="Envoyer">➤</button>
         </div>
-        <div class="muted" style="font-size:11px; margin-top:6px;">⚠️ Bel peut se tromper : vérifie les gros montants. Bel ne change rien dans l'appli.</div>
+        <div class="muted" style="font-size:11px; margin-top:6px;">⚠️ Bel peut se tromper : vérifie les gros montants. Bel n'enregistre rien sans ton « Confirmer ».</div>
       </div>
     </div>
 

@@ -336,6 +336,54 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     await p.close2();
   });
 
+  await test('Bel qui agit : la carte « à confirmer » enregistre seulement après le clic', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(async () => { document.getElementById('loginOverlay').style.display = 'none'; Object.assign(state, ${JSON.stringify(smartData())});
+      state.invoices.forEach((i, k) => { i.id = 'f' + k; });
+      state.invoices.push({ id: 'f99', num: 21, date: '2026-01-01', total: 4000, montantPaye: 0, client: 'Moussa Diop', clientId: 'c1', lignes: [] });
+      const writes = [];
+      state.db = { doc: (path) => ({ set: async (v) => writes.push(['set', path.split('/')[0], v]), update: async (v) => writes.push(['update', path, v]) }) };
+      aiAskOk = true;
+      aiHistory = [{ q: 'note', a: 'Voici 👇\\n[[DEPENSE|5 000|transport|Taxi marché]]\\n[[PAIEMENT|moussa diop|30000|Mobile Money]]\\n[[COMMANDE|Grossiste Ndiaye|120000|20000|Riz]]\\n[[PAIEMENT|Inconnu|1000|Espèces]]' }];
+      aiRender();
+      const cards = [...document.querySelectorAll('#aiAskAnswer .bel-act')].map(c => c.textContent.split(String.fromCharCode(8239)).join(' ').split(String.fromCharCode(160)).join(' ').trim());
+      const avant = writes.length;
+      const click = async (sel) => { document.querySelector(sel).click(); await new Promise(z => setTimeout(z, 30)); };
+      await click('[data-belok="0:0"]'); await click('[data-belok="0:1"]'); await click('[data-belno="0:2"]');
+      const ok3 = !!document.querySelector('[data-belok="0:3"]');
+      const etat = aiHistory[0].acts;
+      const n = writes.length; await click('[data-belno="0:0"]').catch(() => {}); 
+      return { cards, avant, writes: writes.map(w => w[0] === 'set' ? [w[1], w[2].montant ?? w[2].montantCommande, w[2].categorie || w[2].mode || '', w[2].factureId || ''] : [w[1], w[2].montantPaye]), etat, ok3, pareil: writes.length === n,
+        voix: belPlain(aiHistory[0].a) }; })()`);
+    eq(r.avant, 0, 'rien enregistré avant le clic');
+    expect(r.cards.length === 4 && /Dépense.*5 000.*Transport.*Taxi marché/.test(r.cards[0]), 'carte dépense : ' + r.cards[0]);
+    expect(/Moussa Diop.*24 000/.test(r.cards[1]) && /ne doit que/.test(r.cards[1]), 'paiement plafonné à la dette : ' + r.cards[1]);
+    expect(/introuvable/.test(r.cards[3]) && !r.ok3, 'client inconnu : pas de bouton Confirmer');
+    eq(r.writes, [['depenses', 5000, 'Transport', ''], ['paiements', 4000, 'Mobile Money', 'f99'], ['factures/f99', 4000], ['paiements', 20000, 'Mobile Money', 'f10'], ['factures/f10', 25000]], 'enregistrements (plus ancienne facture d\'abord)');
+    eq(r.etat, { 0: 'done', 1: 'done', 2: 'no' }, 'état des cartes');
+    expect(r.pareil, 'pas de double enregistrement');
+    expect(!r.voix.includes('[[') && r.voix.includes('opération à confirmer'), 'voix sans les lignes techniques');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
+  await test('Bel prévient tout seul : message du matin une fois par jour', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(() => { document.getElementById('loginOverlay').style.display = 'none'; Object.assign(state, ${JSON.stringify(smartData())});
+      state.products[0].stock = 3;
+      state.invoices.push({ num: 30, date: '2026-01-01', echeance: '2026-01-08', total: 9000, montantPaye: 1000, client: 'Awa Fall', clientId: 'c2', lignes: [] });
+      try { localStorage.clear(); } catch (e) {}
+      const vis = () => document.getElementById('belMorning').style.display;
+      aiAskOk = false; belMorningRender(); const sansIA = vis();
+      aiAskOk = true; belMorningRender(); const avec = vis(); const txt = document.getElementById('belMorningBody').textContent.split(String.fromCharCode(8239)).join(' ').split(String.fromCharCode(160)).join(' ');
+      document.getElementById('belMorningOk').click(); belMorningRender(); const apres = vis();
+      return { sansIA, avec, txt, apres }; })()`);
+    eq([r.sansIA, r.avec, r.apres], ['none', '', 'none'], 'visible pour le compte Bel, caché après « Merci Bel »');
+    expect(/Bonjour/.test(r.txt) && /Riz 25 kg/.test(r.txt) && /Awa Fall/.test(r.txt) && /8 000/.test(r.txt), 'contenu : ' + r.txt);
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
   // Sans abonnement : aucun blocage, mais le patron voit la carte « Mon abonnement » (tarifs + comment payer)
   await test('Abonnement : sans abonnement enregistré, rien ne change (aucun blocage)', async () => {
     const p = await open(browser);

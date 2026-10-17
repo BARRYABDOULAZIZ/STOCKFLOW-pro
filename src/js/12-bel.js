@@ -36,9 +36,9 @@
     const box = document.getElementById('aiAsk'); if (!box) return;
     const hbtn = document.getElementById('belHeadBtn');
     smartInit();
-    if (!isOwnerOrAdmin() || !supabaseClient) { box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; const c0 = document.getElementById('photoFillCard'); if (c0) c0.style.display = 'none'; const v0 = document.getElementById('voiceSale'); if (v0) v0.style.display = 'none'; aiAskOk = false; const bl0 = document.getElementById('bossListen'); if (bl0) bl0.style.display = 'none'; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} belClosePage(); return; }
+    if (!isOwnerOrAdmin() || !supabaseClient) { box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; const c0 = document.getElementById('photoFillCard'); if (c0) c0.style.display = 'none'; const v0 = document.getElementById('voiceSale'); if (v0) v0.style.display = 'none'; aiAskOk = false; const bl0 = document.getElementById('bossListen'); if (bl0) bl0.style.display = 'none'; const bm0 = document.getElementById('belMorning'); if (bm0) bm0.style.display = 'none'; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} belClosePage(); return; }
     const pfc = document.getElementById('photoFillCard');
-    if (aiAskFor !== CURRENT_USER_ID) { aiAskFor = CURRENT_USER_ID; aiAskOk = false; box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; if (pfc) pfc.style.display = 'none'; const vs0 = document.getElementById('voiceSale'); if (vs0) vs0.style.display = 'none'; const bl1 = document.getElementById('bossListen'); if (bl1) bl1.style.display = 'none'; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} belClosePage(); }
+    if (aiAskFor !== CURRENT_USER_ID) { aiAskFor = CURRENT_USER_ID; aiAskOk = false; box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; if (pfc) pfc.style.display = 'none'; const vs0 = document.getElementById('voiceSale'); if (vs0) vs0.style.display = 'none'; const bl1 = document.getElementById('bossListen'); if (bl1) bl1.style.display = 'none'; const bm1 = document.getElementById('belMorning'); if (bm1) bm1.style.display = 'none'; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} belClosePage(); }
     if (aiAskOk || navigator.onLine === false) return;   // déjà vérifié pour ce compte : pas de nouvelle vérification (évite que le cadre clignote)
     try {
       const { data, error } = await supabaseClient.functions.invoke('ask-ai', { body: { ping: true } });
@@ -49,6 +49,7 @@
       const blb = document.getElementById('bossListen'); if (blb) blb.style.display = '';
       try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) { console.error(e); }
       try { aboRender(); } catch (e) { console.error(e); }
+      try { belMorningRender(); } catch (e) { console.error(e); }
       // Vente à la voix : prête mais mise en pause (à rallumer : remettre display = '')
       const vsc = document.getElementById('voiceSale'); if (vsc) vsc.style.display = 'none';
       const face = document.getElementById('belFace'); if (face && !face.innerHTML) face.innerHTML = belAvatarSvg(56);
@@ -206,6 +207,7 @@
   function belPlain(txt) {
     return String(txt || '')
       .replace(/\[\[WHATSAPP\|([^|\]]{1,80})\|[^\]]*\]\]/g, (m, nom) => ({ fr: 'Je t\'ai préparé un message WhatsApp pour ', en: 'I prepared a WhatsApp message for ', ar: 'جهّزت لك رسالة واتساب إلى ' })[UI_LANG] + nom.trim() + '.')
+      .replace(BEL_ACT_RE, () => ({ fr: 'Je t\'ai préparé une opération à confirmer.', en: 'I prepared an entry for you to confirm.', ar: 'جهّزت لك عملية لتأكيدها.' })[UI_LANG])
       .replace(/\*\*/g, '').replace(/^#{1,4}\s*/gm, '').replace(/^\s*[-*•] /gm, '')
       .replace(/\p{Extended_Pictographic}/gu, '').replace(/[‍️⃣]/g, '')
       .split(curSym()).join(UI_LANG === 'ar' ? DEVISES[curCode()].ar : DEVISES[curCode()][UI_LANG === 'en' ? 'en' : 'fr'][1]).replace(/[ \t]+/g, ' ').replace(/^ +| +$/gm, '').replace(/\n\s*\n+/g, '\n').trim();
@@ -296,9 +298,11 @@
     const f = (state.fournisseurs || []).find(x => (x.nom || '').trim().toLowerCase() === k);
     return f && f.telephone ? f.telephone : '';
   }
-  function aiFormat(txt) {
+  function aiFormat(txt, hi, hEntry) {
     // Le texte de l'IA est d'abord échappé : aucun HTML venant de l'IA n'est exécuté
-    let h = escapeHtml(txt);
+    // Les opérations proposées par Bel (dépense, paiement, commande) sont mises de côté, puis remises en cartes « à confirmer »
+    const X = belExtractActs(txt);
+    let h = escapeHtml(X.out);
     h = h.replace(/\[\[WHATSAPP\|([^|\]]{1,80})\|([^\]]{1,1000})\]\]/g, (m, nom, msg) => {
       const i = aiWaActions.push({ nom: nom.trim().replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"'), msg: msg.trim().replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>') }) - 1;
       return '<div style="margin:6px 0; padding:8px 10px; border:1px solid rgba(34,197,94,.45); border-radius:10px; background:rgba(34,197,94,.08);">'
@@ -306,7 +310,7 @@
         + '<button type="button" class="primary" data-aiwa="' + i + '" style="padding:4px 10px; font-size:12px;">📱 Ouvrir dans WhatsApp</button></div>';
     });
     h = h.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/^#{1,4}\s*(.+)$/gm, '<b>$1</b>').replace(/^\s*[-*] /gm, '• ');
-    return h.replace(/\n/g, '<br>');
+    return belInsertActs(h.replace(/\n/g, '<br>'), X.acts, hi, hEntry);
   }
   function aiRender(pendingQ) {
     const out = document.getElementById('aiAskAnswer');
@@ -315,7 +319,7 @@
     const bot = (inner, cls, live) => `<div class="bel-row bot"><span class="bel-av${live ? ' live' : ''}" data-mood="${live ? 'think' : 'idle'}">${belAvatarSvg(30)}</span><div class="bel-bub ${cls || ''}">${inner}</div></div>`;
     const parts = aiHistory.map((h, i) => me(h.q) + (h.err
       ? bot('😕 ' + escapeHtml(h.a), 'err')
-      : bot(aiFormat(h.a) + `<div><button type="button" class="bel-speak" data-belvoice="${i}">${belVoiceLabel(i)}</button></div>`)));
+      : bot(aiFormat(h.a, i, h) + `<div><button type="button" class="bel-speak" data-belvoice="${i}">${belVoiceLabel(i)}</button></div>`)));
     if (pendingQ) parts.push(me(pendingQ) + bot('<span class="bel-dots"><span></span><span></span><span></span></span> <span class="muted" style="font-size:12.5px;">🧠 Je regarde tes chiffres…</span>', '', true));
     out.innerHTML = parts.join('');
     out.style.display = parts.length ? 'block' : 'none';

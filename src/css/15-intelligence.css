@@ -24,3 +24,21 @@
   .sale-guard .sg-line { margin-top:4px; }
   .sale-guard .sg-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
   .sale-guard .sg-yes { background:#dc2626 !important; border-color:#dc2626 !important; }
+
+  /* Bel qui agit : cartes « à confirmer » dans la discussion */
+  .bel-act { margin:8px 0; padding:9px 11px; border:1.5px solid rgba(91,61,245,.45); border-radius:12px; background:rgba(91,61,245,.06); }
+  .bel-act.done { border-color:rgba(5,150,105,.5); background:rgba(5,150,105,.07); }
+  .bel-act-t { font-size:13.5px; line-height:1.4; }
+  .bel-act-st { margin-top:6px; font-size:12.5px; color:var(--muted, #6b7280); }
+  .bel-act-st.ok { color:#059669; font-weight:600; }
+  .bel-act-st.bad { color:#b91c1c; }
+  .bel-act-st.warn { color:#b45309; }
+  .bel-act-btns { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .bel-act-btns button { padding:6px 12px; font-size:13px; }
+
+  /* Le message du matin de Bel (Accueil) */
+  .bel-morning { border:2px solid rgba(245,158,11,.55) !important; background:linear-gradient(135deg, rgba(255,209,102,.16), rgba(52,211,153,.08)) !important; }
+  .bel-morning-in { display:flex; gap:12px; align-items:flex-start; }
+  .bel-morning-face { flex:0 0 auto; line-height:0; }
+  .bel-morning-txt { flex:1; min-width:0; font-size:14px; line-height:1.5; }
+  .bel-morning-h { display:block; font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:#b45309; margin-bottom:2px; }
