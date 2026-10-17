@@ -98,17 +98,20 @@
     if (!supabaseClient) { showAuthError('Connexion indisponible.'); return; }
     const commerceNom = document.getElementById('signup-commerce').value.trim();
     const nom = document.getElementById('signup-nom').value.trim();
+    const tel = document.getElementById('signup-tel').value.trim();
     const email = document.getElementById('signup-email').value.trim();
     const password = document.getElementById('signup-password').value;
-    if (!commerceNom || !nom || !email || !password) { showAuthError('Remplis tous les champs.'); return; }
+    if (!commerceNom || !nom || !tel || !email || !password) { showAuthError('Remplis tous les champs.'); return; }
+    if (!signupTelOk(tel)) { showAuthError('Numéro de téléphone invalide : écris-le en chiffres (ex : 77 123 45 67 ou +221 77 123 45 67).'); return; }
     if (password.length < 8) { showAuthError('Le mot de passe doit faire au moins 8 caractères.'); return; }
     state.signupInProgress = true;
     // Les infos du commerce sont gardées avec le compte : si l'e-mail doit d'abord être confirmé, le commerce est créé à la première connexion.
-    const { data, error } = await supabaseClient.auth.signUp({ email, password, options: { emailRedirectTo: location.origin, data: { sf_action: 'create', sf_commerce: commerceNom, sf_nom: nom } } });
+    const { data, error } = await supabaseClient.auth.signUp({ email, password, options: { emailRedirectTo: location.origin, data: { sf_action: 'create', sf_commerce: commerceNom, sf_nom: nom, sf_tel: tel } } });
     if (error) { state.signupInProgress = false; showAuthError(error.message); return; }
     if (!data.session) { state.signupInProgress = false; showConfirmEmailInfo(email); return; }
     const { error: rpcErr } = await supabaseClient.rpc('create_commerce_and_owner', { p_commerce_nom: commerceNom, p_user_nom: nom });
     if (rpcErr) { await abortSignup("Compte créé mais erreur lors de la création du commerce : " + rpcErr.message); return; }
+    await saveSignupTel(data.session.user, tel);
     await finishSignup(data.session.user);
   });
 
@@ -148,6 +151,7 @@
     const m = (user && user.user_metadata) || {};
     if (m.sf_action === 'create' && m.sf_commerce && m.sf_nom) {
       const { error } = await supabaseClient.rpc('create_commerce_and_owner', { p_commerce_nom: m.sf_commerce, p_user_nom: m.sf_nom });
+      if (!error && m.sf_tel) await saveSignupTel(user, m.sf_tel);
       return error ? error.message : true;
     }
     if (m.sf_action === 'join' && m.sf_code && m.sf_nom) {
@@ -155,6 +159,22 @@
       return error ? (/invalide/i.test(error.message) ? 'Code invitation invalide : demande un nouveau code à ton propriétaire.' : error.message) : true;
     }
     return false;
+  }
+  // Téléphone demandé à l'inscription : 8 à 15 chiffres, « + », espaces, points et tirets acceptés
+  function signupTelOk(tel) {
+    if (!/^[+0-9 .()\-]+$/.test(tel)) return false;
+    const n = tel.replace(/\D/g, '').length;
+    return n >= 8 && n <= 15;
+  }
+  // Enregistre le numéro comme téléphone du commerce (Paramètres, factures, page Admin).
+  // Sans gravité si ça échoue : le patron peut le remplir plus tard dans Paramètres.
+  async function saveSignupTel(user, tel) {
+    try {
+      const { data: prof } = await supabaseClient.from('profiles').select('commerce_id').eq('id', user.id).maybeSingle();
+      if (!prof || !prof.commerce_id) return;
+      const { error } = await supabaseClient.from('commerces').update({ telephone: tel }).eq('id', prof.commerce_id);
+      if (error) console.error(error);
+    } catch (e) { console.error(e); }
   }
   async function finishSignup(user) {
     state.signupInProgress = false;

@@ -309,6 +309,33 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     await p.close2();
   });
 
+  await test('Inscription : le numéro de téléphone est obligatoire et enregistré sur le commerce', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(async () => {
+      const calls = [];
+      supabaseClient = {
+        auth: { signUp: async (o) => { calls.push(['signUp', o.options.data]); return { data: { session: { user: { id: 'u9' } } }, error: null }; }, signOut: async () => {} },
+        rpc: async (fn) => { calls.push(['rpc', fn]); return { error: null }; },
+        from: (t) => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { commerce_id: 'c9' } }) }) }),
+                        update: (v) => ({ eq: async (k, id) => { calls.push(['update', t, v, id]); return { error: null }; } }) }),
+      };
+      loadProfileAndCommerce = async () => {};
+      const fill = (tel) => { document.getElementById('signup-commerce').value = 'Boutique Test'; document.getElementById('signup-nom').value = 'Awa';
+        document.getElementById('signup-tel').value = tel; document.getElementById('signup-email').value = 'test@exemple.com'; document.getElementById('signup-password').value = 'motdepasse1'; };
+      const err = () => document.getElementById('loginError').textContent;
+      const click = async () => { document.getElementById('btnSignup').click(); await new Promise(r => setTimeout(r, 50)); };
+      fill(''); await click(); const vide = [err(), calls.length];
+      fill('abc'); await click(); const faux = [err(), calls.length];
+      fill('+221 77 123 45 67'); await click();
+      return { vide, faux, calls, ok: [signupTelOk('77 123 45 67'), signupTelOk('1234'), signupTelOk('+221 77-123.45.67')] }; })()`);
+    eq(r.vide, ['Remplis tous les champs.', 0], 'téléphone vide refusé');
+    expect(/Numéro de téléphone invalide/.test(r.faux[0]) && r.faux[1] === 0, 'numéro faux refusé : ' + r.faux[0]);
+    eq(r.ok, [true, false, true], 'formats de numéro');
+    eq(r.calls, [['signUp', { sf_action: 'create', sf_commerce: 'Boutique Test', sf_nom: 'Awa', sf_tel: '+221 77 123 45 67' }], ['rpc', 'create_commerce_and_owner'], ['update', 'commerces', { telephone: '+221 77 123 45 67' }, 'c9']], 'numéro enregistré');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
   // Sans abonnement : aucun blocage, mais le patron voit la carte « Mon abonnement » (tarifs + comment payer)
   await test('Abonnement : sans abonnement enregistré, rien ne change (aucun blocage)', async () => {
     const p = await open(browser);
