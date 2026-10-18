@@ -20,7 +20,7 @@ android {
 
     defaultConfig {
         applicationId twa.applicationId
-        minSdk 21
+        minSdk 24   // Android 7.0 et plus (minimum de la bibliothèque Trusted Web Activity)
         targetSdk 36
         // À augmenter de 1 à chaque nouvelle version envoyée sur le Play Store
         versionCode 1
