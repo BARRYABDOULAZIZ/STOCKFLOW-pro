@@ -13,13 +13,14 @@
     if (page === 'suppression') return `
       <h2 style="margin-top:0;">Supprimer mon compte ${A}</h2>
       <p class="muted">Dernière mise à jour : ${escapeHtml(L.maj)}</p>
-      <p>Tu peux demander à tout moment la suppression de ton compte ${A} et des données qui y sont liées. C'est gratuit.</p>
+      <p>Tu peux demander à tout moment la suppression de ton compte ${A} et des données qui y sont liées. C'est gratuit. Application éditée par ${E}.</p>
       <h3>1. Comment faire ?</h3>
       <ul>
         <li><b>Dans l'application</b> : onglet <b>Paramètres</b>, carte « Supprimer mon compte », bouton <b>« Demander la suppression »</b>.</li>
         <li><b>Sans l'application</b> : écris à ${mail} depuis l'adresse e-mail de ton compte, avec pour objet « Suppression de compte » et le nom de ta boutique.</li>
       </ul>
       <p>Nous confirmons ta demande sous 48 heures, puis la suppression est faite au plus tard 30 jours après.</p>
+      <p>Aucun abonnement automatique n'est à annuler : l'abonnement ${A} n'est jamais renouvelé sans ton accord, il s'arrête simplement.</p>
       <h3>2. Ce qui est supprimé</h3>
       <ul>
         <li><b>Ton compte</b> : e-mail, nom, mot de passe, rôle.</li>
