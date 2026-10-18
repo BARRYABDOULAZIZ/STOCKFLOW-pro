@@ -16,9 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -42,11 +42,13 @@ jobs:
 
       - name: Fabriquer l'APK et l'AAB
         working-directory: android
-        run: ./gradlew --no-daemon assembleRelease bundleRelease
+        run: |
+          mkdir -p ../build-out
+          set -o pipefail
+          ./gradlew --no-daemon --stacktrace assembleRelease bundleRelease 2>&1 | tee ../build-out/fabrication.log
 
       - name: Vérifier la signature
         run: |
-          mkdir -p build-out
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           "$BT/apksigner" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk | tee build-out/signature.txt
           cp android/app/build/outputs/apk/release/app-release.apk build-out/BoromBoutik.apk
@@ -74,7 +76,8 @@ jobs:
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cd build-out
+          mkdir -p build-out && cd build-out
+          tail -c 200000 fabrication.log > fabrication-fin.log 2>/dev/null || true
           git init -q
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
