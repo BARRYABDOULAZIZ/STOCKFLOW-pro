@@ -36,3 +36,5 @@ Sans ces secrets, l'appli est signée avec une clé de test : installable, mais 
 - de la clé de signature Google Play (Play Console → Intégrité de l'application) : pour les installations depuis le Play Store.
 
 Si une empreinte manque, l'appli s'ouvre quand même, mais avec une barre d'adresse en haut.
+
+Version signée avec la clé officielle : 2026-10-18
