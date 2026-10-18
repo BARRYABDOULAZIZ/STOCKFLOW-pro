@@ -38,7 +38,7 @@ async function open(browser, opts = {}) {
   p.errors = [];
   p.on('pageerror', (e) => { if (!NET.test(e.message)) p.errors.push(e.message); });
   if (opts.lang) await ctx.addInitScript((l) => { try { localStorage.setItem('sf_ui_lang', l); } catch (e) {} }, opts.lang);
-  await p.goto('file://' + file, { waitUntil: 'domcontentloaded' });
+  await p.goto('file://' + file + (opts.query || ''), { waitUntil: 'domcontentloaded' });
   await p.waitForTimeout(1200);
   p.app = (code) => p.evaluate((c) => window.__app(c), code);
   p.close2 = () => ctx.close();
@@ -380,6 +380,57 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
       return { sansIA, avec, txt, apres }; })()`);
     eq([r.sansIA, r.avec, r.apres], ['none', '', 'none'], 'visible pour le compte Bel, caché après « Merci Bel »');
     expect(/Bonjour/.test(r.txt) && /Riz 25 kg/.test(r.txt) && /Awa Fall/.test(r.txt) && /8 000/.test(r.txt), 'contenu : ' + r.txt);
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
+  await test('Application Android : repérée, aucun paiement proposé, statut d\'abonnement visible', async () => {
+    const p = await open(browser, { query: '?app=android' });
+    const base = await p.app(`({ on: ANDROID_APP, cls: document.documentElement.classList.contains('android-app'), url: location.search, ro: ABO_RO_MSG })`);
+    eq([base.on, base.cls, base.url], [true, true, ''], 'mode appli repéré, adresse nettoyée');
+    expect(!/Renouvelle/.test(base.ro), 'message lecture seule neutre : ' + base.ro);
+    const cfg = [{ cle: 'tarifs', valeur: { XOF: { m1: 5000, m3: 14000, m12: 50000 } } }, { cle: 'paiement', valeur: { wave: '77 000 00 00', whatsapp: '77 000 00 00' } }];
+    await p.app(aboSetup({ commerce_id: 'c-test', actif_jusqua: plusJours(2) }, { cfg }));
+    const r = await p.app(`(async () => { await aboLoad(); const b = document.getElementById('aboBody'), ban = document.getElementById('aboBanner');
+      return { card: document.getElementById('aboCard').style.display, statut: !!b.querySelector('.abo-status'), prix: b.querySelectorAll('.abo-p').length, wave: b.textContent.includes('77 000 00 00'), paid: !!document.getElementById('aboPaid'), banner: ban.style.display, renouveler: !!ban.querySelector('[data-abogo]') }; })()`);
+    eq(r, { card: '', statut: true, prix: 0, wave: false, paid: false, banner: '', renouveler: false }, 'abonnement dans l\'appli Android');
+    await p.app(aboSetup(null, { cfg }));
+    const sans = await p.app(`(async () => { await aboLoad(); return document.getElementById('aboCard').style.display; })()`);
+    eq(sans, 'none', 'pas de carte (ni de prix) sans abonnement');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+    const w = await open(browser);
+    const web = await w.app(`({ on: ANDROID_APP, cls: document.documentElement.classList.contains('android-app') })`);
+    eq(web, { on: false, cls: false }, 'site web normal : pas de mode appli');
+    await w.close2();
+  });
+
+  await test('Application Android : le bouton « retour » revient à l\'accueil', async () => {
+    const p = await open(browser, { query: '?app=android' });
+    const r = await p.app(`(async () => { document.getElementById('loginOverlay').style.display = 'none';
+      const tab = (t) => document.querySelector('nav.tabs button[data-tab="' + t + '"]'), act = () => document.querySelector('nav.tabs button.active').dataset.tab;
+      const wait = () => new Promise(z => setTimeout(z, 120));
+      tab('produits').click(); tab('ventes').click(); const apres = [act(), history.state && history.state.sfTab, history.length];
+      history.back(); await wait(); const retour = [act(), history.state && history.state.sfTab];
+      tab('caisse').click(); tab('dashboard').click(); await wait(); const accueil = [act(), !!(history.state && history.state.sfTab)];
+      return { apres, retour, accueil }; })()`);
+    eq(r.apres.slice(0, 2), ['ventes', 'ventes'], 'onglet enregistré');
+    eq(r.retour, ['dashboard', null], 'retour → accueil');
+    eq(r.accueil, ['dashboard', false], 'clic sur Accueil');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
+  await test('Suppression de compte : bouton dans Paramètres, e-mail prêt, page publique', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(() => { state.currentUser = { id: 'u1', nom: 'Awa', role: 'proprietaire', email: 'awa@test.sn' }; state.commerce = { nom: 'Boutique Test' };
+      const m = deleteAccountMail(); openLegal('suppression');
+      return { btn: !!document.getElementById('btnDeleteAccount'), url: decodeURIComponent(m.url), page: document.getElementById('legalBody').textContent }; })()`);
+    expect(r.btn, 'bouton présent');
+    expect(r.url.startsWith('mailto:') && r.url.includes('awa@test.sn') && r.url.includes('Boutique Test') && r.url.includes('Propriétaire'), 'e-mail : ' + r.url);
+    expect(/Ce qui est supprimé/.test(r.page) && /30 jours/.test(r.page), 'page « supprimer mon compte »');
+    const pub = require('fs').readFileSync(path.join(ROOT, 'supprimer-compte.html'), 'utf8');
+    expect(pub.includes('Ce qui est supprimé') && pub.includes('href="confidentialite.html"'), 'page publique supprimer-compte.html');
     eq(p.errors, [], 'erreurs');
     await p.close2();
   });

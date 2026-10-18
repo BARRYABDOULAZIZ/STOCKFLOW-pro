@@ -1,0 +1,78 @@
+plugins {
+    id 'com.android.application'
+}
+
+// ⚙️ Réglages de l'application : modifier ici uniquement.
+def twa = [
+    applicationId : 'com.boromboutik.app',   // identifiant définitif sur le Play Store : ne plus le changer après publication
+    hostName      : 'boromboutik.com',       // le site affiché dans l'application
+    launchUrl     : '/?app=android',         // page d'ouverture (le paramètre permet au site de savoir qu'il est dans l'appli)
+    name          : 'BoromBoutik',
+    launcherName  : 'BoromBoutik',           // nom sous l'icône
+    themeColor    : '#5B3DF5',               // barre d'état (violet BoromBoutik)
+    navigationColor: '#FFFFFF',              // barre de navigation Android
+    backgroundColor: '#F3F5FF',              // fond de l'écran de démarrage
+]
+
+android {
+    namespace 'com.boromboutik.app'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId twa.applicationId
+        minSdk 24   // Android 7.0 et plus (minimum de la bibliothèque Trusted Web Activity)
+        targetSdk 36
+        // À augmenter de 1 à chaque nouvelle version envoyée sur le Play Store
+        versionCode 1
+        versionName '1.0.0'
+
+        resValue 'string', 'appName', twa.name
+        resValue 'string', 'launcherName', twa.launcherName
+        resValue 'string', 'launchUrl', 'https://' + twa.hostName + twa.launchUrl
+        resValue 'string', 'hostName', twa.hostName
+        resValue 'string', 'providerAuthority', twa.applicationId + '.fileprovider'
+        resValue 'color', 'colorPrimary', twa.themeColor
+        resValue 'color', 'colorPrimaryDark', twa.themeColor
+        resValue 'color', 'navigationColor', twa.navigationColor
+        resValue 'color', 'navigationColorDark', '#1B1440'
+        resValue 'color', 'navigationDividerColor', '#E4E1F5'
+        resValue 'color', 'navigationDividerColorDark', '#1B1440'
+        resValue 'color', 'backgroundColor', twa.backgroundColor
+    }
+
+    // Signature : la clé n'est JAMAIS dans le dépôt. Elle est donnée par les variables
+    // BOROM_KEYSTORE (chemin du fichier .jks) et BOROM_KEYSTORE_PASSWORD (secrets GitHub).
+    // Sans elles, la version « release » est signée avec une clé de test (installable, mais pas pour le Play Store).
+    def ks = System.getenv('BOROM_KEYSTORE')
+    signingConfigs {
+        upload {
+            if (ks) {
+                storeFile file(ks)
+                storePassword System.getenv('BOROM_KEYSTORE_PASSWORD')
+                keyAlias 'borom'
+                keyPassword System.getenv('BOROM_KEYSTORE_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig ks ? signingConfigs.upload : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    lint {
+        checkReleaseBuilds false
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.4'
+}

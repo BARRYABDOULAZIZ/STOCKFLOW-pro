@@ -21,6 +21,7 @@
     if (!belHome) belHome = { parent: box.parentNode, next: box.nextSibling };
     slot.appendChild(box); box.style.borderTop = 'none'; box.style.marginTop = '0';
     page.style.display = 'block'; document.body.style.overflow = 'hidden';
+    if (ANDROID_APP) { try { history.pushState({ ...(history.state || {}), sfBel: 1 }, ''); } catch (e) {} }   // « retour » Android ferme Bel
     const out = document.getElementById('aiAskAnswer'); if (out) out.style.maxHeight = 'none';
     belMood('happy'); setTimeout(() => { if (!aiBusy) belMood('idle'); }, 1500);
   }
@@ -30,7 +31,7 @@
     if (box && belHome) { belHome.parent.insertBefore(box, belHome.next); box.style.borderTop = ''; box.style.marginTop = ''; const out = document.getElementById('aiAskAnswer'); if (out) out.style.maxHeight = ''; belHome = null; }
   }
   document.getElementById('belHeadBtn').addEventListener('click', belOpenPage);
-  document.getElementById('belPageClose').addEventListener('click', belClosePage);
+  document.getElementById('belPageClose').addEventListener('click', () => { if (ANDROID_APP && history.state && history.state.sfBel) history.back(); else belClosePage(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.getElementById('belPage').style.display === 'block') belClosePage(); });
   async function aiAskInit() {
     const box = document.getElementById('aiAsk'); if (!box) return;
