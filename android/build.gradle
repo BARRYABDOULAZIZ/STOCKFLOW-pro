@@ -1,0 +1,6 @@
+// BoromBoutik — application Android (Trusted Web Activity).
+// L'application affiche boromboutik.com en plein écran, sans barre d'adresse, grâce à Chrome.
+// Toutes les fonctions et toutes les mises à jour viennent du site : rien à republier à chaque nouveauté.
+plugins {
+    id 'com.android.application' version '8.9.1' apply false
+}

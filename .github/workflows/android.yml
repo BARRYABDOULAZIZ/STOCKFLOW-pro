@@ -1,0 +1,94 @@
+# BoromBoutik — fabrique l'application Android, la teste sur un téléphone virtuel,
+# puis range les fichiers dans la branche « android-builds » (et dans « Releases » si elle est signée pour le Play Store).
+name: Application Android
+
+on:
+  push:
+    branches: [main, 'test-android*']
+    paths: ['android/**', '.github/workflows/android.yml', '.github/scripts/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Clé de signature (secrets GitHub)
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PW: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -n "$KS_B64" ] && [ -n "$KS_PW" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+            echo "BOROM_KEYSTORE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+            echo "BOROM_KEYSTORE_PASSWORD=$KS_PW" >> "$GITHUB_ENV"
+            echo "SIGNED=play" >> "$GITHUB_ENV"
+            echo "Signature : clé BoromBoutik (Play Store)"
+          else
+            echo "SIGNED=test" >> "$GITHUB_ENV"
+            echo "Signature : clé de test (les secrets ANDROID_KEYSTORE_* ne sont pas encore réglés)"
+          fi
+
+      - name: Fabriquer l'APK et l'AAB
+        working-directory: android
+        run: ./gradlew --no-daemon assembleRelease bundleRelease
+
+      - name: Vérifier la signature
+        run: |
+          mkdir -p build-out
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/apksigner" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk | tee build-out/signature.txt
+          cp android/app/build/outputs/apk/release/app-release.apk build-out/BoromBoutik.apk
+          cp android/app/build/outputs/bundle/release/app-release.aab build-out/BoromBoutik.aab
+          { echo "commit: $GITHUB_SHA"; echo "branche: $GITHUB_REF_NAME"; echo "signature: $SIGNED"; date -u; } > build-out/info.txt
+
+      - name: Activer l'accélération du téléphone virtuel
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Tester sur un téléphone Android virtuel
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: bash .github/scripts/test-android.sh
+
+      - name: Ranger les fichiers dans la branche android-builds
+        if: always()
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd build-out
+          git init -q
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git checkout -q -b android-builds
+          git add -A
+          git commit -q -m "Application Android — $GITHUB_SHA ($SIGNED)"
+          git push -q -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" android-builds
+
+      - name: Publier l'APK dans « Releases » (seulement si signée pour le Play Store)
+        if: env.SIGNED == 'play'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete android-test -y --cleanup-tag || true
+          gh release create android-test build-out/BoromBoutik.apk build-out/BoromBoutik.aab \
+            --title "BoromBoutik Android (version de test)" --prerelease --target "$GITHUB_SHA" \
+            --notes "À installer sur un téléphone Android : télécharger BoromBoutik.apk puis l'ouvrir. Le fichier .aab est celui à envoyer sur le Play Store."

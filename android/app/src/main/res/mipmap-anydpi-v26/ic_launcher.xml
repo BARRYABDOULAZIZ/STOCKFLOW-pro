@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icône adaptative : le logo BoromBoutik remplit toute la forme choisie par le téléphone (rond, carré…). -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@mipmap/ic_maskable" />
+    <foreground android:drawable="@android:color/transparent" />
+</adaptive-icon>
