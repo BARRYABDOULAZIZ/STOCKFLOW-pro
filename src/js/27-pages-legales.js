@@ -10,6 +10,25 @@
   function legalHtml(page) {
     const L = LEGAL, A = escapeHtml(L.app), E = escapeHtml(L.editeur), M = escapeHtml(L.email);
     const mail = `<a href="mailto:${M}">${M}</a>`;
+    if (page === 'suppression') return `
+      <h2 style="margin-top:0;">Supprimer mon compte ${A}</h2>
+      <p class="muted">Dernière mise à jour : ${escapeHtml(L.maj)}</p>
+      <p>Tu peux demander à tout moment la suppression de ton compte ${A} et des données qui y sont liées. C'est gratuit.</p>
+      <h3>1. Comment faire ?</h3>
+      <ul>
+        <li><b>Dans l'application</b> : onglet <b>Paramètres</b>, carte « Supprimer mon compte », bouton <b>« Demander la suppression »</b>.</li>
+        <li><b>Sans l'application</b> : écris à ${mail} depuis l'adresse e-mail de ton compte, avec pour objet « Suppression de compte » et le nom de ta boutique.</li>
+      </ul>
+      <p>Nous confirmons ta demande sous 48 heures, puis la suppression est faite au plus tard 30 jours après.</p>
+      <h3>2. Ce qui est supprimé</h3>
+      <ul>
+        <li><b>Ton compte</b> : e-mail, nom, mot de passe, rôle.</li>
+        <li>Si tu es <b>propriétaire</b> de la boutique : toutes les données de la boutique (produits, stocks, ventes, factures, devis, clients, fournisseurs, dépenses, journal des actions) et les comptes de ton équipe.</li>
+        <li>Si tu es <b>caissier ou employé</b> : ton compte seulement. Les ventes que tu as enregistrées restent dans la boutique de ton patron, qui en est responsable.</li>
+      </ul>
+      <h3>3. Ce qui peut être gardé</h3>
+      <p>Seulement ce que la loi oblige à conserver (par exemple les traces des paiements d'abonnement), et pas plus longtemps que nécessaire.</p>
+      <p>Avant de demander la suppression, pense à télécharger une copie de tes données (onglet <b>Données</b>) : après la suppression, elles ne pourront plus être récupérées.</p>`;
     if (page === 'confidentialite') return `
       <h2 style="margin-top:0;">Politique de confidentialité</h2>
       <p class="muted">Dernière mise à jour : ${escapeHtml(L.maj)}</p>
@@ -77,6 +96,22 @@
       <h3>8. Modifications et droit applicable</h3>
       <p>Ces conditions peuvent évoluer ; tu seras prévenu en cas de changement important. Elles sont soumises au droit sénégalais.</p>`;
   }
+  // Demande de suppression de compte (obligatoire pour le Play Store) : prépare un e-mail à BoromBoutik
+  function deleteAccountMail() {
+    const u = state.currentUser || {}, shop = (state.commerce && state.commerce.nom) || '';
+    const roleTxt = (typeof ROLE_LABEL !== 'undefined' && ROLE_LABEL[u.role]) || u.role || '';
+    const subject = 'Suppression de compte ' + LEGAL.app;
+    const body = 'Bonjour,\n\nJe demande la suppression de mon compte ' + LEGAL.app + '.\n\nE-mail du compte : ' + (u.email || '') + '\nNom : ' + (u.nom || '') + '\nRôle : ' + roleTxt + '\nBoutique : ' + shop + '\n\nMerci.';
+    return { subject, url: 'mailto:' + LEGAL.email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body) };
+  }
+  function deleteAccountRequest() {
+    const u = state.currentUser || {}, shop = (state.commerce && state.commerce.nom) || '';
+    if (!confirm('Demander la suppression de ton compte' + (u.role === 'proprietaire' ? ' ET de toutes les données de la boutique « ' + shop + ' »' : '') + ' ?\n\nUn e-mail de demande va s\'ouvrir : il suffit de l\'envoyer. Pense d\'abord à télécharger une copie de tes données (onglet Données).')) return;
+    const m = deleteAccountMail(), st = document.getElementById('delAccStatus');
+    if (st) st.innerHTML = 'Si ta messagerie ne s\'ouvre pas, écris à <b>' + escapeHtml(LEGAL.email) + '</b> avec l\'objet « ' + escapeHtml(m.subject) + ' ».';
+    window.location.href = m.url;
+  }
+  (function () { const b = document.getElementById('btnDeleteAccount'); if (b) b.addEventListener('click', deleteAccountRequest); })();
   function openLegal(page) {
     const o = document.getElementById('legalOverlay');
     document.getElementById('legalBody').innerHTML = legalHtml(page);

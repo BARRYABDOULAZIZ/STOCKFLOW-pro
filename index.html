@@ -215,6 +215,9 @@
     .pi-table .num-cell { text-align: right; }
     .pi-total { display: flex; justify-content: flex-end; gap: 14px; margin-top: 16px; padding-top: 12px; border-top: 2px solid #000; font-size: 16px; font-weight: 700; }
   }
+
+  /* Application Android : pas de « tirer pour actualiser » (une vente en cours ne doit pas être perdue) */
+  html.android-app, html.android-app body { overscroll-behavior-y: none; }
 </style>
 <style>
   /* Choix de la langue de l'interface */
@@ -1458,6 +1461,13 @@
     </div>
 
     <div class="card">
+      <div class="row-head"><h2>🗑️ Supprimer mon compte</h2></div>
+      <p class="hint-text" style="margin-top:0;">Tu peux demander à tout moment la suppression de ton compte et de tes données. <a href="#" data-legal="suppression">Ce qui est supprimé</a></p>
+      <button class="ghost" type="button" id="btnDeleteAccount">Demander la suppression</button>
+      <p class="muted" id="delAccStatus" style="margin-top:10px;"></p>
+    </div>
+
+    <div class="card">
       <div class="row-head">
         <h2>👥 Mon équipe</h2>
         <button class="ghost" id="btnRefreshTeam">Actualiser</button>
@@ -1825,6 +1835,21 @@
         if (!state.recoveryFormShown) { try { showAuthError("Le lien n'a pas pu être validé. Refais « Mot de passe oublié ? » et ouvre le dernier email reçu, dans le même navigateur."); } catch (e) {} }
       }, 4000);
     }
+  })();
+  // ================= Application Android (Play Store) =================
+  // L'application Android ouvre ce site en plein écran (Trusted Web Activity) avec l'adresse « /?app=android ».
+  // On le repère ici, et on le garde pour cet onglet seulement (sessionStorage) :
+  // le même site ouvert dans Chrome à côté reste en mode « site web ».
+  const ANDROID_APP = (function () {
+    let on = false;
+    try {
+      const p = new URLSearchParams(location.search);
+      if (p.get('app') === 'android' || /^android-app:\/\/com\.boromboutik\.app/.test(document.referrer || '')) sessionStorage.setItem('sf_android_app', '1');
+      on = sessionStorage.getItem('sf_android_app') === '1';
+      if (p.has('app')) { p.delete('app'); const q = p.toString(); history.replaceState(history.state, '', location.pathname + (q ? '?' + q : '') + location.hash); }
+    } catch (e) {}
+    if (on) document.documentElement.classList.add('android-app');
+    return on;
   })();
   // ================= Devise du commerce (Sénégal, Guinée, Gambie, Mauritanie…) =================
   const DEVISES = {
@@ -2277,6 +2302,10 @@
     ["📜 Informations légales", "📜 Legal information", "📜 المعلومات القانونية"],
     ["Les règles d'utilisation de l'application et la façon dont les données sont protégées.", "The rules for using the app and how data is protected.", "قواعد استخدام التطبيق وطريقة حماية البيانات."],
     ["🔐 Mon compte", "🔐 My account", "🔐 حسابي"],
+    ["🗑️ Supprimer mon compte", "🗑️ Delete my account", "🗑️ حذف حسابي"],
+    ["Tu peux demander à tout moment la suppression de ton compte et de tes données.", "You can ask at any time for your account and data to be deleted.", "يمكنك في أي وقت طلب حذف حسابك وبياناتك."],
+    ["Ce qui est supprimé", "What gets deleted", "ما الذي يُحذف"],
+    ["Demander la suppression", "Request deletion", "طلب الحذف"],
     ["Connecté avec :", "Signed in with:", "متصل بـ:"],
     ["Confirmer", "Confirm", "تأكيد"],
     ["Changer le mot de passe", "Change password", "تغيير كلمة المرور"],
@@ -3678,6 +3707,7 @@
     if (!belHome) belHome = { parent: box.parentNode, next: box.nextSibling };
     slot.appendChild(box); box.style.borderTop = 'none'; box.style.marginTop = '0';
     page.style.display = 'block'; document.body.style.overflow = 'hidden';
+    if (ANDROID_APP) { try { history.pushState({ ...(history.state || {}), sfBel: 1 }, ''); } catch (e) {} }   // « retour » Android ferme Bel
     const out = document.getElementById('aiAskAnswer'); if (out) out.style.maxHeight = 'none';
     belMood('happy'); setTimeout(() => { if (!aiBusy) belMood('idle'); }, 1500);
   }
@@ -3687,7 +3717,7 @@
     if (box && belHome) { belHome.parent.insertBefore(box, belHome.next); box.style.borderTop = ''; box.style.marginTop = ''; const out = document.getElementById('aiAskAnswer'); if (out) out.style.maxHeight = ''; belHome = null; }
   }
   document.getElementById('belHeadBtn').addEventListener('click', belOpenPage);
-  document.getElementById('belPageClose').addEventListener('click', belClosePage);
+  document.getElementById('belPageClose').addEventListener('click', () => { if (ANDROID_APP && history.state && history.state.sfBel) history.back(); else belClosePage(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.getElementById('belPage').style.display === 'block') belClosePage(); });
   async function aiAskInit() {
     const box = document.getElementById('aiAsk'); if (!box) return;
@@ -4369,6 +4399,25 @@
     });
   });
 
+  // ---- Application Android : le bouton « retour » du téléphone revient à l'accueil au lieu de fermer l'appli ----
+  // Accueil = page de base de l'historique ; les autres onglets (et la page de Bel) ajoutent UNE étape d'historique.
+  if (ANDROID_APP) {
+    let fromBack = false;
+    const tabBtn = (t) => document.querySelector(`nav.tabs button[data-tab="${t}"]`);
+    document.querySelectorAll('nav.tabs button').forEach(btn => btn.addEventListener('click', () => {
+      if (fromBack) return;
+      const t = btn.dataset.tab, inStep = !!(history.state && history.state.sfTab);
+      if (t === 'dashboard') { if (inStep) history.back(); return; }
+      try { inStep ? history.replaceState({ sfTab: t }, '') : history.pushState({ sfTab: t }, ''); } catch (e) {}
+    }));
+    window.addEventListener('popstate', () => {
+      const page = document.getElementById('belPage');
+      if (page && page.style.display === 'block') { try { belClosePage(); } catch (e) {} return; }
+      if (document.body.classList.contains('menu-open')) document.body.classList.remove('menu-open');
+      const want = (history.state && history.state.sfTab) || 'dashboard', b = tabBtn(want);
+      if (b && !b.classList.contains('active') && b.style.display !== 'none') { fromBack = true; try { b.click(); } finally { fromBack = false; } }
+    });
+  }
   // ================= Derived metrics =================
   function computeGlobals() {
     const montantInvesti = state.products.reduce((s, p) => s + (Number(p.stock) || 0) * (Number(p.prixAchat) || 0), 0);
@@ -6632,7 +6681,9 @@
   // Avec un abonnement : rappel 5 jours avant la fin, 3 jours de grâce, puis lecture seule
   // (les données restent visibles et téléchargeables ; seules les nouvelles saisies sont bloquées).
   const ABO_RAPPEL = 5, ABO_GRACE = 3;
-  const ABO_RO_MSG = 'Abonnement terminé : l\'appli est en lecture seule. Renouvelle ton abonnement pour enregistrer à nouveau.';
+  // Dans l'application Android (Play Store) : aucun prix, aucun moyen de paiement, aucun bouton « Renouveler »
+  // (règle Google Play : pas de paiement hors Google Play proposé dans l'appli). Le statut reste affiché.
+  const ABO_RO_MSG = ANDROID_APP ? 'Abonnement terminé : l\'appli est en lecture seule. Tes données restent visibles.' : 'Abonnement terminé : l\'appli est en lecture seule. Renouvelle ton abonnement pour enregistrer à nouveau.';
   const ABO_FORMULES = [[1, '1 mois'], [3, '3 mois'], [12, '12 mois']];
   const abo = { row: null, cfg: {}, pays: [], admin: false };
   let aboAdminRows = [], aboAdminFilter = 'tous', aboAdminOpen = null;
@@ -6695,7 +6746,7 @@
       if (S.mode === 'bientot') { cls = 'warn'; h = `⏳ ${S.essai ? 'Ta période d\'essai' : 'Ton abonnement'} se termine ${S.left === 0 ? 'aujourd\'hui' : 'dans ' + S.left + ' jour' + (S.left > 1 ? 's' : '')} (le ${aboFmt(S.fin)}).`; }
       else if (S.mode === 'grace') { cls = 'bad'; h = `⚠️ ${S.essai ? 'Ta période d\'essai' : 'Ton abonnement'} est terminé depuis le ${aboFmt(S.fin)}. Encore ${S.rest} jour${S.rest > 1 ? 's' : ''} avant le passage en lecture seule.`; }
       else if (S.mode === 'lecture') { cls = 'bad'; h = `🔒 ${S.essai ? 'Période d\'essai terminée' : 'Abonnement terminé'} : l'appli est en lecture seule. Tes données restent visibles, mais tu ne peux plus rien enregistrer.`; }
-      if (h) h += boss ? ` <button type="button" class="primary" data-abogo="1">💳 ${escapeHtml(tr('Renouveler'))}</button>` : ` <b>${escapeHtml(tr('Préviens ton patron.'))}</b>`;
+      if (h && !ANDROID_APP) h += boss ? ` <button type="button" class="primary" data-abogo="1">💳 ${escapeHtml(tr('Renouveler'))}</button>` : ` <b>${escapeHtml(tr('Préviens ton patron.'))}</b>`;
       ban.className = 'abo-banner ' + cls;
       ban.innerHTML = h;
       ban.style.display = h ? '' : 'none';
@@ -6705,7 +6756,7 @@
     // Sans abonnement enregistré, elle montre juste les tarifs et comment payer : rien n'est bloqué.
     const card = document.getElementById('aboCard');
     if (card) {
-      const show = boss;
+      const show = boss && (!ANDROID_APP || S.mode !== 'none');
       card.style.display = show ? '' : 'none';
       if (show) aboCardRender(S);
     }
@@ -6719,6 +6770,7 @@
     const dv = curCode(), pay = abo.cfg.paiement || {};
     const lab = { none: '— Pas encore d\'abonnement', actif: '✅ Actif', bientot: '⏳ Bientôt terminé', grace: '⚠️ Terminé (délai de grâce)', lecture: '🔒 Terminé : lecture seule' }[S.mode];
     let h = `<div class="abo-status ${S.mode}"><b>${escapeHtml(lab)}</b>${S.fin ? `<span>${S.essai ? 'Essai gratuit' : 'Abonnement'} ${S.mode === 'actif' || S.mode === 'bientot' ? 'actif jusqu\'au' : 'terminé le'} <b>${aboFmt(S.fin)}</b>${S.mode === 'actif' || S.mode === 'bientot' ? ` (${S.left} jour${S.left > 1 ? 's' : ''} restant${S.left > 1 ? 's' : ''})` : ''}</span>` : ''}</div>`;
+    if (ANDROID_APP) { document.getElementById('aboBody').innerHTML = h; return; }   // appli Android : le statut seulement
     const prix = ABO_FORMULES.map(([m, l]) => [m, l, aboPrix(dv, m)]).filter(x => x[2] > 0);
     if (prix.length) {
       const base = aboPrix(dv, 1);
@@ -6996,6 +7048,25 @@
   function legalHtml(page) {
     const L = LEGAL, A = escapeHtml(L.app), E = escapeHtml(L.editeur), M = escapeHtml(L.email);
     const mail = `<a href="mailto:${M}">${M}</a>`;
+    if (page === 'suppression') return `
+      <h2 style="margin-top:0;">Supprimer mon compte ${A}</h2>
+      <p class="muted">Dernière mise à jour : ${escapeHtml(L.maj)}</p>
+      <p>Tu peux demander à tout moment la suppression de ton compte ${A} et des données qui y sont liées. C'est gratuit.</p>
+      <h3>1. Comment faire ?</h3>
+      <ul>
+        <li><b>Dans l'application</b> : onglet <b>Paramètres</b>, carte « Supprimer mon compte », bouton <b>« Demander la suppression »</b>.</li>
+        <li><b>Sans l'application</b> : écris à ${mail} depuis l'adresse e-mail de ton compte, avec pour objet « Suppression de compte » et le nom de ta boutique.</li>
+      </ul>
+      <p>Nous confirmons ta demande sous 48 heures, puis la suppression est faite au plus tard 30 jours après.</p>
+      <h3>2. Ce qui est supprimé</h3>
+      <ul>
+        <li><b>Ton compte</b> : e-mail, nom, mot de passe, rôle.</li>
+        <li>Si tu es <b>propriétaire</b> de la boutique : toutes les données de la boutique (produits, stocks, ventes, factures, devis, clients, fournisseurs, dépenses, journal des actions) et les comptes de ton équipe.</li>
+        <li>Si tu es <b>caissier ou employé</b> : ton compte seulement. Les ventes que tu as enregistrées restent dans la boutique de ton patron, qui en est responsable.</li>
+      </ul>
+      <h3>3. Ce qui peut être gardé</h3>
+      <p>Seulement ce que la loi oblige à conserver (par exemple les traces des paiements d'abonnement), et pas plus longtemps que nécessaire.</p>
+      <p>Avant de demander la suppression, pense à télécharger une copie de tes données (onglet <b>Données</b>) : après la suppression, elles ne pourront plus être récupérées.</p>`;
     if (page === 'confidentialite') return `
       <h2 style="margin-top:0;">Politique de confidentialité</h2>
       <p class="muted">Dernière mise à jour : ${escapeHtml(L.maj)}</p>
@@ -7063,6 +7134,22 @@
       <h3>8. Modifications et droit applicable</h3>
       <p>Ces conditions peuvent évoluer ; tu seras prévenu en cas de changement important. Elles sont soumises au droit sénégalais.</p>`;
   }
+  // Demande de suppression de compte (obligatoire pour le Play Store) : prépare un e-mail à BoromBoutik
+  function deleteAccountMail() {
+    const u = state.currentUser || {}, shop = (state.commerce && state.commerce.nom) || '';
+    const roleTxt = (typeof ROLE_LABEL !== 'undefined' && ROLE_LABEL[u.role]) || u.role || '';
+    const subject = 'Suppression de compte ' + LEGAL.app;
+    const body = 'Bonjour,\n\nJe demande la suppression de mon compte ' + LEGAL.app + '.\n\nE-mail du compte : ' + (u.email || '') + '\nNom : ' + (u.nom || '') + '\nRôle : ' + roleTxt + '\nBoutique : ' + shop + '\n\nMerci.';
+    return { subject, url: 'mailto:' + LEGAL.email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body) };
+  }
+  function deleteAccountRequest() {
+    const u = state.currentUser || {}, shop = (state.commerce && state.commerce.nom) || '';
+    if (!confirm('Demander la suppression de ton compte' + (u.role === 'proprietaire' ? ' ET de toutes les données de la boutique « ' + shop + ' »' : '') + ' ?\n\nUn e-mail de demande va s\'ouvrir : il suffit de l\'envoyer. Pense d\'abord à télécharger une copie de tes données (onglet Données).')) return;
+    const m = deleteAccountMail(), st = document.getElementById('delAccStatus');
+    if (st) st.innerHTML = 'Si ta messagerie ne s\'ouvre pas, écris à <b>' + escapeHtml(LEGAL.email) + '</b> avec l\'objet « ' + escapeHtml(m.subject) + ' ».';
+    window.location.href = m.url;
+  }
+  (function () { const b = document.getElementById('btnDeleteAccount'); if (b) b.addEventListener('click', deleteAccountRequest); })();
   function openLegal(page) {
     const o = document.getElementById('legalOverlay');
     document.getElementById('legalBody').innerHTML = legalHtml(page);

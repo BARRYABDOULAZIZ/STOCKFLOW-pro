@@ -72,15 +72,66 @@ function build() {
   return { html, files: seen.size, scripts: scripts.length };
 }
 
+// Pages publiques (lien demandé par le Play Store) : confidentialité, conditions, suppression de compte.
+// Le texte vient de src/js/27-pages-legales.js : une seule source, l'appli et le site disent la même chose.
+function publicPages() {
+  const src = fs.readFileSync(path.join(SRC, 'js', '27-pages-legales.js'), 'utf8');
+  const start = src.indexOf('const LEGAL'), end = src.indexOf('  // Demande de suppression de compte');
+  if (start < 0 || end < 0) throw new Error('Pages légales : repères introuvables dans src/js/27-pages-legales.js');
+  const ctx = { escapeHtml: (x) => String(x ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])) };
+  vm.runInNewContext(src.slice(start, end) + '\nthis.LEGAL = LEGAL; this.legalHtml = legalHtml;', ctx);
+  const pages = { 'confidentialite.html': ['confidentialite', 'Politique de confidentialité'], 'conditions.html': ['cgu', "Conditions d'utilisation"], 'supprimer-compte.html': ['suppression', 'Supprimer mon compte'] };
+  const out = {};
+  for (const [file, [key, title]] of Object.entries(pages)) {
+    const body = ctx.legalHtml(key).replace(/href="#" data-legal="confidentialite"/g, 'href="confidentialite.html"').replace(/href="#" data-legal="cgu"/g, 'href="conditions.html"');
+    out[file] = `<!DOCTYPE html>
+<!-- Page publique fabriquée par build.js à partir de src/js/27-pages-legales.js : ne pas modifier ici. -->
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${title} — ${ctx.LEGAL.app}</title>
+<meta name="theme-color" content="#5b3df5">
+<link rel="icon" href="boromboutik-logo-192.png">
+<style>
+  body { margin:0; background:#f3f5ff; color:#1b1440; font:16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+  header { background:linear-gradient(135deg,#5b3df5,#e2387e); color:#fff; padding:18px 20px; display:flex; align-items:center; gap:12px; }
+  header img { width:40px; height:40px; border-radius:10px; }
+  header b { font-size:20px; }
+  main { max-width:760px; margin:24px auto; background:#fff; border-radius:16px; padding:24px 28px; box-shadow:0 4px 24px rgba(27,20,64,.08); }
+  h2 { font-size:26px; line-height:1.25; } h3 { margin-top:28px; color:#5b3df5; }
+  .muted { color:#6b6790; font-size:14px; } a { color:#5b3df5; }
+  footer { text-align:center; padding:8px 16px 32px; font-size:14px; }
+  @media (max-width:600px) { main { margin:0; border-radius:0; padding:20px 16px; } }
+</style>
+</head>
+<body>
+<header><img src="boromboutik-logo-192.png" alt=""><b>${ctx.LEGAL.app}</b></header>
+<main>${body}
+</main>
+<footer><a href="confidentialite.html">Confidentialité</a> · <a href="conditions.html">Conditions d'utilisation</a> · <a href="supprimer-compte.html">Supprimer mon compte</a> · <a href="./">Ouvrir ${ctx.LEGAL.app}</a></footer>
+</body>
+</html>
+`;
+  }
+  return out;
+}
+
 try {
   const { html, files, scripts } = build();
+  const pages = publicPages();
   const check = process.argv.includes('--check');
   const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
   if (check) {
     if (current !== html) { console.error('✗ index.html n\'est PAS à jour : lancer  node build.js'); process.exit(1); }
+    for (const [f, txt] of Object.entries(pages)) {
+      const cur = fs.existsSync(path.join(ROOT, f)) ? fs.readFileSync(path.join(ROOT, f), 'utf8') : '';
+      if (cur !== txt) { console.error('✗ ' + f + ' n\'est PAS à jour : lancer  node build.js'); process.exit(1); }
+    }
     console.log('✓ index.html est à jour (' + files + ' morceaux, ' + scripts + ' programmes vérifiés)');
   } else {
     fs.writeFileSync(OUT, html);
+    for (const [f, txt] of Object.entries(pages)) fs.writeFileSync(path.join(ROOT, f), txt);
     console.log('✓ index.html assemblé : ' + files + ' morceaux, ' + scripts + ' programmes vérifiés, ' + Math.round(html.length / 1024) + ' Ko');
   }
 } catch (e) {

@@ -197,3 +197,6 @@
     .pi-table .num-cell { text-align: right; }
     .pi-total { display: flex; justify-content: flex-end; gap: 14px; margin-top: 16px; padding-top: 12px; border-top: 2px solid #000; font-size: 16px; font-weight: 700; }
   }
+
+  /* Application Android : pas de « tirer pour actualiser » (une vente en cours ne doit pas être perdue) */
+  html.android-app, html.android-app body { overscroll-behavior-y: none; }

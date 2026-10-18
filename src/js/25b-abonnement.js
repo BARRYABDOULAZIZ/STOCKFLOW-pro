@@ -3,7 +3,9 @@
   // Avec un abonnement : rappel 5 jours avant la fin, 3 jours de grâce, puis lecture seule
   // (les données restent visibles et téléchargeables ; seules les nouvelles saisies sont bloquées).
   const ABO_RAPPEL = 5, ABO_GRACE = 3;
-  const ABO_RO_MSG = 'Abonnement terminé : l\'appli est en lecture seule. Renouvelle ton abonnement pour enregistrer à nouveau.';
+  // Dans l'application Android (Play Store) : aucun prix, aucun moyen de paiement, aucun bouton « Renouveler »
+  // (règle Google Play : pas de paiement hors Google Play proposé dans l'appli). Le statut reste affiché.
+  const ABO_RO_MSG = ANDROID_APP ? 'Abonnement terminé : l\'appli est en lecture seule. Tes données restent visibles.' : 'Abonnement terminé : l\'appli est en lecture seule. Renouvelle ton abonnement pour enregistrer à nouveau.';
   const ABO_FORMULES = [[1, '1 mois'], [3, '3 mois'], [12, '12 mois']];
   const abo = { row: null, cfg: {}, pays: [], admin: false };
   let aboAdminRows = [], aboAdminFilter = 'tous', aboAdminOpen = null;
@@ -66,7 +68,7 @@
       if (S.mode === 'bientot') { cls = 'warn'; h = `⏳ ${S.essai ? 'Ta période d\'essai' : 'Ton abonnement'} se termine ${S.left === 0 ? 'aujourd\'hui' : 'dans ' + S.left + ' jour' + (S.left > 1 ? 's' : '')} (le ${aboFmt(S.fin)}).`; }
       else if (S.mode === 'grace') { cls = 'bad'; h = `⚠️ ${S.essai ? 'Ta période d\'essai' : 'Ton abonnement'} est terminé depuis le ${aboFmt(S.fin)}. Encore ${S.rest} jour${S.rest > 1 ? 's' : ''} avant le passage en lecture seule.`; }
       else if (S.mode === 'lecture') { cls = 'bad'; h = `🔒 ${S.essai ? 'Période d\'essai terminée' : 'Abonnement terminé'} : l'appli est en lecture seule. Tes données restent visibles, mais tu ne peux plus rien enregistrer.`; }
-      if (h) h += boss ? ` <button type="button" class="primary" data-abogo="1">💳 ${escapeHtml(tr('Renouveler'))}</button>` : ` <b>${escapeHtml(tr('Préviens ton patron.'))}</b>`;
+      if (h && !ANDROID_APP) h += boss ? ` <button type="button" class="primary" data-abogo="1">💳 ${escapeHtml(tr('Renouveler'))}</button>` : ` <b>${escapeHtml(tr('Préviens ton patron.'))}</b>`;
       ban.className = 'abo-banner ' + cls;
       ban.innerHTML = h;
       ban.style.display = h ? '' : 'none';
@@ -76,7 +78,7 @@
     // Sans abonnement enregistré, elle montre juste les tarifs et comment payer : rien n'est bloqué.
     const card = document.getElementById('aboCard');
     if (card) {
-      const show = boss;
+      const show = boss && (!ANDROID_APP || S.mode !== 'none');
       card.style.display = show ? '' : 'none';
       if (show) aboCardRender(S);
     }
@@ -90,6 +92,7 @@
     const dv = curCode(), pay = abo.cfg.paiement || {};
     const lab = { none: '— Pas encore d\'abonnement', actif: '✅ Actif', bientot: '⏳ Bientôt terminé', grace: '⚠️ Terminé (délai de grâce)', lecture: '🔒 Terminé : lecture seule' }[S.mode];
     let h = `<div class="abo-status ${S.mode}"><b>${escapeHtml(lab)}</b>${S.fin ? `<span>${S.essai ? 'Essai gratuit' : 'Abonnement'} ${S.mode === 'actif' || S.mode === 'bientot' ? 'actif jusqu\'au' : 'terminé le'} <b>${aboFmt(S.fin)}</b>${S.mode === 'actif' || S.mode === 'bientot' ? ` (${S.left} jour${S.left > 1 ? 's' : ''} restant${S.left > 1 ? 's' : ''})` : ''}</span>` : ''}</div>`;
+    if (ANDROID_APP) { document.getElementById('aboBody').innerHTML = h; return; }   // appli Android : le statut seulement
     const prix = ABO_FORMULES.map(([m, l]) => [m, l, aboPrix(dv, m)]).filter(x => x[2] > 0);
     if (prix.length) {
       const base = aboPrix(dv, 1);

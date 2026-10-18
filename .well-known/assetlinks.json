@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.boromboutik.app",
+      "sha256_cert_fingerprints": [
+        "6F:09:7A:F8:80:1C:4D:1B:ED:29:F8:A4:85:FB:F1:A8:7E:2B:57:CD:63:05:19:21:96:7F:1E:5E:8F:D5:BC:24"
+      ]
+    }
+  }
+]
