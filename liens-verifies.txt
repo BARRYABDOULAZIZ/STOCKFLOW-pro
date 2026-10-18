@@ -1,0 +1,5 @@
+  com.boromboutik.app:
+    ID: 0a749414-1960-4e9a-a16a-b4af1a75b50b
+    Signatures: [6F:09:7A:F8:80:1C:4D:1B:ED:29:F8:A4:85:FB:F1:A8:7E:2B:57:CD:63:05:19:21:96:7F:1E:5E:8F:D5:BC:24]
+    Domain verification state:
+      boromboutik.com: verified

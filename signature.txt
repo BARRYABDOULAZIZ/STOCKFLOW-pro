@@ -1,0 +1,18 @@
+Verifies
+Verified using v1 scheme (JAR signing): false
+Verified using v2 scheme (APK Signature Scheme v2): true
+Verified using v3 scheme (APK Signature Scheme v3): false
+Verified using v3.1 scheme (APK Signature Scheme v3.1): false
+Verified using v3.2 scheme (APK Signature Scheme v3.2): false
+Verified using v4 scheme (APK Signature Scheme v4): false
+Verified for SourceStamp: false
+Number of signers: 1
+V2 Signer: certificate DN: CN=Abdoul Aziz Barry, O=BoromBoutik, C=SN
+V2 Signer: certificate SHA-256 digest: 6f097af8801c4d1bed29f8a485fbf1a87e2b57cd63051921967f1e5e8fd5bc24
+V2 Signer: certificate SHA-1 digest: 3ea44c198896a91f4a3a0dcc82ff780309822381
+V2 Signer: certificate MD5 digest: ab6615d2af89b2aee856389efb99aa50
+V2 Signer: key algorithm: RSA
+V2 Signer: key size (bits): 2048
+V2 Signer: public key SHA-256 digest: d77a510ebfea59e1fc95be4b7375ac9c937735c9d2946765f38b028c24846e38
+V2 Signer: public key SHA-1 digest: 8479e2bc1966a9d9afe90a9ff09720cb85e6aaba
+V2 Signer: public key MD5 digest: 607d66f72c573443db456c1b9a5b2c30
