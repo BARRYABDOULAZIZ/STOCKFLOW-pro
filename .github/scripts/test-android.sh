@@ -3,29 +3,31 @@
 set -x
 OUT=build-out
 APK=$OUT/BoromBoutik.apk
-mkdir -p $OUT
+mkdir -p $OUT/ecrans
+shot() { adb exec-out screencap -p > "$OUT/ecrans/$1.png"; }
 adb shell getprop ro.build.version.release > $OUT/android-version.txt
 adb shell pm list packages | sort > $OUT/applis-installees.txt
+adb shell dumpsys package com.android.chrome | grep -m1 versionName > $OUT/chrome-version.txt
 # Chrome sans écran de bienvenue (pour que le test voie directement BoromBoutik)
 adb root || true
-sleep 3
+sleep 5
+adb wait-for-device
 adb shell "echo 'chrome --disable-fre --no-default-browser-check --no-first-run' > /data/local/tmp/chrome-command-line"
 adb shell chmod 644 /data/local/tmp/chrome-command-line || true
 adb shell am set-debug-app --persistent com.android.chrome || true
+adb logcat -c
 adb install -r "$APK"
-adb shell dumpsys package com.boromboutik.app | grep -E "versionName|versionCode|targetSdk" > $OUT/appli-installee.txt
-adb shell am start -W -n com.boromboutik.app/.LauncherActivity
-sleep 3
-adb exec-out screencap -p > $OUT/ecran-1-demarrage.png
-sleep 30
-adb exec-out screencap -p > $OUT/ecran-2-ouverte.png
-sleep 20
-adb exec-out screencap -p > $OUT/ecran-3-apres-50s.png
+adb shell am start -n com.boromboutik.app/.LauncherActivity
+for s in 03 06 10 15 20 30 45; do
+  sleep 4; shot "app-${s}s"
+done
 adb shell dumpsys activity activities | grep -E "ResumedActivity" > $OUT/activite-affichee.txt
 adb shell pm get-app-links com.boromboutik.app > $OUT/liens-verifies.txt 2>&1 || true
-# Retour arrière Android, puis retour dans l'appli : ne doit pas planter
+adb logcat -d > $OUT/journal-complet.txt
+# Retour arrière Android
 adb shell input keyevent KEYCODE_BACK
-sleep 3
-adb exec-out screencap -p > $OUT/ecran-4-retour.png
-adb logcat -d | grep -iE "boromboutik|androidbrowserhelper|TrustedWebActivity|FATAL" | tail -200 > $OUT/journal.txt
+sleep 3; shot "app-retour"
+# Contrôle : le site ouvert directement dans Chrome
+adb shell am start -a android.intent.action.VIEW -d "https://boromboutik.com/?app=android" com.android.chrome
+sleep 20; shot "chrome-direct"
 exit 0

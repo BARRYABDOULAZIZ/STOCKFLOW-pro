@@ -78,6 +78,7 @@ jobs:
         run: |
           mkdir -p build-out && cd build-out
           tail -c 200000 fabrication.log > fabrication-fin.log 2>/dev/null || true
+          [ -f journal-complet.txt ] && grep -iE "boromboutik|chrom|cr_|TrustedWeb|CustomTab|FATAL|ANR" journal-complet.txt | tail -1500 > journal.txt && rm journal-complet.txt
           git init -q
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
