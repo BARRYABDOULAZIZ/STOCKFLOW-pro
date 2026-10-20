@@ -8418,7 +8418,9 @@
       clearTimeout(kickTimers[table]);
       kickTimers[table] = setTimeout(() => { (refreshers[table] || []).forEach(f => f()); }, 250);
     }
-    const POLL_MS = { produits: 8000, factures: 8000, paiements: 12000, clients: 15000, depenses: 20000, fournisseurs: 30000, commandes_fournisseurs: 30000, documents: 30000, mouvements: 60000 };
+    // Fréquence de vérification du serveur (chaque vérification = une ligne de log facturée par Supabase au-delà de 1 Go/mois).
+    // Pas besoin de plus : on revérifie aussi tout de suite quand on revient sur l'appli et après chaque écriture.
+    const POLL_MS = { produits: 30000, factures: 30000, paiements: 60000, clients: 120000, depenses: 120000, fournisseurs: 300000, commandes_fournisseurs: 300000, documents: 300000, mouvements: 300000 };
     function canSeeCosts() {
       return !!(state.currentUser && (state.currentUser.role === 'proprietaire' || state.currentUser.role === 'admin'));
     }
@@ -8786,7 +8788,7 @@
             if (t.ready) emit(table);
             fetchAll();
           })();
-          const interval = setInterval(() => { if (!document.hidden) fetchAll(); }, (POLL_MS[table] || 15000) + Math.floor(Math.random() * 1500));
+          const interval = setInterval(() => { if (!document.hidden) fetchAll(); }, (POLL_MS[table] || 60000) + Math.floor(Math.random() * 3000));
           const onVisible = () => { if (!document.hidden) fetchAll(); };
           document.addEventListener('visibilitychange', onVisible);
           const stop = () => { stopped = true; t.listeners.delete(onNext); clearInterval(interval); document.removeEventListener('visibilitychange', onVisible); refreshers[table].delete(fetchAll); activePolls.delete(stop); };
