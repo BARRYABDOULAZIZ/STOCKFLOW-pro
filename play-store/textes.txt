@@ -1,0 +1,46 @@
+NOM DE L'APPLICATION (30 caractères max)
+BoromBoutik
+
+DESCRIPTION COURTE (80 caractères max)
+Stock, ventes, factures et crédits clients pour ta boutique, même sans internet.
+
+DESCRIPTION COMPLÈTE
+BoromBoutik est l'application simple pour gérer ta boutique au quotidien : ton stock, tes ventes, tes factures et l'argent que tes clients te doivent. Pensée pour les commerçants d'Afrique de l'Ouest, elle fonctionne même quand la connexion internet coupe.
+
+🛒 VENDS EN QUELQUES SECONDES
+• Tape le nom du produit ou scanne son code-barres
+• Le total se calcule tout seul, le stock baisse automatiquement
+• Ticket ou facture prêts à envoyer par WhatsApp ou à imprimer
+• Une alerte te prévient si tu vends par erreur à perte ou à un prix inhabituel
+
+📦 TON STOCK TOUJOURS À JOUR
+• Liste de tes produits avec prix d'achat, prix de vente et quantités
+• Alerte quand un produit passe sous le seuil
+• « À commander » : l'appli calcule quand chaque produit va manquer et combien en racheter pour 2 semaines, fournisseur par fournisseur
+• Commande envoyée à ton fournisseur en un clic sur WhatsApp
+
+👥 SUIS LES CRÉDITS DE TES CLIENTS
+• Qui te doit combien, depuis quand
+• Paiements partiels enregistrés en un instant
+• Rappel prêt à envoyer par WhatsApp
+
+☀️ TES 3 ACTIONS DU JOUR
+Chaque matin, BoromBoutik te dit l'essentiel : quoi racheter, quel fournisseur appeler, quel client relancer.
+
+📈 TES CHIFFRES CLAIRS
+• Chiffre d'affaires du jour, de la semaine, du mois
+• Bénéfice estimé, dépenses, caisse du soir
+• Devis, bons de livraison, factures et comptabilité simple
+
+👨‍👩‍👧 TRAVAILLE EN ÉQUIPE
+Ajoute tes caissiers et employés, chacun avec ses droits. Toi seul vois les prix d'achat et les bénéfices.
+
+🌍 FAIT POUR TOI
+• Monnaies : FCFA (XOF), franc guinéen (GNF), dalasi (GMD), ouguiya (MRU)…
+• Factures en français, anglais ou arabe, avec le montant en lettres
+• Fonctionne hors connexion : tes ventes sont envoyées dès que le réseau revient
+
+🔒 TES DONNÉES PROTÉGÉES
+Connexion sécurisée, chaque boutique strictement séparée, copie de secours téléchargeable à tout moment. BoromBoutik ne vend pas tes données et n'affiche aucune publicité.
+
+Une question ? Écris-nous : siradjisow23@gmail.com
