@@ -4,8 +4,8 @@
     app: 'BoromBoutik',
     editeur: 'Abdoul Aziz Barry',
     pays: 'Sénégal',
-    email: 'siradjisow23@gmail.com',
-    maj: '15 octobre 2026',
+    email: 'boromboutik8@gmail.com',
+    maj: '22 octobre 2026',
   };
   function legalHtml(page) {
     const L = LEGAL, A = escapeHtml(L.app), E = escapeHtml(L.editeur), M = escapeHtml(L.email);
