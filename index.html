@@ -218,6 +218,70 @@
 
   /* Application Android : pas de « tirer pour actualiser » (une vente en cours ne doit pas être perdue) */
   html.android-app, html.android-app body { overscroll-behavior-y: none; }
+
+  /* ===== Modèles de facture : réglage dans Mon commerce (comptes de test) ===== */
+  .fstyle-card { margin: 14px 0; padding: 14px; border: 1px dashed var(--line); border-radius: var(--radius); }
+  .fstyle-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 6px; }
+  .fstyle-opt { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px; min-height: 44px; border: 2px solid var(--line); border-radius: var(--radius); background: var(--paper); color: var(--ink); text-align: left; cursor: pointer; }
+  .fstyle-opt.on { border-color: var(--ink); box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink); }
+  .fstyle-opt small { opacity: 0.7; font-size: 11.5px; }
+  .fstyle-mini { display: flex; flex-direction: column; gap: 4px; width: 100%; height: 64px; padding: 6px; box-sizing: border-box; background: #fff; border: 1px solid #e5e7eb; border-radius: 4px; }
+  .fstyle-mini i { display: block; height: 6px; border-radius: 2px; background: #e5e7eb; }
+  .fstyle-mini i:first-child { height: 10px; width: 55%; background: var(--pi-accent); }
+  .fstyle-mini-moderne i:first-child { width: 100%; height: 16px; }
+  .fstyle-mini-elegant { align-items: center; }
+  .fstyle-mini-elegant i { width: 70%; height: 4px; }
+  .fstyle-mini-elegant i:first-child { width: 40%; height: 8px; background: transparent; border: 1px solid var(--pi-accent); }
+  .fstyle-mini-compact { gap: 2px; }
+  .fstyle-mini-compact i { height: 4px; }
+  .fstyle-mini-compact i:first-child { width: 100%; height: 6px; }
+  .fstyle-colors { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 6px; }
+  .fstyle-color { width: 36px; height: 36px; min-width: 36px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--line); cursor: pointer; padding: 0; }
+  .fstyle-color.on { box-shadow: 0 0 0 3px var(--ink); }
+  .fstyle-custom input { width: 44px; height: 38px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: transparent; cursor: pointer; }
+
+  /* ===== Modèles de facture : impression ===== */
+  @media print {
+    #pi-pay { margin-top: 14px; padding: 8px 12px; border-radius: 6px; background: #f3f4f6; font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 600; clear: both; }
+
+    /* Moderne : bandeau de couleur, tableau et total en couleur */
+    #printArea.pi-tpl-moderne { font-family: 'Inter', sans-serif; }
+    #printArea.pi-tpl-moderne .pi-head { background: var(--pi-accent); color: #fff; margin: -20px -20px 20px; padding: 24px 28px; border-bottom: none; }
+    #printArea.pi-tpl-moderne .pi-head h1 { font-family: 'Inter', sans-serif; font-size: 28px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #fff !important; }
+    #printArea.pi-tpl-moderne #pi-commerce-nom, #printArea.pi-tpl-moderne #pi-commerce-adresse, #printArea.pi-tpl-moderne .pi-meta { color: #fff !important; }
+    #printArea.pi-tpl-moderne #pi-logo { background: #fff; border-radius: 10px; padding: 6px; }
+    #printArea.pi-tpl-moderne .pi-table th { background: var(--pi-accent) !important; color: #fff !important; border-bottom: none !important; padding: 8px; }
+    #printArea.pi-tpl-moderne .pi-table td { border-bottom: 1px solid #e5e7eb; }
+    #printArea.pi-tpl-moderne .pi-total, #printArea.pi-tpl-moderne .pi-total span { color: #fff !important; }
+    #printArea.pi-tpl-moderne .pi-total { background: var(--pi-accent); border-top: none; border-radius: 8px; padding: 10px 14px; }
+    #printArea.pi-tpl-moderne #pi-pay { border-left: 4px solid var(--pi-accent); }
+
+    /* Élégant : centré, aéré, titres à empattements, filets fins */
+    #printArea.pi-tpl-elegant { padding: 34px 40px; }
+    #printArea.pi-tpl-elegant .pi-head { flex-direction: column; align-items: center; text-align: center; gap: 10px; border-bottom: 1px solid var(--pi-accent); }
+    #printArea.pi-tpl-elegant .pi-head h1 { font-family: 'Fraunces', Georgia, serif; font-weight: 500; font-size: 30px; color: var(--pi-accent) !important; }
+    #printArea.pi-tpl-elegant #pi-commerce-nom { font-family: 'Fraunces', Georgia, serif !important; color: #1c1917 !important; font-size: 18px !important; }
+    #printArea.pi-tpl-elegant .pi-meta { text-align: center !important; color: #57534e !important; }
+    #printArea.pi-tpl-elegant .pi-table th { border-bottom: 1px solid #1c1917 !important; font-weight: 500 !important; letter-spacing: 1px; text-transform: uppercase; font-size: 10px; color: #57534e !important; }
+    #printArea.pi-tpl-elegant .pi-table td { border-bottom: 1px solid #e7e5e4; padding: 10px 8px; }
+    #printArea.pi-tpl-elegant .pi-total, #printArea.pi-tpl-elegant .pi-total span { color: var(--pi-accent) !important; }
+    #printArea.pi-tpl-elegant .pi-total { border-top: 1px solid var(--pi-accent); font-family: 'Fraunces', Georgia, serif; font-size: 19px; }
+    #printArea.pi-tpl-elegant #pi-message { text-align: center; font-family: 'Fraunces', Georgia, serif; color: var(--pi-accent) !important; }
+    #printArea.pi-tpl-elegant #pi-pay { background: none; border-top: 1px solid #e7e5e4; border-radius: 0; text-align: center; font-weight: 500; }
+
+    /* Compact : petit texte, lignes serrées et zébrées */
+    #printArea.pi-tpl-compact { padding: 12px; }
+    #printArea.pi-tpl-compact .pi-head { border-bottom: 3px solid var(--pi-accent); padding-bottom: 8px; margin-bottom: 10px; }
+    #printArea.pi-tpl-compact .pi-head h1 { font-size: 18px; }
+    #printArea.pi-tpl-compact #pi-logo { max-height: 44px !important; }
+    #printArea.pi-tpl-compact .pi-client { margin-bottom: 8px; font-size: 11.5px; }
+    #printArea.pi-tpl-compact .pi-table { font-size: 11px; }
+    #printArea.pi-tpl-compact .pi-table th { background: #1f2937 !important; color: #fff !important; border-bottom: none !important; padding: 4px 5px; font-size: 10px; }
+    #printArea.pi-tpl-compact .pi-table td { padding: 3px 5px; border-bottom: 1px solid #e5e7eb; }
+    #printArea.pi-tpl-compact .pi-table tbody tr:nth-child(even) td { background: #f6f7f9 !important; }
+    #printArea.pi-tpl-compact .pi-total { font-size: 14px; margin-top: 8px; padding-top: 6px; border-top: 2px solid var(--pi-accent); }
+    #printArea.pi-tpl-compact #pi-pay { font-size: 11px; padding: 6px 10px; margin-top: 10px; }
+  }
 </style>
 <style>
   /* Choix de la langue de l'interface */
@@ -1671,6 +1735,18 @@
         <label>Message de remerciement (en bas des factures)</label>
         <input id="cm-message" maxlength="140" placeholder="Merci pour votre confiance, à bientôt !">
       </div>
+      <div id="fstyleCard" class="fstyle-card" style="display:none;">
+        <label>🎨 Modèle de facture <span class="muted">(en test)</span></label>
+        <div id="fstyleModeles" class="fstyle-grid"></div>
+        <label style="margin-top:12px;">Couleur de la facture</label>
+        <div id="fstyleCouleurs" class="fstyle-colors"></div>
+        <div class="field-grid" style="margin-top:12px;">
+          <div><label for="cm-wave">📱 Numéro Wave (imprimé sur la facture)</label><input id="cm-wave" maxlength="40" inputmode="tel" placeholder="Ex : 77 123 45 67"></div>
+          <div><label for="cm-om">🟠 Numéro Orange Money</label><input id="cm-om" maxlength="40" inputmode="tel" placeholder="Ex : 77 123 45 67"></div>
+          <div><label for="cm-rccm">RCCM</label><input id="cm-rccm" maxlength="40" placeholder="Optionnel"></div>
+        </div>
+        <button class="ghost" id="btnFstylePreview" type="button" style="margin-top:12px;">👁 Voir un aperçu avec une facture d'exemple</button>
+      </div>
       <button class="primary" id="btnSaveCommerce">Enregistrer</button>
       <p class="muted" id="commerceStatus" style="margin-top:10px;"></p>
     </div>
@@ -1768,7 +1844,7 @@
     <div>
       <img id="pi-logo" alt="" style="display:none; max-height:70px; max-width:170px; margin-bottom:8px;">
       <h1 id="pi-title">Facture</h1>
-      <div style="font-family:'Inter',sans-serif; font-size:15px; font-weight:800; margin-top:4px; color:#1d4ed8;" id="pi-commerce-nom">BoromBoutik</div>
+      <div style="font-family:'Inter',sans-serif; font-size:15px; font-weight:800; margin-top:4px; color:var(--pi-accent, #1d4ed8);" id="pi-commerce-nom">BoromBoutik</div>
       <div style="font-family:'Inter',sans-serif; font-size:11px; color:#555;" id="pi-commerce-adresse"></div>
     </div>
     <div class="pi-meta"><div id="pi-num"></div><div id="pi-date"></div></div>
@@ -1783,7 +1859,8 @@
   <div id="pi-lettres" style="font-family:'Inter',sans-serif; font-size:12px; font-style:italic; margin-top:6px; text-align:right; clear:both;"></div>
   <div id="pi-statut" style="margin-top:10px; text-align:right; font-family:'Inter',sans-serif; font-weight:700; font-size:14px; padding:6px 14px; border-radius:6px; display:inline-block; float:right;"></div>
   <div style="clear:both;"></div>
-  <div id="pi-remarque" style="display:none; font-family:'Inter',sans-serif; font-size:12.5px; margin-top:14px; padding:8px 12px; border-left:3px solid #1d4ed8; background:#f1f5f9;"></div>
+  <div id="pi-remarque" style="display:none; font-family:'Inter',sans-serif; font-size:12.5px; margin-top:14px; padding:8px 12px; border-left:3px solid var(--pi-accent, #1d4ed8); background:#f1f5f9;"></div>
+  <div id="pi-pay" style="display:none;"></div>
   <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:24px; margin-top:36px;">
     <div id="pi-message" style="font-family:'Inter',sans-serif; font-size:13px; font-style:italic; color:#333; flex:1;"></div>
     <div id="pi-client-sign" style="display:none; text-align:center;">
@@ -2780,6 +2857,7 @@
     }
     applyCurrencyUi();
     renderCommerceImages();
+    try { fstyleRender(); } catch (e) { console.error(e); }
     const codeEl = document.getElementById('inviteCodeDisplay');
     if (codeEl) codeEl.textContent = state.commerce.inviteCode || '------';
   }
@@ -2887,6 +2965,8 @@
         state.commerce.devise = dv; state.commerce.langueFacture = lgv;
         try { localStorage.setItem('sf_devise:' + (state.commerce.id || ''), dv); localStorage.setItem('sf_langue:' + (state.commerce.id || ''), lgv); } catch (e) {}
       }
+      // Modèle de facture (comptes de test) : enregistré à part, comme la devise
+      try { if (await fstyleSave()) localOnly = true; } catch (e) { console.error(e); localOnly = true; }
       updateCommerceForm();
       [renderDashboard, renderStock, renderInsights].forEach(f => { try { f(); } catch (e) {} });
       try { updateGrandTotal(); } catch (e) {}
@@ -3737,6 +3817,7 @@
       try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) { console.error(e); }
       try { aboRender(); } catch (e) { console.error(e); }
       try { belMorningRender(); } catch (e) { console.error(e); }
+      try { fstyleRender(); } catch (e) { console.error(e); }
       // Vente à la voix : prête mais mise en pause (à rallumer : remettre display = '')
       const vsc = document.getElementById('voiceSale'); if (vsc) vsc.style.display = 'none';
       const face = document.getElementById('belFace'); if (face && !face.innerHTML) face.innerHTML = belAvatarSvg(56);
@@ -5180,6 +5261,7 @@
     const sigSrc = state.commerce && state.commerce.signatureUrl;
     if (isImageData(sigSrc)) { sigEl.src = sigSrc; document.getElementById('pi-signature-box').style.display = ''; } else { sigEl.removeAttribute('src'); document.getElementById('pi-signature-box').style.display = 'none'; }
     document.getElementById('pi-message').textContent = (state.commerce && state.commerce.messageFacture) || X.merci;
+    fstyleApply(pa, lg);   // modèle, couleur, RCCM, numéros Wave / Orange Money (19a-modeles-facture.js)
     document.getElementById('pi-lines').innerHTML = (inv.lignes || []).map(l => `
       <tr><td>${escapeHtml(l.ref || '—')}</td><td>${escapeHtml(l.nom)}</td><td class="num-cell">${iso(escapeHtml(String(l.qte)))}</td><td>${escapeHtml(l.unite || '')}</td><td class="num-cell">${mny(l.prix)}</td><td class="num-cell">${mny((Number(l.prix) || 0) * (Number(l.qte) || 0))}</td></tr>
     `).join('');
@@ -5224,6 +5306,139 @@
     setTimeout(() => window.print(), 350);
   }
 
+  // ================= Modèles de facture (Classique, Moderne, Élégant, Compact) =================
+  // Choix du modèle et de la couleur, numéros Wave / Orange Money et RCCM imprimés sur les factures.
+  // Le réglage n'est visible que sur les comptes de test (aiAskOk) tant qu'il n'est pas validé.
+  // Sans réglage, la facture reste exactement le modèle Classique d'origine.
+  const FSTYLE_MODELES = [
+    { k: 'classique', label: 'Classique', desc: 'Sobre, passe-partout' },
+    { k: 'moderne', label: 'Moderne', desc: 'Bandeau de couleur en haut' },
+    { k: 'elegant', label: 'Élégant', desc: 'Aéré : mode, cosmétique' },
+    { k: 'compact', label: 'Compact', desc: 'Beaucoup de lignes par page' },
+  ];
+  const FSTYLE_COULEURS = ['#1d4ed8', '#1f7a5c', '#c2410c', '#7c3aed', '#9d4e6e', '#111827'];
+  const FSTYLE_DEFAUT = { modele: 'classique', couleur: '#1d4ed8', wave: '', om: '', rccm: '' };
+  const FSTYLE_TXT = {
+    fr: { payer: 'Payer par', ou: ' · ' },
+    en: { payer: 'Pay with', ou: ' · ' },
+    ar: { payer: 'الدفع عبر', ou: ' · ' },
+  };
+  let fstyleDraft = null;       // choix en cours dans Mon commerce (pas encore enregistré)
+  let fstylePreviewing = null;  // style utilisé pour l'aperçu d'exemple
+  let fstyleFor = null;         // commerce auquel appartient le brouillon
+
+  const fstyleKey = () => 'sf_fstyle:' + ((state.commerce && state.commerce.id) || '');
+  function fstyleClean(s) {
+    const out = { ...FSTYLE_DEFAUT, ...(s && typeof s === 'object' ? s : {}) };
+    if (!FSTYLE_MODELES.some(m => m.k === out.modele)) out.modele = 'classique';
+    if (!/^#[0-9a-f]{6}$/i.test(String(out.couleur))) out.couleur = FSTYLE_DEFAUT.couleur;
+    ['wave', 'om', 'rccm'].forEach(k => { out[k] = String(out[k] || '').trim().slice(0, 40); });
+    return { modele: out.modele, couleur: out.couleur.toLowerCase(), wave: out.wave, om: out.om, rccm: out.rccm };
+  }
+  function fstyle() {
+    let s = state.commerce && state.commerce.factureStyle;
+    if (typeof s === 'string') { try { s = JSON.parse(s); } catch (e) { s = null; } }
+    if (!s || typeof s !== 'object') { try { s = JSON.parse(localStorage.getItem(fstyleKey()) || 'null'); } catch (e) { s = null; } }
+    return fstyleClean(s);
+  }
+  const fstyleSame = (a, b) => JSON.stringify(fstyleClean(a)) === JSON.stringify(fstyleClean(b));
+
+  // ----- À l'impression : applique le modèle, la couleur, le RCCM et la ligne de paiement -----
+  function fstyleApply(pa, lg) {
+    const s = fstylePreviewing || fstyle();
+    FSTYLE_MODELES.forEach(m => pa.classList.toggle('pi-tpl-' + m.k, m.k === s.modele));
+    pa.style.setProperty('--pi-accent', s.couleur);
+    const T = FSTYLE_TXT[lg] || FSTYLE_TXT.fr, sp = lg === 'fr' ? ' : ' : ': ';
+    const iso = (v) => bidiIso(v, lg);
+    if (s.rccm) {
+      const ad = document.getElementById('pi-commerce-adresse');
+      ad.textContent = [ad.textContent, 'RCCM' + sp + iso(s.rccm)].filter(Boolean).join(' · ');
+    }
+    const pay = document.getElementById('pi-pay');
+    const parts = [];
+    if (s.wave) parts.push('Wave' + sp + iso(s.wave));
+    if (s.om) parts.push('Orange Money' + sp + iso(s.om));
+    if (pay) {
+      pay.textContent = parts.length ? T.payer + ' ' + parts.join(T.ou) : '';
+      pay.style.display = parts.length ? '' : 'none';
+    }
+  }
+
+  // ----- Réglages dans Données > Mon commerce -----
+  function fstyleRender() {
+    const card = document.getElementById('fstyleCard');
+    if (!card) return;
+    const show = !!(aiAskOk && state.commerce && isOwnerOrAdmin());
+    card.style.display = show ? '' : 'none';
+    if (!show) return;
+    if (fstyleFor !== state.commerce.id) { fstyleDraft = null; fstyleFor = state.commerce.id; }
+    if (!fstyleDraft) fstyleDraft = fstyle();
+    const d = fstyleDraft;
+    document.getElementById('fstyleModeles').innerHTML = FSTYLE_MODELES.map(m => `
+      <button type="button" class="fstyle-opt${m.k === d.modele ? ' on' : ''}" data-fmodele="${m.k}" aria-pressed="${m.k === d.modele}">
+        <span class="fstyle-mini fstyle-mini-${m.k}" style="--pi-accent:${d.couleur}" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <b>${escapeHtml(m.label)}</b><small>${escapeHtml(m.desc)}</small>
+      </button>`).join('');
+    document.getElementById('fstyleCouleurs').innerHTML = FSTYLE_COULEURS.map(c => `
+      <button type="button" class="fstyle-color${c === d.couleur ? ' on' : ''}" data-fcouleur="${c}" style="background:${c}" aria-label="Couleur ${c}" aria-pressed="${c === d.couleur}"></button>`).join('')
+      + `<label class="fstyle-custom" title="Autre couleur"><input type="color" id="fstyleCustom" value="${d.couleur}" aria-label="Choisir une autre couleur"></label>`;
+    const setIfIdle = (id, v) => { const el = document.getElementById(id); if (el && document.activeElement !== el) el.value = v || ''; };
+    setIfIdle('cm-wave', d.wave); setIfIdle('cm-om', d.om); setIfIdle('cm-rccm', d.rccm);
+  }
+  function fstyleReadInputs() {
+    if (!fstyleDraft) fstyleDraft = fstyle();
+    fstyleDraft.wave = document.getElementById('cm-wave').value;
+    fstyleDraft.om = document.getElementById('cm-om').value;
+    fstyleDraft.rccm = document.getElementById('cm-rccm').value;
+    fstyleDraft = fstyleClean(fstyleDraft);
+    return fstyleDraft;
+  }
+  (function fstyleWire() {
+    const card = document.getElementById('fstyleCard');
+    if (!card) return;
+    card.addEventListener('click', (e) => {
+      const mo = e.target.closest('[data-fmodele]'), co = e.target.closest('[data-fcouleur]');
+      if (!mo && !co) return;
+      fstyleReadInputs();
+      if (mo) fstyleDraft.modele = mo.dataset.fmodele;
+      if (co) fstyleDraft.couleur = co.dataset.fcouleur;
+      fstyleRender();
+      document.getElementById('commerceStatus').textContent = 'Modèle choisi — clique sur Enregistrer pour le garder.';
+    });
+    card.addEventListener('input', (e) => {
+      if (e.target.id !== 'fstyleCustom') return;
+      fstyleReadInputs();
+      fstyleDraft.couleur = e.target.value;
+      fstyleDraft = fstyleClean(fstyleDraft);
+      document.querySelectorAll('#fstyleCouleurs .fstyle-color').forEach(b => b.classList.remove('on'));
+      document.querySelectorAll('#fstyleModeles .fstyle-mini').forEach(el => el.style.setProperty('--pi-accent', fstyleDraft.couleur));
+    });
+    document.getElementById('btnFstylePreview').addEventListener('click', () => {
+      fstylePreviewing = fstyleReadInputs();
+      const today = todayStr();
+      const sample = { num: 42, date: today, client: 'Client exemple', remise: 1500, montantPaye: 50000, total: 85000, sousTotal: 86500,
+        lignes: [
+          { ref: 'A-01', nom: 'Article exemple 1', qte: 2, unite: 'pièce', prix: 15000 },
+          { ref: 'A-02', nom: 'Article exemple 2', qte: 1, unite: 'pièce', prix: 25000 },
+          { ref: 'A-03', nom: 'Article exemple 3', qte: 3, unite: 'pièce', prix: 4500 },
+          { ref: 'A-04', nom: 'Article exemple 4', qte: 1, unite: 'pièce', prix: 18000 },
+        ] };
+      try { printInvoice(sample, 'facture'); } finally { setTimeout(() => { fstylePreviewing = null; }, 1500); }
+    });
+  })();
+
+  // Appelé par le bouton Enregistrer de Mon commerce. Renvoie true si le style n'a pu être gardé que sur cet appareil.
+  async function fstyleSave() {
+    const card = document.getElementById('fstyleCard');
+    if (!card || card.style.display === 'none' || !fstyleDraft) return false;
+    const next = fstyleReadInputs();
+    if (fstyleSame(next, fstyle())) return false;
+    state.commerce.factureStyle = next;
+    try { localStorage.setItem(fstyleKey(), JSON.stringify(next)); } catch (e) {}
+    const { error } = await supabaseClient.from('commerces').update({ facture_style: next }).eq('id', state.currentUser.commerceId);
+    if (error) { console.error(error); return true; }
+    return false;
+  }
   // ================= Ventes (invoice builder) =================
   let saleType = 'comptant';
   let invoiceLines = [freshLine()];
@@ -8369,7 +8584,7 @@
     mouvements: { productId: 'product_id', ancienStock: 'ancien_stock', nouveauStock: 'nouveau_stock', createdAt: 'created_at' },
     fournisseurs: { createdAt: 'created_at' },
     commandes_fournisseurs: { fournisseurId: 'fournisseur_id', fournisseurNom: 'fournisseur_nom', montantCommande: 'montant_commande', montantPaye: 'montant_paye', createdAt: 'created_at' },
-    commerces: { logoUrl: 'logo_url', signatureUrl: 'signature_url', messageFacture: 'message_facture', numeroFiscal: 'numero_fiscal', inviteCode: 'invite_code', createdAt: 'created_at', langueFacture: 'langue_facture' },
+    commerces: { logoUrl: 'logo_url', signatureUrl: 'signature_url', messageFacture: 'message_facture', numeroFiscal: 'numero_fiscal', inviteCode: 'invite_code', createdAt: 'created_at', langueFacture: 'langue_facture', factureStyle: 'facture_style' },
     clients: { createdAt: 'created_at' },
     paiements: { factureId: 'facture_id', clientId: 'client_id', createdAt: 'created_at' },
     depenses: { createdAt: 'created_at' },

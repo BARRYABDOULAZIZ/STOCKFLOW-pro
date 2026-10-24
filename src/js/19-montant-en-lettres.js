@@ -232,6 +232,7 @@
     const sigSrc = state.commerce && state.commerce.signatureUrl;
     if (isImageData(sigSrc)) { sigEl.src = sigSrc; document.getElementById('pi-signature-box').style.display = ''; } else { sigEl.removeAttribute('src'); document.getElementById('pi-signature-box').style.display = 'none'; }
     document.getElementById('pi-message').textContent = (state.commerce && state.commerce.messageFacture) || X.merci;
+    fstyleApply(pa, lg);   // modèle, couleur, RCCM, numéros Wave / Orange Money (19a-modeles-facture.js)
     document.getElementById('pi-lines').innerHTML = (inv.lignes || []).map(l => `
       <tr><td>${escapeHtml(l.ref || '—')}</td><td>${escapeHtml(l.nom)}</td><td class="num-cell">${iso(escapeHtml(String(l.qte)))}</td><td>${escapeHtml(l.unite || '')}</td><td class="num-cell">${mny(l.prix)}</td><td class="num-cell">${mny((Number(l.prix) || 0) * (Number(l.qte) || 0))}</td></tr>
     `).join('');

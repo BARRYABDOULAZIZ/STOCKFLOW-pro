@@ -34,6 +34,18 @@
         <label>Message de remerciement (en bas des factures)</label>
         <input id="cm-message" maxlength="140" placeholder="Merci pour votre confiance, à bientôt !">
       </div>
+      <div id="fstyleCard" class="fstyle-card" style="display:none;">
+        <label>🎨 Modèle de facture <span class="muted">(en test)</span></label>
+        <div id="fstyleModeles" class="fstyle-grid"></div>
+        <label style="margin-top:12px;">Couleur de la facture</label>
+        <div id="fstyleCouleurs" class="fstyle-colors"></div>
+        <div class="field-grid" style="margin-top:12px;">
+          <div><label for="cm-wave">📱 Numéro Wave (imprimé sur la facture)</label><input id="cm-wave" maxlength="40" inputmode="tel" placeholder="Ex : 77 123 45 67"></div>
+          <div><label for="cm-om">🟠 Numéro Orange Money</label><input id="cm-om" maxlength="40" inputmode="tel" placeholder="Ex : 77 123 45 67"></div>
+          <div><label for="cm-rccm">RCCM</label><input id="cm-rccm" maxlength="40" placeholder="Optionnel"></div>
+        </div>
+        <button class="ghost" id="btnFstylePreview" type="button" style="margin-top:12px;">👁 Voir un aperçu avec une facture d'exemple</button>
+      </div>
       <button class="primary" id="btnSaveCommerce">Enregistrer</button>
       <p class="muted" id="commerceStatus" style="margin-top:10px;"></p>
     </div>

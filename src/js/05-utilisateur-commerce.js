@@ -52,6 +52,7 @@
     }
     applyCurrencyUi();
     renderCommerceImages();
+    try { fstyleRender(); } catch (e) { console.error(e); }
     const codeEl = document.getElementById('inviteCodeDisplay');
     if (codeEl) codeEl.textContent = state.commerce.inviteCode || '------';
   }
@@ -159,6 +160,8 @@
         state.commerce.devise = dv; state.commerce.langueFacture = lgv;
         try { localStorage.setItem('sf_devise:' + (state.commerce.id || ''), dv); localStorage.setItem('sf_langue:' + (state.commerce.id || ''), lgv); } catch (e) {}
       }
+      // Modèle de facture (comptes de test) : enregistré à part, comme la devise
+      try { if (await fstyleSave()) localOnly = true; } catch (e) { console.error(e); localOnly = true; }
       updateCommerceForm();
       [renderDashboard, renderStock, renderInsights].forEach(f => { try { f(); } catch (e) {} });
       try { updateGrandTotal(); } catch (e) {}

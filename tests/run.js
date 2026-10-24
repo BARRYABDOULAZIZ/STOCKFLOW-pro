@@ -121,6 +121,30 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     await p.close2();
   });
 
+  await test('Modèles de facture : Classique par défaut, Moderne avec couleur, RCCM et Wave', async () => {
+    const p = await open(browser, { viewport: { width: 820, height: 1100 } });
+    const inv = { num: 3, date: '2026-10-24', client: 'Client Test', lignes: [{ ref: 'R1', nom: 'Riz 25 kg', qte: 1, unite: 'sac', prix: 16500 }], total: 16500, montantPaye: 16500, remise: 0 };
+    const r = await p.app(`(() => { window.print = () => {}; const pa = document.getElementById('printArea'), pay = document.getElementById('pi-pay');
+      state.commerce = { id: 'x1', nom: 'Boutique Test', adresse: 'Rue 1', devise: 'XOF', langueFacture: 'fr' };
+      printInvoice(${JSON.stringify(inv)}, 'facture');
+      const a = { classes: pa.className, payShown: pay.style.display !== 'none', adresse: document.getElementById('pi-commerce-adresse').textContent };
+      state.commerce = { id: 'x2', nom: 'Boutique Test', adresse: 'Rue 1', devise: 'XOF', langueFacture: 'fr', factureStyle: { modele: 'moderne', couleur: '#C2410C', wave: '77 111 22 33', om: '', rccm: 'SN-DKR-2026-A-1' } };
+      printInvoice(${JSON.stringify(inv)}, 'facture');
+      const b = { classes: pa.className, accent: pa.style.getPropertyValue('--pi-accent'), pay: pay.textContent, payShown: pay.style.display !== 'none', adresse: document.getElementById('pi-commerce-adresse').textContent };
+      state.commerce.factureStyle = { modele: 'inconnu', couleur: 'rouge' };
+      printInvoice(${JSON.stringify(inv)}, 'facture');
+      const c = { classes: pa.className, accent: pa.style.getPropertyValue('--pi-accent') };
+      return { a, b, c }; })()`);
+    expect(/pi-tpl-classique/.test(r.a.classes) && !r.a.payShown && !/RCCM/.test(r.a.adresse), 'sans réglage : Classique sans ligne de paiement (' + JSON.stringify(r.a) + ')');
+    expect(/pi-tpl-moderne/.test(r.b.classes) && !/pi-tpl-classique/.test(r.b.classes), 'modèle Moderne non appliqué : ' + r.b.classes);
+    eq(r.b.accent, '#c2410c', 'couleur');
+    expect(r.b.payShown && /Wave : 77 111 22 33/.test(r.b.pay) && !/Orange/.test(r.b.pay), 'ligne de paiement : ' + r.b.pay);
+    expect(/RCCM : SN-DKR-2026-A-1/.test(r.b.adresse), 'RCCM absent : ' + r.b.adresse);
+    expect(/pi-tpl-classique/.test(r.c.classes) && r.c.accent === '#1d4ed8', 'réglage invalide : retour au Classique (' + JSON.stringify(r.c) + ')');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
   await test('Vente : les lignes et le total se calculent', async () => {
     const p = await open(browser);
     const r = await p.app(`(() => { document.getElementById('loginOverlay').style.display = 'none';
