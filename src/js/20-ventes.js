@@ -14,9 +14,20 @@
     if (prod) return Number(line.qte) > Number(prod.stock) ? `<span class="il-warn" title="Stock insuffisant">⚠ ${prod.stock}</span>` : `<span class="il-ok" title="En stock">${prod.stock}</span>`;
     return line.nom && line.nom.trim() ? `<span class="il-hors" title="Hors stock : ne sera pas déduit du stock">hors</span>` : '';
   }
+  // Relie une ligne à un produit du stock. Si ce produit est déjà sur une autre ligne, on ajoute la quantité
+  // à cette ligne au lieu de créer un doublon (sinon le contrôle du stock serait contourné). Renvoie la ligne utilisée.
   function pickProduct(i, prod) {
-    if (!prod || !invoiceLines[i]) return;
-    invoiceLines[i] = { ref: prod.ref, nom: prod.nom, qte: Number(invoiceLines[i].qte) || 1, prix: prod.prixVente, unite: prod.unite || '', matched: true };
+    if (!prod || !invoiceLines[i]) return i;
+    const qte = Number(invoiceLines[i].qte) || 1;
+    const j = invoiceLines.findIndex((l, k) => k !== i && l.matched && l.ref === prod.ref);
+    if (j !== -1) {
+      invoiceLines[j].qte = (Number(invoiceLines[j].qte) || 0) + qte;
+      invoiceLines[i] = freshLine();
+      toast(`✓ ${prod.nom} est déjà dans la vente : quantité ${invoiceLines[j].qte}`);
+      return j;
+    }
+    invoiceLines[i] = { ref: prod.ref, nom: prod.nom, qte, prix: prod.prixVente, unite: prod.unite || '', matched: true };
+    return i;
   }
   function renderInvoiceLines() {
     const wrap = document.getElementById('invLines');
@@ -52,7 +63,7 @@
       inp.addEventListener('keydown', e => {
         if (e.key !== 'Enter') return; e.preventDefault();
         const idx = +e.target.dataset.idx, m = matchProducts(e.target.value);
-        if (m.length) { pickProduct(idx, m[0]); closeAllAutocomplete(); renderInvoiceLines(); const q = document.querySelectorAll('.line-qty')[idx]; if (q) { q.focus(); q.select(); } }
+        if (m.length) { const at = pickProduct(idx, m[0]); closeAllAutocomplete(); renderInvoiceLines(); const q = document.querySelectorAll('.line-qty')[at]; if (q) { q.focus(); q.select(); } }
       });
       inp.addEventListener('blur', e => {
         const idx = +e.target.dataset.idx;

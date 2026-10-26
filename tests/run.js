@@ -145,6 +145,23 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     await p.close2();
   });
 
+  await test('Vente : un même article choisi deux fois reste sur une seule ligne', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(() => {
+      state.products = [{ id: 'p1', ref: 'RIZ25', nom: 'Riz 25 kg', prixVente: 16500, stock: 5, unite: 'sac' }, { id: 'p2', ref: 'HUI5', nom: 'Huile 5 L', prixVente: 6200, stock: 9, unite: 'bidon' }];
+      invoiceLines = [freshLine(), freshLine(), freshLine()];
+      invoiceLines[0].qte = 3; pickProduct(0, state.products[0]);
+      pickProduct(1, state.products[1]);
+      invoiceLines[2].qte = 3; const at = pickProduct(2, state.products[0]);
+      return { at, lignes: invoiceLines.filter(l => l.matched).map(l => [l.ref, Number(l.qte)]), vide: !invoiceLines[2].nom };
+    })()`);
+    eq(r.lignes, [['RIZ25', 6], ['HUI5', 1]], 'lignes');
+    eq(r.at, 0, 'ligne utilisée');
+    expect(r.vide, 'la ligne en double doit être vidée');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
   await test('Vente : les lignes et le total se calculent', async () => {
     const p = await open(browser);
     const r = await p.app(`(() => { document.getElementById('loginOverlay').style.display = 'none';
