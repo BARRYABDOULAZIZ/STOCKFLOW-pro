@@ -1,6 +1,14 @@
   // ================= Produits: add / restock / edit =================
   let editingId = null; // null = mode ajout/réappro ; sinon = id du produit en cours de modification
 
+  // Référence déjà connue : on remplit le formulaire avec la fiche du produit (réapprovisionnement),
+  // pour ne pas avoir à tout retaper et pour ne pas écraser les prix par 0.
+  let autofilledRef = null;
+  const AUTOFILL_FIELDS = [
+    ['p-nom', p => p.nom, ''], ['p-barcode', p => p.codeBarre, ''], ['p-fournisseur', p => p.fournisseur, ''],
+    ['p-categorie', p => p.categorie, ''], ['p-emplacement', p => p.emplacement, ''], ['p-unite', p => p.unite, ''],
+    ['p-prixachat', p => p.prixAchat, '0'], ['p-prixvente', p => p.prixVente, '0'], ['p-seuil', p => p.seuil, '5'],
+  ];
   document.getElementById('p-ref').addEventListener('input', e => {
     if (editingId) return; // en mode édition, on ne bascule pas en mode réappro
     const ref = e.target.value.trim();
@@ -9,11 +17,22 @@
     const hint = document.getElementById('restockHint');
     const btn = document.getElementById('btnAddProduct');
     if (existing) {
+      if (autofilledRef !== existing.ref) {
+        AUTOFILL_FIELDS.forEach(([id, get]) => { const v = get(existing); document.getElementById(id).value = (v === undefined || v === null) ? '' : v; });
+        document.getElementById('p-stock').value = '';
+        autofilledRef = existing.ref;
+      }
       lbl.textContent = 'Quantité à ajouter au stock';
       hint.style.display = 'block';
-      hint.textContent = `Référence existante : ${existing.nom} — stock actuel ${existing.stock} ${existing.unite || 'unité'}. Le nombre saisi ci-dessus s'ajoutera à ce stock.`;
+      hint.style.color = '';
+      hint.textContent = `Référence existante : ${existing.nom} — stock actuel ${existing.stock} ${existing.unite || 'unité'}. Les informations du produit sont remplies : écris seulement la quantité à ajouter (tu peux aussi corriger un prix).`;
       btn.textContent = 'Réapprovisionner ce produit';
     } else {
+      if (autofilledRef) {   // on a quitté une référence connue : on vide ce qui avait été rempli automatiquement
+        AUTOFILL_FIELDS.forEach(([id, , empty]) => { document.getElementById(id).value = empty; });
+        document.getElementById('p-stock').value = '0';
+        autofilledRef = null;
+      }
       lbl.textContent = 'Quantité en stock';
       hint.style.display = 'none';
       btn.textContent = 'Ajouter au catalogue';
@@ -49,6 +68,7 @@
 
   function resetProductForm() {
     editingId = null;
+    autofilledRef = null;
     ['p-ref','p-nom','p-barcode','p-fournisseur','p-categorie','p-emplacement','p-unite'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('p-stock').value = '0';
     document.getElementById('p-prixachat').value = '0';

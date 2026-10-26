@@ -162,6 +162,26 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     await p.close2();
   });
 
+  await test('Produits : une référence existante remplit le formulaire, une nouvelle le vide', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(() => {
+      state.products = [{ id: 'p1', ref: 'RIZ25', nom: 'Riz 25 kg', codeBarre: '123', fournisseur: 'Grossiste A', categorie: 'Céréales', emplacement: 'Rayon 1', unite: 'sac', prixAchat: 15000, prixVente: 16500, seuil: 3, stock: 10 }];
+      const v = (id) => document.getElementById(id).value, ref = document.getElementById('p-ref');
+      const type = (t) => { ref.value = t; ref.dispatchEvent(new Event('input')); };
+      type('RIZ25');
+      const a = { nom: v('p-nom'), unite: v('p-unite'), achat: v('p-prixachat'), vente: v('p-prixvente'), seuil: v('p-seuil'), stock: v('p-stock'), bouton: document.getElementById('btnAddProduct').textContent };
+      type('NOUVEAU1');
+      const b = { nom: v('p-nom'), vente: v('p-prixvente'), stock: v('p-stock'), bouton: document.getElementById('btnAddProduct').textContent };
+      return { a, b };
+    })()`);
+    eq([r.a.nom, r.a.unite, r.a.achat, r.a.vente, r.a.seuil, r.a.stock], ['Riz 25 kg', 'sac', '15000', '16500', '3', ''], 'remplissage');
+    expect(/Réapprovisionner/.test(r.a.bouton), 'bouton réappro : ' + r.a.bouton);
+    eq([r.b.nom, r.b.vente, r.b.stock], ['', '0', '0'], 'vidage');
+    expect(/Ajouter/.test(r.b.bouton), 'bouton ajout : ' + r.b.bouton);
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
   await test('Vente : les lignes et le total se calculent', async () => {
     const p = await open(browser);
     const r = await p.app(`(() => { document.getElementById('loginOverlay').style.display = 'none';
