@@ -77,6 +77,26 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     }
   });
 
+  await test('Pulaar : caché par défaut, visible et traduit pour un compte de test', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(() => {
+      const has = () => !!document.querySelector('#loginLangRow [data-uilang="ff"]');
+      const avant = has();
+      aiAskOk = true; renderLangPickers();
+      const apres = has();
+      setUiLang('ff', false);
+      const menu = document.querySelector('nav.tabs button[data-tab="ventes"]').textContent.trim();
+      setUiLang('fr', false); aiAskOk = false; renderLangPickers();
+      return { avant, apres, menu, fin: has() };
+    })()`);
+    eq(r.avant, false, 'pulaar caché pour un compte normal');
+    eq(r.apres, true, 'pulaar proposé au compte de test');
+    expect(r.menu.includes('Njeeygu'), 'onglet Ventes en pulaar : « ' + r.menu + ' »');
+    eq(r.fin, false, 'pulaar de nouveau caché');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
   await test('Chaque onglet du menu s\'ouvre', async () => {
     const p = await open(browser, { viewport: { width: 1280, height: 900 } });
     const r = await p.evaluate(async () => {

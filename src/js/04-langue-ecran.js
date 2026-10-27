@@ -51,11 +51,13 @@
     });
     i18nObs.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: I18N_ATTRS });
   }
+  // Langues en essai : visibles seulement pour un compte de test (aiAskOk est déclaré plus loin, d'où le try)
+  function langTestOk() { try { return !!aiAskOk; } catch (e) { return false; } }
   function renderLangPickers() {
     const L = UI_LANGS[UI_LANG];
     const f = document.getElementById('langBtnFlag'), c = document.getElementById('langBtnCode');
     if (f) f.textContent = L.flag; if (c) c.textContent = L.code;
-    const opts = Object.entries(UI_LANGS).map(([k, v]) => `<button type="button" class="lang-opt${k === UI_LANG ? ' on' : ''}" data-uilang="${k}" role="menuitem" lang="${k}"><span class="f">${v.flag}</span><span>${v.name}</span></button>`).join('');
+    const opts = Object.entries(UI_LANGS).filter(([k, v]) => !v.essai || k === UI_LANG || langTestOk()).map(([k, v]) => `<button type="button" class="lang-opt${k === UI_LANG ? ' on' : ''}" data-uilang="${k}" role="menuitem" lang="${k}"><span class="f">${v.flag}</span><span>${v.name}</span></button>`).join('');
     const m = document.getElementById('langMenu'); if (m) m.innerHTML = opts;
     const r = document.getElementById('loginLangRow'); if (r) r.innerHTML = opts;
   }

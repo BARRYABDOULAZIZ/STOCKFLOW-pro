@@ -45,6 +45,7 @@
       const { data, error } = await supabaseClient.functions.invoke('ask-ai', { body: { ping: true } });
       if (error || !data || !data.actif) return;
       aiAskOk = true;
+      try { renderLangPickers(); } catch (e) {}
       box.style.display = '';
       if (pfc) pfc.style.display = '';
       const blb = document.getElementById('bossListen'); if (blb) blb.style.display = '';
