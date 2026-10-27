@@ -37,7 +37,7 @@
     ["toi@exemple.com", "you@example.com", "you@example.com"],
     ["8 caractères min.", "8 characters min.", "8 أحرف على الأقل"],
     ["Répète le mot de passe", "Repeat the password", "أعد كتابة كلمة المرور"],
-    ["ex : Quincaillerie Sow et Frères", "e.g. Sow & Brothers Hardware", "مثال: محلات صو وإخوانه"],
+    ["ex : Boutique Baraka", "e.g. Baraka Shop", "مثال: متجر بركة"],
     ["Ton prénom", "Your first name", "اسمك الأول"],
     ["Déconnexion", "Sign out", "تسجيل الخروج"],
     ["Propriétaire", "Owner", "المالك"],
