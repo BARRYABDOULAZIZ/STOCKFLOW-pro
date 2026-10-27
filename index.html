@@ -429,6 +429,7 @@
       </div>
 
       <div id="loginError" style="display:none; color:#dc2626; font-size:13px; margin:10px 0 2px;"></div>
+      <a id="authHelpWa" href="https://wa.me/33605958673?text=Bonjour%2C%20j%27ai%20besoin%20d%27aide%20pour%20BoromBoutik" target="_blank" rel="noopener" style="display:flex; align-items:center; justify-content:center; gap:8px; margin-top:14px; padding:10px; border-radius:10px; background:#25d366; color:#fff; font-weight:600; font-size:14px; text-decoration:none;">💬 Besoin d'aide ? Écris-nous sur WhatsApp</a>
       <div style="text-align:center; margin-top:14px; font-size:12px;" class="muted"><a href="#" data-legal="cgu">Conditions d'utilisation</a> · <a href="#" data-legal="confidentialite">Confidentialité</a></div>
     </div>
   </div>
@@ -2650,7 +2651,9 @@
     ["📋 Inventaire", "📋 Inventory", "📋 الجرد"],
     ["🧾 Caisse", "🧾 Till", "🧾 الصندوق"],
     ["📦 Voir", "📦 See", "📦 عرض"],
-  ].forEach(([fr, en, ar]) => I18N.set(fr, { en, ar }));
+    // Aide WhatsApp (page de connexion)
+  ["💬 Besoin d'aide ? Écris-nous sur WhatsApp", "💬 Need help? Message us on WhatsApp", "💬 تحتاج مساعدة؟ راسلنا على واتساب"],
+].forEach(([fr, en, ar]) => I18N.set(fr, { en, ar }));
   // Traduit un texte écrit en français (rend le texte d'origine s'il n'est pas dans le dictionnaire)
   function tr(fr) { if (UI_LANG === 'fr') return fr; const t = I18N.get(String(fr).replace(/\s+/g, ' ').trim()); return (t && t[UI_LANG]) || fr; }
   const i18nText = new WeakMap(), i18nAttr = new WeakMap();

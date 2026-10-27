@@ -683,4 +683,6 @@
     ["📋 Inventaire", "📋 Inventory", "📋 الجرد"],
     ["🧾 Caisse", "🧾 Till", "🧾 الصندوق"],
     ["📦 Voir", "📦 See", "📦 عرض"],
-  ].forEach(([fr, en, ar]) => I18N.set(fr, { en, ar }));
+    // Aide WhatsApp (page de connexion)
+  ["💬 Besoin d'aide ? Écris-nous sur WhatsApp", "💬 Need help? Message us on WhatsApp", "💬 تحتاج مساعدة؟ راسلنا على واتساب"],
+].forEach(([fr, en, ar]) => I18N.set(fr, { en, ar }));
