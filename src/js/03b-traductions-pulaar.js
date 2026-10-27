@@ -24,7 +24,7 @@
     ["Plus", "Goɗɗi"],
     ["Menu principal", "Menu mawɗo"],
     ["Masquer / afficher les montants", "Suuɗ / hollu kaalis"],
-    ["💰 Montant investi dans le stock — payé aux fournisseurs", "💰 Kaalis mo waɗɗaa e stock — ko njoɓuɗaa e fournisseur-ɓe"],
+    ["💰 Montant investi dans le stock — payé aux fournisseurs", "💰 Kaalis somuya"],
     ["💵 Valeur potentielle du stock — à la vente", "💵 So a yeeyi marsandiisi o fof total mum"],
     ["📈 Bénéfice potentiel — si tout est vendu", "📈 Benefiis mo njogordaa dañde"],
     ["🧠 Conseils intelligents du jour", "🧠 Wasiyaaji hannde"],
