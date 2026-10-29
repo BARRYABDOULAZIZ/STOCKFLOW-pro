@@ -88,7 +88,7 @@
   // Ouvre l'app avec les données gardées sur l'appareil quand la session ne peut pas être relue (pas d'internet)
   async function tryOfflineBoot() {
     let uid = null; try { uid = localStorage.getItem('sf_last_user'); } catch (e) {}
-    if (!uid || state.recoveryInProgress || state.signupInProgress) return false;
+    if (!uid || state.loggingOut || state.recoveryInProgress || state.signupInProgress) return false;
     const cached = await sfStore.get('identity:' + uid);
     if (!cached || !cached.profile || !cached.commerce) return false;
     applyIdentity({ id: uid, email: cached.email || '' }, cached.profile, cached.commerce);
@@ -121,6 +121,7 @@
     supabaseClient.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') { state.recoveryInProgress = true; showRecoveryForm(); return; }
       if (session && session.user) {
+        state.loggingOut = false;
         if (state.recoveryInProgress) { showRecoveryForm(); return; } // lien « mot de passe oublié » : on choisit d'abord un nouveau mot de passe
         if (state.signupInProgress) return;               // inscription en cours : le profil n'existe pas encore
         if (event === 'TOKEN_REFRESHED' && state.currentUser) return; // simple renouvellement de jeton

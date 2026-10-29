@@ -152,6 +152,20 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     });
   }
 
+  await test('Déconnexion : l\'appli ne se rouvre pas toute seule avec la copie de l\'appareil', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(async () => {
+      await sfStore.set('identity:u1', { email: 'a@b.c', profile: { id: 'u1', nom: 'Patron', role: 'proprietaire', commerce_id: 'c1' }, commerce: { id: 'c1', nom: 'Boutique' } });
+      localStorage.setItem('sf_last_user', 'u1');
+      window.confirm = () => true; supabaseClient = { auth: { signOut: async () => {} } };
+      document.getElementById('userBadge').click(); await new Promise(r => setTimeout(r, 50));
+      const rouvert = await tryOfflineBoot();
+      return { rouvert, user: state.currentUser ? state.currentUser.nom : null, overlay: document.getElementById('loginOverlay').style.display };
+    })()`);
+    eq(r, { rouvert: false, user: null, overlay: 'flex' }, 'après déconnexion');
+    await p.close2();
+  });
+
   await test('Chaque onglet du menu s\'ouvre', async () => {
     const p = await open(browser, { viewport: { width: 1280, height: 900 } });
     const r = await p.evaluate(async () => {

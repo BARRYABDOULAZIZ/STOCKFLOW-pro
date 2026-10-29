@@ -135,9 +135,14 @@
 
   document.getElementById('userBadge').addEventListener('click', async () => {
     if (!confirm('Se déconnecter ?')) return;
+    // Déconnexion voulue : l'appli ne doit plus se rouvrir toute seule avec la copie gardée sur l'appareil
+    // (ouverture « sans internet »). Les ventes pas encore envoyées restent gardées et partiront à la prochaine connexion.
+    state.loggingOut = true;
+    try { localStorage.removeItem('sf_last_user'); } catch (e) {}
     clearAuthSecrets();
-    await supabaseClient.auth.signOut();
+    try { await supabaseClient.auth.signOut(); } catch (e) { console.error(e); }
     clearAuthSecrets();
+    handleSignedOut();
   });
 
   // Fin d'inscription : le profil existe maintenant, on peut le charger (l'écouteur d'auth l'ignorait pendant l'inscription)
