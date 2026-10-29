@@ -82,3 +82,12 @@ commit;
 select tablename, policyname, permissive, cmd from pg_policies
 where schemaname = 'public' and (policyname like 'role_owner%' or policyname like 'produits_no_cashier%' or policyname like '%patron')
 order by 1, 2;
+
+-- 7. Appliqué aussi le 29/10 : droits par défaut des futures tables et fonctions internes
+alter default privileges in schema public revoke all on tables from anon;
+alter default privileges in schema public revoke truncate, trigger, references on tables from authenticated;
+alter default privileges in schema public revoke execute on functions from anon;
+revoke execute on function public.new_invite_code(), public.factures_guard_edit(), public.factures_guard_cancel() from public, anon, authenticated;
+revoke execute on function public.est_admin_plateforme() from public, anon;
+grant execute on function public.est_admin_plateforme() to authenticated;
+-- Réglage Auth (tableau de bord) : longueur minimale du mot de passe passée de 6 à 8.
