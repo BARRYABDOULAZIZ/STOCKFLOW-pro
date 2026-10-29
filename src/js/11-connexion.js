@@ -135,7 +135,9 @@
 
   document.getElementById('userBadge').addEventListener('click', async () => {
     if (!confirm('Se déconnecter ?')) return;
+    clearAuthSecrets();
     await supabaseClient.auth.signOut();
+    clearAuthSecrets();
   });
 
   // Fin d'inscription : le profil existe maintenant, on peut le charger (l'écouteur d'auth l'ignorait pendant l'inscription)

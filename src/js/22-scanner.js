@@ -304,3 +304,9 @@
     await state.db.doc('mouvements/' + id).set(doc);
   }
 
+
+  // Icône de scan dans le champ « article » de chaque ligne de vente : même scanner que l'ancien bouton
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-scanline]'); if (!b) return;
+    e.preventDefault(); document.getElementById('btnQuickScanSale').click();
+  });

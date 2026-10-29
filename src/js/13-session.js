@@ -51,6 +51,7 @@
       }
       const sig = JSON.stringify([profile, commerce]);
       if (!applied || sig !== sig0) applyIdentity(user, profile, commerce);
+      clearAuthSecrets();
       sfStore.set('identity:' + user.id, { email: user.email, profile, commerce });
       state.offlineBoot = false;
       if (state.db && state.db.resumeAuth) state.db.resumeAuth();
@@ -61,7 +62,12 @@
     }
   }
 
+  // Efface tout mot de passe tapé dans les formulaires de connexion (déconnexion, connexion réussie)
+  function clearAuthSecrets() {
+    ['login-password', 'signup-password', 'join-password', 'recovery-p1', 'recovery-p2'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  }
   function handleSignedOut() {
+    clearAuthSecrets();
     clearTimeout(reauthTimer);
     stopAllPolling();
     if (state.db && state.db.reset) state.db.reset();

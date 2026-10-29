@@ -114,6 +114,44 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     await p.close2();
   });
 
+  await test('Déconnexion : les mots de passe tapés sont effacés tout de suite', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(() => {
+      ['login-password', 'signup-password', 'join-password'].forEach(id => { document.getElementById(id).value = 'secret123'; });
+      handleSignedOut();
+      return ['login-password', 'signup-password', 'join-password'].map(id => document.getElementById(id).value);
+    })()`);
+    eq(r, ['', '', ''], 'champs mot de passe vides après déconnexion');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
+  for (const [nom, vp] of [['mobile', { width: 390, height: 844 }], ['ordinateur', { width: 1366, height: 900 }]]) {
+    await test('Icône de scan dans le champ de saisie (' + nom + ')', async () => {
+      const p = await open(browser, { viewport: vp });
+      const r = await p.app(`(async () => {
+        document.getElementById('loginOverlay').style.display = 'none';
+        const inside = (inpSel, btnSel) => {
+          const i = document.querySelector(inpSel), b = document.querySelector(btnSel);
+          const a = i.getBoundingClientRect(), c = b.getBoundingClientRect();
+          return a.width > 0 && c.width > 0 && c.left >= a.left - 1 && c.right <= a.right + 1 && c.top >= a.top - 1 && c.bottom <= a.bottom + 1;
+        };
+        const go = async (t) => { document.querySelector('nav.tabs button[data-tab="' + t + '"]').click(); await new Promise(r => setTimeout(r, 60)); };
+        await go('produits');
+        const catalogue = inside('#stockSearch', '#btnScanCatalog');
+        const fiche = inside('#p-barcode', '#btnScanBarcodeField');
+        await go('ventes');
+        const vente = inside('.line-nom[data-idx="0"]', '[data-scanline="0"]');
+        let opened = false; const old = openGlobalScanner; openGlobalScanner = () => { opened = true; };
+        document.querySelector('[data-scanline="0"]').click(); openGlobalScanner = old;
+        return { catalogue, fiche, vente, opened };
+      })()`);
+      eq(r, { catalogue: true, fiche: true, vente: true, opened: true }, 'icône dans le champ et scanner ouvert');
+      eq(p.errors, [], 'erreurs');
+      await p.close2();
+    });
+  }
+
   await test('Chaque onglet du menu s\'ouvre', async () => {
     const p = await open(browser, { viewport: { width: 1280, height: 900 } });
     const r = await p.evaluate(async () => {

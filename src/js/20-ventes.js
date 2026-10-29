@@ -40,8 +40,9 @@
       const row = document.createElement('div');
       row.className = 'inv-line il2';
       row.innerHTML = `
-        <div class="il-name autocomplete-wrap">
+        <div class="il-name autocomplete-wrap${filled ? '' : ' scan-in'}">
           <input type="text" class="line-nom" data-idx="${idx}" value="${escapeHtml(line.nom)}" placeholder="${idx === 0 ? 'Tape le nom d\'un article…' : ''}" autocomplete="off">
+          ${filled ? '' : `<button type="button" class="scan-in-btn" data-scanline="${idx}" tabindex="-1" title="Scanner un code-barres" aria-label="Scanner un code-barres"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v8M16 8v8"/></svg></button>`}
           <div class="ac-list" data-ac="${idx}" style="display:none;"></div>
         </div>
         <div class="il-stock" data-stk="${idx}">${lineStockHtml(line)}</div>

@@ -912,7 +912,7 @@
       <div class="field-grid">
         <div><label>Nom du produit</label><input id="p-nom" placeholder="Ciment, fer à béton, parpaing…"></div>
         <div><label>Référence interne</label><input id="p-ref" placeholder="REF-001"></div>
-        <div><label>Code-barres</label><div style="display:flex; gap:6px;"><input id="p-barcode" placeholder="EAN / code-barres"><button class="ghost" id="btnScanBarcodeField" type="button" title="Scanner le code-barres" style="padding:8px 12px;">📷</button></div></div>
+        <div><label>Code-barres</label><div class="scan-in"><input id="p-barcode" placeholder="EAN / code-barres"><button class="scan-in-btn" id="btnScanBarcodeField" type="button" title="Scanner le code-barres" aria-label="Scanner le code-barres"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v8M16 8v8"/></svg></button></div></div>
         <div><label>Fournisseur</label><input id="p-fournisseur" placeholder="Nom du fournisseur"></div>
         <div><label>Catégorie</label><input id="p-categorie" list="cat-suggestions" autocomplete="off" placeholder="Gros œuvre, plomberie, électricité…"><datalist id="cat-suggestions"></datalist></div>
         <div><label>Emplacement</label><input id="p-emplacement" placeholder="Rayon 3, étagère A2…"></div>
@@ -969,9 +969,9 @@
 
     <div class="row-head">
       <h2>Catalogue <span class="muted" id="catalogCount"></span></h2>
-      <div class="search-box" style="display:flex; gap:6px;">
+      <div class="search-box scan-in">
         <input id="stockSearch" placeholder="Nom, référence ou code-barres…">
-        <button class="ghost" id="btnScanCatalog" type="button" title="Scanner pour chercher" style="padding: 8px 12px;">📷</button>
+        <button class="scan-in-btn" id="btnScanCatalog" type="button" title="Scanner pour chercher" aria-label="Scanner pour chercher"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v8M16 8v8"/></svg></button>
       </div>
     </div>
     <div class="cat-toolbar">
@@ -1182,7 +1182,7 @@
           <div class="inv-lines" id="invLines"></div>
           <div class="sale-addrow">
             <button class="ghost" id="btnAddLine" type="button">＋ Ajouter une ligne</button>
-            <button class="ghost" id="btnQuickScanSale" type="button" style="color:var(--brick); border-color:var(--brick);">📷 Scanner</button>
+            <button class="ghost" id="btnQuickScanSale" type="button" style="display:none;">📷 Scanner</button>
           </div>
         </div>
 
@@ -3853,7 +3853,9 @@
 
   document.getElementById('userBadge').addEventListener('click', async () => {
     if (!confirm('Se déconnecter ?')) return;
+    clearAuthSecrets();
     await supabaseClient.auth.signOut();
+    clearAuthSecrets();
   });
 
   // Fin d'inscription : le profil existe maintenant, on peut le charger (l'écouteur d'auth l'ignorait pendant l'inscription)
@@ -4543,6 +4545,7 @@
       }
       const sig = JSON.stringify([profile, commerce]);
       if (!applied || sig !== sig0) applyIdentity(user, profile, commerce);
+      clearAuthSecrets();
       sfStore.set('identity:' + user.id, { email: user.email, profile, commerce });
       state.offlineBoot = false;
       if (state.db && state.db.resumeAuth) state.db.resumeAuth();
@@ -4553,7 +4556,12 @@
     }
   }
 
+  // Efface tout mot de passe tapé dans les formulaires de connexion (déconnexion, connexion réussie)
+  function clearAuthSecrets() {
+    ['login-password', 'signup-password', 'join-password', 'recovery-p1', 'recovery-p2'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  }
   function handleSignedOut() {
+    clearAuthSecrets();
     clearTimeout(reauthTimer);
     stopAllPolling();
     if (state.db && state.db.reset) state.db.reset();
@@ -5642,8 +5650,9 @@
       const row = document.createElement('div');
       row.className = 'inv-line il2';
       row.innerHTML = `
-        <div class="il-name autocomplete-wrap">
+        <div class="il-name autocomplete-wrap${filled ? '' : ' scan-in'}">
           <input type="text" class="line-nom" data-idx="${idx}" value="${escapeHtml(line.nom)}" placeholder="${idx === 0 ? 'Tape le nom d\'un article…' : ''}" autocomplete="off">
+          ${filled ? '' : `<button type="button" class="scan-in-btn" data-scanline="${idx}" tabindex="-1" title="Scanner un code-barres" aria-label="Scanner un code-barres"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v8M16 8v8"/></svg></button>`}
           <div class="ac-list" data-ac="${idx}" style="display:none;"></div>
         </div>
         <div class="il-stock" data-stk="${idx}">${lineStockHtml(line)}</div>
@@ -6488,6 +6497,12 @@
     await state.db.doc('mouvements/' + id).set(doc);
   }
 
+
+  // Icône de scan dans le champ « article » de chaque ligne de vente : même scanner que l'ancien bouton
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-scanline]'); if (!b) return;
+    e.preventDefault(); document.getElementById('btnQuickScanSale').click();
+  });
   // ================= Saisie par photo (test) : étagère → produits, facture fournisseur → réassort =================
   let pfMode = 'etagere', pfRows = [], pfMeta = {}, pfBusy = false;
   const pfNorm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
@@ -9735,6 +9750,26 @@ header.top{animation:none !important;background-size:100% 100% !important;}
   .adm-tarifs { width:100%; border-collapse:collapse; margin-bottom:8px; }
   .adm-tarifs th, .adm-tarifs td { padding:4px; text-align:center; font-size:13px; }
   .adm-tarifs input { width:100%; min-width:70px; text-align:center; }
+</style>
+<style id="scan-champ-css">
+
+/* ---- Icône de scan (code-barres / QR) à l'intérieur du champ de saisie ---- */
+.scan-in { position: relative !important; display: block !important; flex: 1 1 220px; min-width: 0; width: 100%; }
+.row-head .scan-in { max-width: 360px; }
+.scan-in > input { width: 100% !important; padding-right: 48px !important; box-sizing: border-box; }
+.scan-in > button.scan-in-btn { position: absolute !important; right: 4px !important; left: auto !important; top: 50% !important; transform: translateY(-50%) !important;
+  display: inline-flex !important; align-items: center; justify-content: center; width: 40px !important; height: 40px !important; min-width: 0 !important; min-height: 0 !important;
+  padding: 0 !important; margin: 0 !important; border: 0 !important; border-radius: 10px; background: transparent !important; box-shadow: none !important;
+  color: var(--brick, #7c3aed); cursor: pointer; }
+.scan-in > button.scan-in-btn:hover, .scan-in > button.scan-in-btn:focus-visible { background: rgba(124, 58, 237, .10) !important; }
+.scan-in > button.scan-in-btn svg { display: block; }
+[dir="rtl"] .scan-in > input { padding-right: 12px !important; padding-left: 48px !important; }
+[dir="rtl"] .scan-in > button.scan-in-btn { right: auto !important; left: 4px !important; }
+@media (max-width: 640px) {
+  .il2 .scan-in > input { padding-right: 36px !important; }
+  .il2 .scan-in > button.scan-in-btn { width: 32px !important; height: 32px !important; right: 2px !important; }
+  .il2 .scan-in > button.scan-in-btn svg { width: 19px; height: 19px; }
+}
 </style>
 </body>
 </html>
