@@ -91,3 +91,7 @@ revoke execute on function public.new_invite_code(), public.factures_guard_edit(
 revoke execute on function public.est_admin_plateforme() from public, anon;
 grant execute on function public.est_admin_plateforme() to authenticated;
 -- Réglage Auth (tableau de bord) : longueur minimale du mot de passe passée de 6 à 8.
+-- 8. Appliqué le 29/10 : suppression de devis/bons réservée au propriétaire et à l'admin (la policy était permissive)
+drop policy if exists documents_delete_owner_admin on public.documents;
+create policy documents_delete_owner_admin on public.documents as restrictive for delete to authenticated
+  using (public.my_role() in ('proprietaire','admin'));
