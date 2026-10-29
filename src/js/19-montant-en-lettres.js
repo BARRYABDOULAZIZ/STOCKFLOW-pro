@@ -133,14 +133,14 @@
     if (!cl && inv.client) cl = (state.clients || []).find(x => (x.nom || '').trim().toLowerCase() === String(inv.client).trim().toLowerCase());
     const key = String((cl && cl.id) || inv.client || '').trim().toLowerCase();
     let cache = {};
-    try { cache = JSON.parse(localStorage.getItem('sf_wa_phones') || '{}') || {}; } catch (e) {}
+    try { cache = JSON.parse(localStorage.getItem('sf_wa_phones' + clNs()) || '{}') || {}; } catch (e) {}
     let phone = toWhatsAppNumber(cl && cl.telephone) || (key ? toWhatsAppNumber(cache[key]) : '');
     // Demande le numéro seulement si on connaît le client mais pas son téléphone (1 seule fois, ensuite mémorisé)
     if (!phone && askIfMissing && key) {
       const r = prompt('Numéro WhatsApp de ' + (inv.client || 'ce client') + ' (ex : 77 123 45 67).\nIl sera mémorisé. Laissez vide pour choisir le contact dans WhatsApp :');
       if (r === null) return;
       phone = toWhatsAppNumber(r);
-      if (phone) { cache[key] = phone; try { localStorage.setItem('sf_wa_phones', JSON.stringify(cache)); } catch (e) {} }
+      if (phone) { cache[key] = phone; try { localStorage.setItem('sf_wa_phones' + clNs(), JSON.stringify(cache)); } catch (e) {} }
     }
     const url = (phone ? 'https://wa.me/' + phone : 'https://wa.me/') + '?text=' + encodeURIComponent(text || ticketText(inv));
     const win = window.open(url, 'sf_whatsapp');   // même onglet réutilisé à chaque envoi

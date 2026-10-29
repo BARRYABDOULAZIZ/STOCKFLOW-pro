@@ -6,13 +6,13 @@
   function aiOpenWa(phoneRaw, text, name) {
     let phone = toWhatsAppNumber(phoneRaw);
     const key = String(name || '').trim().toLowerCase();
-    let cache = {}; try { cache = JSON.parse(localStorage.getItem('sf_wa_phones') || '{}') || {}; } catch (e) {}
+    let cache = {}; try { cache = JSON.parse(localStorage.getItem('sf_wa_phones' + clNs()) || '{}') || {}; } catch (e) {}
     if (!phone && key) phone = toWhatsAppNumber(cache[key]);
     if (!phone) {
       const r = prompt('Numéro WhatsApp de ' + (name || 'cette personne') + ' (ex : 77 123 45 67).\nIl sera mémorisé. Laissez vide pour choisir le contact dans WhatsApp :');
       if (r === null) return;
       phone = toWhatsAppNumber(r);
-      if (phone && key) { cache[key] = phone; try { localStorage.setItem('sf_wa_phones', JSON.stringify(cache)); } catch (e) {} }
+      if (phone && key) { cache[key] = phone; try { localStorage.setItem('sf_wa_phones' + clNs(), JSON.stringify(cache)); } catch (e) {} }
     }
     const w = window.open((phone ? 'https://wa.me/' + phone : 'https://wa.me/') + '?text=' + encodeURIComponent(text), 'sf_whatsapp');
     if (!w) toast('⚠ Le navigateur a bloqué WhatsApp. Autorise les fenêtres pour ce site.');
@@ -153,7 +153,7 @@
       if (annul >= 3) add({ cat: 'urgent', sev: 'warn', ic: '🔎', tab: 'factures', t: `${annul} factures annulées cette semaine`, d: 'C\'est plus que d\'habitude : regarde le journal des actions pour comprendre pourquoi.' });
       const depM = (state.depenses || []).filter(d => (d.date || '').slice(0, 7) === monthStr).reduce((t, d) => t + (Number(d.montant) || 0), 0);
       if (margeMois > 0) add({ cat: 'argent', sev: margeMois - depM >= 0 ? 'good' : 'warn', ic: '📊', tab: 'comptabilite', t: `Ce mois : bénéfice estimé ${euros(margeMois - depM)}`, d: `Marge sur les ventes ${euros(margeMois)} − dépenses ${euros(depM)}. (Estimation : seuls les produits avec un prix d'achat sont comptés.)` });
-      let lastClose = ''; try { lastClose = localStorage.getItem('sf_last_close') || ''; } catch (e) {}
+      const lastClose = clLastCloseGet();
       if (new Date().getHours() >= 18 && (byDay[today] || 0) > 0 && lastClose !== today) add({ cat: 'urgent', sev: 'warn', ic: '🔒', tab: 'caisse', t: 'Pense à clôturer la caisse', d: 'Compte le tiroir et compare avec ce que l\'appli attend.' });
     }
 

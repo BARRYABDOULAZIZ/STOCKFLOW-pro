@@ -1,15 +1,22 @@
   // ================= Clôture de caisse =================
   const CL_DENOMS = [['b10000', 'Billet 10 000', 10000], ['b5000', 'Billet 5 000', 5000], ['b2000', 'Billet 2 000', 2000], ['b1000', 'Billet 1 000', 1000], ['b500', 'Billet 500', 500],
     ['p500', 'Pièce 500', 500], ['p250', 'Pièce 250', 250], ['p200', 'Pièce 200', 200], ['p100', 'Pièce 100', 100], ['p50', 'Pièce 50', 50], ['p25', 'Pièce 25', 25], ['p10', 'Pièce 10', 10], ['p5', 'Pièce 5', 5]];
-  const clKey = () => 'sf_cl_counts_' + todayStr();
+  // Tout ce qui est gardé sur l'appareil est rangé par commerce : un téléphone qui passe d'un commerce
+  // à l'autre (propriétaire de plusieurs boutiques, admin, compte de test) ne mélange pas les caisses.
+  function clNs() { return ':' + ((state.commerce && state.commerce.id) || 'aucun'); }
+  function clLastCloseGet() { try { return localStorage.getItem('sf_last_close' + clNs()) || ''; } catch (e) { return ''; } }
+  const clKey = () => 'sf_cl_counts_' + todayStr() + clNs();
+  // Anciennes clôtures gardées sans nom de commerce (avant la séparation) : on ne sait pas à quelle boutique
+  // elles appartiennent, on les retire de l'écran. Elles restent dans le Journal des actions (en base).
+  try { ['sf_clotures', 'sf_cl_fond', 'sf_last_close'].forEach(k => localStorage.removeItem(k)); } catch (e) {}
   const clLoad = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
   const clStore = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
-  let clBuilt = false, clLastState = '';
+  let clBuilt = false, clLastState = '';  // clBuilt = commerce pour lequel le formulaire a été rempli
   function clBuild() {
     const counts = clLoad(clKey(), {});
     document.getElementById('clDenoms').innerHTML = CL_DENOMS.map(([k, lab]) => `<div class="cl-den" data-row="${k}"><span>${lab}</span><input type="number" min="0" step="1" inputmode="numeric" data-k="${k}" placeholder="0" value="${counts[k] || ''}"><span class="cl-sub" id="cls-${k}">0</span></div>`).join('');
-    document.getElementById('clFond').value = clLoad('sf_cl_fond', '') || '';
-    clBuilt = true;
+    document.getElementById('clFond').value = clLoad('sf_cl_fond' + clNs(), '') || '';
+    clBuilt = clNs();
   }
   function clToday() {
     const byId = {}; (state.invoices || []).forEach(i => { byId[i.id] = i; });
@@ -25,7 +32,7 @@
     const boss = state.currentUser && (state.currentUser.role === 'proprietaire' || state.currentUser.role === 'admin');
     document.getElementById('clotureCard').style.display = boss ? '' : 'none';
     if (!boss) return;
-    if (!clBuilt) clBuild();
+    if (clBuilt !== clNs()) clBuild();
     const T = clToday();
     document.getElementById('clDate').textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
     const depEl = document.getElementById('clDep');
@@ -65,13 +72,13 @@
     renderClHistory();
   }
   function renderClHistory() {
-    const h = clLoad('sf_clotures', []);
+    const h = clLoad('sf_clotures' + clNs(), []);
     const el = document.getElementById('clHistory');
     const sig = JSON.stringify(h); if (el._sig === sig) return; el._sig = sig;
     el.innerHTML = h.length ? '<h3 class="cl-h" style="margin:10px 0 4px;">Dernières clôtures (sur cet appareil)</h3>' + h.slice(0, 7).map(c => `<div class="cl-h-row"><span>${escapeHtml(c.date.split('-').reverse().join('/'))} · ${escapeHtml(c.by || '')}</span><span>attendu ${euros(c.attendu)} · compté ${euros(c.compte)}</span><span class="cl-chip ${c.ecart === 0 ? 'ok' : c.ecart > 0 ? 'plus' : 'moins'}">${c.ecart > 0 ? '+' : c.ecart < 0 ? '−' : ''}${euros(Math.abs(c.ecart))}</span></div>`).join('') : '';
   }
   document.getElementById('clDenoms').addEventListener('input', () => { clStore(clKey(), clCounts()); renderCloture(); });
-  document.getElementById('clFond').addEventListener('input', () => { clStore('sf_cl_fond', document.getElementById('clFond').value); renderCloture(); });
+  document.getElementById('clFond').addEventListener('input', () => { clStore('sf_cl_fond' + clNs(), document.getElementById('clFond').value); renderCloture(); });
   document.getElementById('clDep').addEventListener('input', () => { document.getElementById('clDep').dataset.touched = '1'; renderCloture(); });
   document.getElementById('clReset').addEventListener('click', () => {
     if (!confirm('Remettre tout le comptage à zéro ?')) return;
@@ -88,10 +95,10 @@
   document.getElementById('clSave').addEventListener('click', () => {
     const S = clSnapshot();
     if (!Object.keys(S.counts).length) { toast('⚠ Compte d\'abord les billets et les pièces.'); return; }
-    const h = clLoad('sf_clotures', []).filter(c => c.date !== todayStr());
+    const h = clLoad('sf_clotures' + clNs(), []).filter(c => c.date !== todayStr());
     h.unshift({ date: todayStr(), attendu: S.attendu, compte: S.compte, ecart: S.ecart, by: S.by });
-    clStore('sf_clotures', h.slice(0, 30)); clStore('sf_last_close', todayStr());
-    try { localStorage.setItem('sf_last_close', todayStr()); } catch (e) {}
+    clStore('sf_clotures' + clNs(), h.slice(0, 30));
+    try { localStorage.setItem('sf_last_close' + clNs(), todayStr()); } catch (e) {}
     // Aussi notée dans le Journal des actions (en base) : visible par le propriétaire depuis n'importe quel appareil
     try {
       const n0 = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR');

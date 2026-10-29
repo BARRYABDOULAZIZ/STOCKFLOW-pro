@@ -97,6 +97,23 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     await p.close2();
   });
 
+  await test('Clôtures de caisse : chaque commerce garde les siennes sur un même téléphone', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(() => {
+      document.getElementById('loginOverlay').style.display = 'none';
+      state.commerce = { id: 'A' }; state.currentUser = { nom: 'Moukhtar' };
+      localStorage.setItem('sf_clotures:A', JSON.stringify([{ date: '2026-10-18', attendu: 307532, compte: 307500, ecart: -32, by: 'Moukhtar' }]));
+      const shown = () => { renderClHistory(); return document.getElementById('clHistory').textContent; };
+      const a = shown();
+      state.commerce = { id: 'B' };
+      const b = shown();
+      return { a: a.includes('Moukhtar'), b: b.includes('Moukhtar'), keyB: clKey().endsWith(':B') };
+    })()`);
+    eq(r, { a: true, b: false, keyB: true }, 'clôtures séparées par commerce');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
   await test('Chaque onglet du menu s\'ouvre', async () => {
     const p = await open(browser, { viewport: { width: 1280, height: 900 } });
     const r = await p.evaluate(async () => {

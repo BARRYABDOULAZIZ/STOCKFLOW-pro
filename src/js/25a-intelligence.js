@@ -164,7 +164,7 @@
       d: `Le stock affiché est négatif (${neg.slice(0, 2).map(p => p.nom + ' : ' + p.stock).join(', ')}) : il y a eu une erreur de saisie ou une sortie non notée.`,
       btn: '📋 Inventaire', go: () => { const b = document.querySelector('nav.tabs button[data-tab="inventaire"]'); if (b) b.click(); } });
     // Caisse du jour à clôturer (le soir)
-    let lastClose = ''; try { lastClose = localStorage.getItem('sf_last_close') || ''; } catch (e) {}
+    const lastClose = clLastCloseGet();
     if (new Date().getHours() >= 18 && lastClose !== today && (state.invoices || []).some(i => !i.annulee && i.date === today))
       acts.push({ id: 'cloture', kind: 'caisse', score: 50, ic: '🔒', t: 'Clôturer la caisse', d: 'Compte le tiroir et compare avec les ventes de la journée.', btn: '🧾 Caisse', go: () => { const b = document.querySelector('nav.tabs button[data-tab="caisse"]'); if (b) b.click(); } });
     // Argent qui dort : produits sans vente depuis 45 jours
