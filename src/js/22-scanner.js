@@ -42,6 +42,7 @@
     zxingLoading = new Promise((resolve, reject) => {
       const s = document.createElement('script');
       s.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
+      s.integrity = 'sha384-BzBxP10ZE72aitqj5UMmUsbKFliP/DZqA8Wq+BNNhlIJDGoEd1tpkMYXOg9+n6sB'; s.crossOrigin = 'anonymous';  // empreinte : un fichier modifié sur le CDN est refusé
       s.onload = () => resolve();
       s.onerror = () => reject(new Error('load-failed'));
       document.head.appendChild(s);

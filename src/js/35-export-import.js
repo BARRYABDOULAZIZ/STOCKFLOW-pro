@@ -7,7 +7,8 @@
     if (xlsxLoadingPromise) return xlsxLoadingPromise;
     xlsxLoadingPromise = new Promise((resolve, reject) => {
       const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+      s.integrity = 'sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT'; s.crossOrigin = 'anonymous';  // empreinte : un fichier modifié sur le CDN est refusé
       s.onload = () => resolve();
       s.onerror = () => reject(new Error('load-failed'));
       document.head.appendChild(s);
