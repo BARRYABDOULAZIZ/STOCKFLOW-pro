@@ -1218,7 +1218,7 @@
           </div>
 
           <details id="saleMore" class="sale-more">
-            <summary>⚙️ Plus d'options <small>(date, remise, TVA, remarque, ticket)</small></summary>
+            <summary><span class="more-title">⚙️ Plus d'options</span> <small>(date, remise, TVA, remarque, ticket)</small><span class="more-toggle" aria-hidden="true"><span class="mt-show">Afficher ▼</span><span class="mt-hide">Masquer ▲</span></span></summary>
             <div class="field-grid" style="margin-top:10px;">
               <div><label>Date de la vente</label><input id="f-date" type="date"></div>
               <div id="f-validite-wrap" style="display:none;"><label>Devis valable jusqu'au</label><input id="f-validite" type="date"></div>
@@ -2651,7 +2651,10 @@
     ["📋 Inventaire", "📋 Inventory", "📋 الجرد"],
     ["🧾 Caisse", "🧾 Till", "🧾 الصندوق"],
     ["📦 Voir", "📦 See", "📦 عرض"],
-    // Aide WhatsApp (page de connexion)
+    // Bouton « Plus d'options » (vente)
+  ["Afficher ▼", "Show ▼", "إظهار ▼"],
+  ["Masquer ▲", "Hide ▲", "إخفاء ▲"],
+  // Aide WhatsApp (page de connexion)
   ["💬 Besoin d'aide ? Écris-nous sur WhatsApp", "💬 Need help? Message us on WhatsApp", "💬 تحتاج مساعدة؟ راسلنا على واتساب"],
 ].forEach(([fr, en, ar]) => I18N.set(fr, { en, ar }));
   // ================= Pulaar du Sénégal (ff) — relu et corrigé par Abdoul Aziz =================
@@ -2800,7 +2803,9 @@
     ["Virement seulement", "Virement tan"],
     ["Chèque seulement", "Chèque tan"],
     ["Encaissé par", "Jaɓɓiiɗo"],
-    ["Aucun paiement sur cette période.", "Alaa njoɓdi e oodo sahaa."]
+    ["Aucun paiement sur cette période.", "Alaa njoɓdi e oodo sahaa."],
+    ["Afficher ▼", "Hollu ▼"],
+    ["Masquer ▲", "Suuɗ ▲"],
   ].forEach(([fr, ff]) => { const t = I18N.get(fr); if (t) t.ff = ff; else I18N.set(fr, { ff }); });
   // Traduit un texte écrit en français (rend le texte d'origine s'il n'est pas dans le dictionnaire)
   function tr(fr) { if (UI_LANG === 'fr') return fr; const t = I18N.get(String(fr).replace(/\s+/g, ' ').trim()); return (t && t[UI_LANG]) || fr; }
@@ -9657,6 +9662,16 @@ body.hide-amounts #stockValue,body.hide-amounts #heroInvesti,body.hide-amounts #
 .sale-more summary{cursor:pointer;font-weight:800;list-style:none;}
 .sale-more summary::-webkit-details-marker{display:none;}
 .sale-more summary small{font-weight:500;opacity:.65;}
+/* « Plus d'options » : vrai bouton Afficher ▼ / Masquer ▲ pour que l'on voie qu'il s'ouvre */
+.sale-more{border-style:solid;border-color:rgba(124,58,237,.45);background:rgba(124,58,237,.06);}
+.sale-more summary{display:grid;grid-template-columns:1fr auto;align-items:center;column-gap:8px;padding:4px 0;}
+.sale-more summary .more-title{grid-column:1;grid-row:1;}
+.sale-more summary small{grid-column:1;grid-row:2;font-size:11.5px;}
+.sale-more .more-toggle{grid-column:2;grid-row:1 / span 2;font-size:12px;font-weight:800;color:#fff;background:var(--brick,#7c3aed);padding:6px 11px;border-radius:999px;white-space:nowrap;}
+.sale-more .mt-hide{display:none;}
+.sale-more[open] .mt-show{display:none;}
+.sale-more[open] .mt-hide{display:inline;}
+.sale-more summary:focus-visible .more-toggle{outline:2px solid var(--brick,#7c3aed);outline-offset:2px;}
 .sale-tk{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;font-size:13px;}
 .sale-footer{margin-top:8px;padding-top:8px;border-top:2px solid var(--line);}
 .sale-footer .inv-total-row{border-top:0;margin-top:0;padding-top:2px;}

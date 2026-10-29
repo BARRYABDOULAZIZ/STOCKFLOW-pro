@@ -144,5 +144,7 @@
     ["Virement seulement", "Virement tan"],
     ["Chèque seulement", "Chèque tan"],
     ["Encaissé par", "Jaɓɓiiɗo"],
-    ["Aucun paiement sur cette période.", "Alaa njoɓdi e oodo sahaa."]
+    ["Aucun paiement sur cette période.", "Alaa njoɓdi e oodo sahaa."],
+    ["Afficher ▼", "Hollu ▼"],
+    ["Masquer ▲", "Suuɗ ▲"],
   ].forEach(([fr, ff]) => { const t = I18N.get(fr); if (t) t.ff = ff; else I18N.set(fr, { ff }); });
