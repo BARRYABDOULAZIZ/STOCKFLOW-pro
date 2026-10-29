@@ -65,7 +65,9 @@
   });
 
   function csvEscape(v) {
-    const s = String(v ?? '');
+    let s = String(v ?? '');
+    // Un texte qui commence par = + - @ serait lu comme une formule par Excel : on le neutralise (sauf les nombres)
+    if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s)) s = "'" + s;
     return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   }
 

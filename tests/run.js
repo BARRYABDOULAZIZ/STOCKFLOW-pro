@@ -166,6 +166,28 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     await p.close2();
   });
 
+  await test('Export CSV : pas de formule Excel dans les textes', async () => {
+    const p = await open(browser);
+    const r = await p.app(`[csvEscape('=HYPERLINK(1)'), csvEscape('+221 77'), csvEscape('-5'), csvEscape('Riz'), csvEscape('@a')]`);
+    eq(r, ["'=HYPERLINK(1)", "'+221 77", '-5', 'Riz', "'@a"], 'formules neutralisées');
+    await p.close2();
+  });
+
+  await test('Déconnexion avec effacement : la copie de l\'appareil est supprimée', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(async () => {
+      await sfStore.set('identity:u1', { email: 'a@b.c', profile: { id: 'u1', nom: 'Patron', role: 'proprietaire', commerce_id: 'c1' }, commerce: { id: 'c1', nom: 'B' } });
+      await sfStore.set('cache:u1:c1:factures', [{ id: 'f1' }]);
+      localStorage.setItem('sf_clotures:c1', '[1]'); localStorage.setItem('sf_ui_lang', 'fr');
+      CURRENT_USER_ID = 'u1'; CURRENT_COMMERCE_ID = 'c1';
+      window.confirm = () => true; supabaseClient = { auth: { signOut: async () => {} } };
+      document.getElementById('userBadge').click(); await new Promise(r => setTimeout(r, 150));
+      return { id: !!(await sfStore.get('identity:u1')), cache: !!(await sfStore.get('cache:u1:c1:factures')), cl: localStorage.getItem('sf_clotures:c1'), lang: localStorage.getItem('sf_ui_lang') };
+    })()`);
+    eq(r, { id: false, cache: false, cl: null, lang: 'fr' }, 'données effacées, réglage langue gardé');
+    await p.close2();
+  });
+
   await test('Chaque onglet du menu s\'ouvre', async () => {
     const p = await open(browser, { viewport: { width: 1280, height: 900 } });
     const r = await p.evaluate(async () => {

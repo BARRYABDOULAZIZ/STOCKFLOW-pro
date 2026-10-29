@@ -3853,6 +3853,16 @@
 
   document.getElementById('userBadge').addEventListener('click', async () => {
     if (!confirm('Se déconnecter ?')) return;
+    // Téléphone partagé, prêté ou vendu : on peut aussi effacer la copie des données gardée sur l'appareil
+    const effacer = confirm('Effacer aussi les données de la boutique gardées sur ce téléphone ?\n\nOK = effacer (conseillé si le téléphone est partagé)\nAnnuler = les garder (ouverture plus rapide la prochaine fois)');
+    if (effacer) {
+      try {
+        const uid = CURRENT_USER_ID, cid = CURRENT_COMMERCE_ID;
+        if (state.db && state.db.wipe && uid) await state.db.wipe(uid, cid);
+        const suffix = ':' + (cid || '');
+        Object.keys(localStorage).filter(k => k.startsWith('sf_') && k.endsWith(suffix)).forEach(k => localStorage.removeItem(k));
+      } catch (e) { console.error(e); }
+    }
     // Déconnexion voulue : l'appli ne doit plus se rouvrir toute seule avec la copie gardée sur l'appareil
     // (ouverture « sans internet »). Les ventes pas encore envoyées restent gardées et partiront à la prochaine connexion.
     state.loggingOut = true;
@@ -8507,7 +8517,9 @@
   });
 
   function csvEscape(v) {
-    const s = String(v ?? '');
+    let s = String(v ?? '');
+    // Un texte qui commence par = + - @ serait lu comme une formule par Excel : on le neutralise (sauf les nombres)
+    if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s)) s = "'" + s;
     return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   }
 
