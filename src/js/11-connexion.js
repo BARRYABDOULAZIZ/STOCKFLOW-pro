@@ -99,14 +99,17 @@
     const commerceNom = document.getElementById('signup-commerce').value.trim();
     const nom = document.getElementById('signup-nom').value.trim();
     const tel = document.getElementById('signup-tel').value.trim();
+    const source = document.getElementById('signup-source').value;
     const email = document.getElementById('signup-email').value.trim();
     const password = document.getElementById('signup-password').value;
     if (!commerceNom || !nom || !tel || !email || !password) { showAuthError('Remplis tous les champs.'); return; }
     if (!signupTelOk(tel)) { showAuthError('Numéro de téléphone invalide : écris-le en chiffres (ex : 77 123 45 67 ou +221 77 123 45 67).'); return; }
+    if (!source) { showAuthError('Dis-nous comment tu as connu BoromBoutik.'); return; }
     if (password.length < 8) { showAuthError('Le mot de passe doit faire au moins 8 caractères.'); return; }
     state.signupInProgress = true;
+    // « Comment as-tu connu BoromBoutik ? » est gardé avec le compte (sf_source), pour savoir ce qui amène des clients.
     // Les infos du commerce sont gardées avec le compte : si l'e-mail doit d'abord être confirmé, le commerce est créé à la première connexion.
-    const { data, error } = await supabaseClient.auth.signUp({ email, password, options: { emailRedirectTo: location.origin, data: { sf_action: 'create', sf_commerce: commerceNom, sf_nom: nom, sf_tel: tel } } });
+    const { data, error } = await supabaseClient.auth.signUp({ email, password, options: { emailRedirectTo: location.origin, data: { sf_action: 'create', sf_commerce: commerceNom, sf_nom: nom, sf_tel: tel, sf_source: source } } });
     if (error) { state.signupInProgress = false; showAuthError(error.message); return; }
     if (!data.session) { state.signupInProgress = false; showConfirmEmailInfo(email); return; }
     const { error: rpcErr } = await supabaseClient.rpc('create_commerce_and_owner', { p_commerce_nom: commerceNom, p_user_nom: nom });
