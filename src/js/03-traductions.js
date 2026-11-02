@@ -22,6 +22,7 @@
     ["Tu crées le compte principal de ton commerce (Propriétaire).", "You are creating the main account of your shop (Owner).", "أنت تنشئ الحساب الرئيسي لمتجرك (المالك)."],
     ["Nom du commerce", "Shop name", "اسم المتجر"],
     ["Téléphone (WhatsApp)", "Phone (WhatsApp)", "الهاتف (واتساب)"],
+    ["Vérification anti-robot impossible. Vérifie ta connexion internet, puis réessaie.", "Anti-robot check failed. Check your internet connection, then try again.", "تعذّر التحقق من أنك لست روبوتاً. تحقّق من اتصالك بالإنترنت ثم أعد المحاولة."],
     ["Comment as-tu connu BoromBoutik ?", "How did you hear about BoromBoutik?", "كيف تعرّفت على BoromBoutik؟"],
     ["— Choisis —", "— Choose —", "— اختر —"],
     ["📘 Facebook / Instagram", "📘 Facebook / Instagram", "📘 فيسبوك / إنستغرام"],

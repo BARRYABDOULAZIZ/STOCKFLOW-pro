@@ -510,6 +510,29 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     await p.close2();
   });
 
+  await test('Anti-robots : le jeton Turnstile est envoyé à la connexion, à l\'inscription et au mot de passe oublié', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(async () => {
+      let n = 0; const resets = [];
+      let cb = null; window.turnstile = { render: (box, o) => { cb = o.callback; setTimeout(() => cb('tok-' + (++n)), 5); return 'w1'; }, reset: (w) => { resets.push(w); setTimeout(() => cb && cb('tok-' + (++n)), 5); } };
+      const calls = [];
+      supabaseClient = { auth: {
+        signInWithPassword: async (o) => { calls.push(['login', o.options && o.options.captchaToken]); return { error: { message: 'captcha protection: request disallowed (captcha verification process failed)' } }; },
+        resetPasswordForEmail: async (e, o) => { calls.push(['reset', o.captchaToken]); return { error: null }; },
+        signUp: async (o) => { calls.push(['signup', o.options.captchaToken]); return { data: { session: null }, error: null }; }, signOut: async () => {} } };
+      document.getElementById('login-email').value = 'a@b.c'; document.getElementById('login-password').value = 'motdepasse1';
+      document.getElementById('btnLogin').click(); await new Promise(r => setTimeout(r, 80));
+      const msg = document.getElementById('loginError').textContent;
+      document.getElementById('forgot-email').value = 'a@b.c'; document.getElementById('btnForgotSend').click(); await new Promise(r => setTimeout(r, 80));
+      return { calls, msg, resets: resets.length, box: !!document.getElementById('captchaBox') }; })()`);
+    expect(r.box, 'zone anti-robot présente');
+    expect(r.calls[0][0] === 'login' && /^tok-/.test(r.calls[0][1]), 'jeton envoyé à la connexion : ' + JSON.stringify(r.calls));
+    expect(/anti-robot/.test(r.msg), 'message clair si la vérification échoue : ' + r.msg);
+    expect(r.calls[1] && r.calls[1][0] === 'reset', 'mot de passe oublié appelé : ' + JSON.stringify(r.calls));
+    expect(r.resets >= 2, 'un nouveau jeton est redemandé après chaque essai');
+    await p.close2();
+  });
+
   await test('Bel qui agit : la carte « à confirmer » enregistre seulement après le clic', async () => {
     const p = await open(browser);
     const r = await p.app(`(async () => { document.getElementById('loginOverlay').style.display = 'none'; Object.assign(state, ${JSON.stringify(smartData())});

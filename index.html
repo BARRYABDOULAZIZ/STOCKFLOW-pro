@@ -439,6 +439,7 @@
         <p class="muted" style="font-size:11.5px; margin:8px 0 0; text-align:center;">En continuant, tu acceptes les <a href="#" data-legal="cgu">Conditions d'utilisation</a> et la <a href="#" data-legal="confidentialite">Politique de confidentialité</a>.</p>
       </div>
 
+      <div id="captchaBox" style="display:flex; justify-content:center; margin-top:10px;"></div>
       <div id="loginError" style="display:none; color:#dc2626; font-size:13px; margin:10px 0 2px;"></div>
       <a id="authHelpWa" href="https://wa.me/33605958673?text=Bonjour%2C%20j%27ai%20besoin%20d%27aide%20pour%20BoromBoutik" target="_blank" rel="noopener" style="display:flex; align-items:center; justify-content:center; gap:8px; margin-top:14px; padding:10px; border-radius:10px; background:#25d366; color:#fff; font-weight:600; font-size:14px; text-decoration:none;">💬 Besoin d'aide ? Écris-nous sur WhatsApp</a>
       <div style="text-align:center; margin-top:14px; font-size:12px;" class="muted"><a href="#" data-legal="cgu">Conditions d'utilisation</a> · <a href="#" data-legal="confidentialite">Confidentialité</a></div>
@@ -2001,6 +2002,7 @@
     ["Tu crées le compte principal de ton commerce (Propriétaire).", "You are creating the main account of your shop (Owner).", "أنت تنشئ الحساب الرئيسي لمتجرك (المالك)."],
     ["Nom du commerce", "Shop name", "اسم المتجر"],
     ["Téléphone (WhatsApp)", "Phone (WhatsApp)", "الهاتف (واتساب)"],
+    ["Vérification anti-robot impossible. Vérifie ta connexion internet, puis réessaie.", "Anti-robot check failed. Check your internet connection, then try again.", "تعذّر التحقق من أنك لست روبوتاً. تحقّق من اتصالك بالإنترنت ثم أعد المحاولة."],
     ["Comment as-tu connu BoromBoutik ?", "How did you hear about BoromBoutik?", "كيف تعرّفت على BoromBoutik؟"],
     ["— Choisis —", "— Choose —", "— اختر —"],
     ["📘 Facebook / Instagram", "📘 Facebook / Instagram", "📘 فيسبوك / إنستغرام"],
@@ -3741,6 +3743,55 @@
     document.addEventListener('mousedown', (e) => { if (e.target !== input && !box.contains(e.target)) box.style.display = 'none'; });
   })();
 
+  // ---- Anti-robots : Cloudflare Turnstile (presque invisible, sans e-mail de confirmation) ----
+  // La clé ci-dessous est la clé PUBLIQUE du site (elle peut être dans le code). La clé SECRÈTE reste dans Supabase.
+  // Le jeton est envoyé à Supabase à l'inscription, à la connexion et au « mot de passe oublié ».
+  // Tant que la protection CAPTCHA n'est pas activée dans Supabase, le jeton est simplement ignoré.
+  const TURNSTILE_SITEKEY = '0x4AAAAAAFwk6cGGGUpmBrsA';
+  let capLoad = null, capWid = null, capTok = null, capWait = [];
+  function capFlush(v) { capWait.splice(0).forEach(f => f(v)); }
+  function captchaLoad() {
+    if (capLoad) return capLoad;
+    capLoad = new Promise((resolve) => {
+      if (window.turnstile) return resolve(true);
+      const s = document.createElement('script');
+      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      s.async = true; s.defer = true;
+      s.onload = () => resolve(!!window.turnstile);
+      s.onerror = () => resolve(false);
+      document.head.appendChild(s);
+      setTimeout(() => resolve(!!window.turnstile), 10000);
+    });
+    return capLoad;
+  }
+  async function captchaPrepare() {
+    try {
+      if (capWid !== null || !(await captchaLoad()) || !window.turnstile) return;
+      const box = document.getElementById('captchaBox');
+      if (!box || capWid !== null) return;
+      capWid = window.turnstile.render(box, {
+        sitekey: TURNSTILE_SITEKEY,
+        appearance: 'interaction-only',
+        language: (document.documentElement.lang || 'fr').slice(0, 2),
+        callback: (t) => { capTok = t; capFlush(t); },
+        'expired-callback': () => { capTok = null; },
+        'error-callback': () => { capTok = null; capFlush(undefined); return true; },
+      });
+    } catch (e) { console.error(e); }
+  }
+  // Renvoie un jeton (ou rien si Turnstile est indisponible : hors ligne, domaine de test…)
+  async function captchaToken() {
+    if (!(await captchaLoad()) || !window.turnstile) return undefined;
+    await captchaPrepare();
+    if (capTok) return capTok;
+    return await new Promise((resolve) => { capWait.push(resolve); setTimeout(() => resolve(capTok || undefined), 12000); });
+  }
+  // Un jeton ne sert qu'une fois : on en redemande un nouveau après chaque essai
+  function captchaUsed() { capTok = null; try { if (capWid !== null && window.turnstile) window.turnstile.reset(capWid); } catch (e) {} }
+  function captchaMsg(error) { return error && /captcha/i.test(error.message || '') ? 'Vérification anti-robot impossible. Vérifie ta connexion internet, puis réessaie.' : null; }
+  // Prépare la vérification dès que l'écran de connexion est utilisé (pas pour les utilisateurs déjà connectés)
+  ['loginOverlay'].forEach(id => { const el = document.getElementById(id); if (el) ['focusin', 'pointerdown'].forEach(ev => el.addEventListener(ev, () => { captchaPrepare(); }, { once: true })); });
+
   // ---- Onglets Connexion / Créer / Rejoindre ----
   const authTabs = { login: 'authPaneLogin', signup: 'authPaneSignup', join: 'authPaneJoin' };
   function showAuthTab(name) {
@@ -3779,8 +3830,11 @@
     const btn = document.getElementById('btnForgotSend');
     btn.disabled = true;
     try {
-      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
+      const captchaTok = await captchaToken();
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname, captchaToken: captchaTok });
+      captchaUsed();
       if (error) {
+        if (captchaMsg(error)) { showAuthError(captchaMsg(error)); return; }
         if (error.status === 429 || /rate limit/i.test(error.message || '')) showAuthError('Trop de demandes. Réessaie dans quelques minutes.');
         else showAuthError("Impossible d'envoyer l'email pour le moment. Demande à ton propriétaire de réinitialiser ton mot de passe.");
         return;
@@ -3833,7 +3887,10 @@
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
     if (!email || !password) { showAuthError('Entre ton email et ton mot de passe.'); return; }
-    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    const captchaTok = await captchaToken();
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password, options: { captchaToken: captchaTok } });
+    captchaUsed();
+    if (error && captchaMsg(error)) { showAuthError(captchaMsg(error)); return; }
     if (error) { showAuthError(error.message === 'Invalid login credentials' ? 'Email ou mot de passe incorrect.' : error.message); return; }
   });
 
@@ -3852,8 +3909,10 @@
     state.signupInProgress = true;
     // « Comment as-tu connu BoromBoutik ? » est gardé avec le compte (sf_source), pour savoir ce qui amène des clients.
     // Les infos du commerce sont gardées avec le compte : si l'e-mail doit d'abord être confirmé, le commerce est créé à la première connexion.
-    const { data, error } = await supabaseClient.auth.signUp({ email, password, options: { emailRedirectTo: location.origin, data: { sf_action: 'create', sf_commerce: commerceNom, sf_nom: nom, sf_tel: tel, sf_source: source } } });
-    if (error) { state.signupInProgress = false; showAuthError(error.message); return; }
+    const captchaTok = await captchaToken();
+    const { data, error } = await supabaseClient.auth.signUp({ email, password, options: { emailRedirectTo: location.origin, captchaToken: captchaTok, data: { sf_action: 'create', sf_commerce: commerceNom, sf_nom: nom, sf_tel: tel, sf_source: source } } });
+    captchaUsed();
+    if (error) { state.signupInProgress = false; showAuthError(captchaMsg(error) || error.message); return; }
     if (!data.session) { state.signupInProgress = false; showConfirmEmailInfo(email); return; }
     const { error: rpcErr } = await supabaseClient.rpc('create_commerce_and_owner', { p_commerce_nom: commerceNom, p_user_nom: nom });
     if (rpcErr) { await abortSignup("Compte créé mais erreur lors de la création du commerce : " + rpcErr.message); return; }
@@ -3871,8 +3930,10 @@
     if (!code || !nom || !email || !password) { showAuthError('Remplis tous les champs.'); return; }
     if (password.length < 8) { showAuthError('Le mot de passe doit faire au moins 8 caractères.'); return; }
     state.signupInProgress = true;
-    const { data, error } = await supabaseClient.auth.signUp({ email, password, options: { emailRedirectTo: location.origin, data: { sf_action: 'join', sf_code: code, sf_nom: nom } } });
-    if (error) { state.signupInProgress = false; showAuthError(error.message); return; }
+    const captchaTok = await captchaToken();
+    const { data, error } = await supabaseClient.auth.signUp({ email, password, options: { emailRedirectTo: location.origin, captchaToken: captchaTok, data: { sf_action: 'join', sf_code: code, sf_nom: nom } } });
+    captchaUsed();
+    if (error) { state.signupInProgress = false; showAuthError(captchaMsg(error) || error.message); return; }
     if (!data.session) { state.signupInProgress = false; showConfirmEmailInfo(email); return; }
     const { error: rpcErr } = await supabaseClient.rpc('join_commerce', { p_invite_code: code, p_user_nom: nom, p_role: role });
     if (rpcErr) { await abortSignup(rpcErr.message.includes('invalide') ? 'Code invitation invalide.' : rpcErr.message); return; }
