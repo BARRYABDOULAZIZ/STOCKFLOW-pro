@@ -1,5 +1,5 @@
   // ================= Pulaar du Sénégal (ff) — relu et corrigé par Abdoul Aziz =================
-  // Langue en essai : proposée seulement aux comptes de test (aiAskOk) tant qu'elle n'est pas validée.
+  // Langue publiée pour tous les commerçants (relue et validée par Abdoul Aziz).
   // Source : traductions/pulaar.json. Une phrase absente reste en français.
   [
     ["🏠 Dashboard", "🏠 Tablo"],
