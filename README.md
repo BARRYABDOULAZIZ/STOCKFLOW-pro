@@ -38,6 +38,7 @@ tests/run.js                  tests automatiques
 supabase/functions/ask-ai/    fonction serveur de l'IA (Bel, photo, voix) — déployée à part sur Supabase
 supabase/abonnements.sql      tables et fonctions des abonnements (à lancer une fois dans Supabase → SQL Editor)
 supabase/numeros_factures.sql numéros de facture/devis/bons sans doublon, attribués par la base (à lancer une fois)
+supabase/couts_figes.sql      prix d'achat figé au moment de chaque vente, pour un bénéfice exact (à lancer une fois)
 sw.js, manifest.json          fonctionnement hors connexion et installation sur le téléphone
 ```
 

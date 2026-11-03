@@ -514,6 +514,27 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     await p.close2();
   });
 
+  await test('Bénéfice exact : le prix d\'achat du jour de la vente est gardé', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(() => { document.getElementById('loginOverlay').style.display = 'none';
+      state.currentUser = { nom: 'Test', role: 'proprietaire', commerceId: 'c-test' };
+      state.products = [{ id: 'p-riz', ref: 'RIZ25', nom: 'Riz', stock: 10, prixAchat: 16000, prixVente: 17500 }];
+      state.invoices = [
+        { id: 'f-old', num: 1, date: todayStr(), total: 35000, lignes: [{ nom: 'Riz', ref: 'RIZ25', productId: 'p-riz', qte: 2, prix: 17500 }] },
+        { id: 'f-new', num: 2, date: todayStr(), total: 17500, lignes: [{ nom: 'Riz', ref: 'RIZ25', productId: 'p-riz', qte: 1, prix: 17500 }] } ];
+      fcMap = { 'f-new': [15000] };   // la facture 2 a été faite quand le riz coûtait 15 000
+      fcAt = Date.now();
+      const ligne = (inv, i) => coutLigne(inv, i, inv.lignes[i]);
+      const avant = [ligne(state.invoices[0], 0), ligne(state.invoices[1], 0)];
+      state.products[0].prixAchat = 20000;   // le prix d'achat augmente ensuite
+      const apres = [ligne(state.invoices[0], 0), ligne(state.invoices[1], 0)];
+      return { avant, apres }; })()`);
+    eq(r.avant, [16000, 15000], 'facture sans coût figé = prix actuel ; facture avec coût figé = prix du jour de la vente');
+    eq(r.apres, [20000, 15000], 'après une hausse du prix d\'achat, la vente figée ne bouge pas');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
   await test('Anti-erreur à la caisse : vente à perte, prix à 0, zéro en trop', async () => {
     const p = await open(browser);
     const r = await p.app(`(async () => { document.getElementById('loginOverlay').style.display = 'none'; document.querySelector('[data-tab="ventes"]').click();

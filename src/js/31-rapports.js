@@ -31,11 +31,12 @@
 
     let benefice = 0;
     const parProduit = {}; // nom -> { qte, ca }
-    factures.forEach(inv => (inv.lignes || []).forEach(l => {
+    if (typeof ensureFactureCouts === 'function') ensureFactureCouts();
+    factures.forEach(inv => (inv.lignes || []).forEach((l, idx) => {
       const qte = Number(l.qte) || 0;
       const ligneCa = (Number(l.prix) || 0) * qte;
-      const prod = l.productId ? state.products.find(p => p.id === l.productId) : null;
-      if (prod) benefice += ((Number(l.prix) || 0) - (Number(prod.prixAchat) || 0)) * qte;
+      const pa = l.productId ? coutLigne(inv, idx, l) : null;   // prix d'achat du jour de la vente si connu
+      if (pa != null) benefice += ((Number(l.prix) || 0) - pa) * qte;
       const key = l.nom || '—';
       if (!parProduit[key]) parProduit[key] = { qte: 0, ca: 0 };
       parProduit[key].qte += qte;

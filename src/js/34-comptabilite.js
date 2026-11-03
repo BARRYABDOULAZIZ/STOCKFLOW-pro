@@ -1,3 +1,32 @@
+  // ---- Prix d'achat figé au moment de la vente (table facture_couts, remplie par la base ; lisible par le patron seulement) ----
+  let fcMap = {}, fcAt = 0, fcBusy = false;
+  function ensureFactureCouts() {
+    const u = state.currentUser;
+    if (!u || !(u.role === 'proprietaire' || u.role === 'admin') || !u.commerceId) return;
+    if (fcBusy || Date.now() - fcAt < 60000 || typeof supabaseClient === 'undefined' || !supabaseClient || (typeof navigator !== 'undefined' && navigator.onLine === false)) return;
+    fcBusy = true;
+    (async () => {
+      const m = {}, PAGE = 1000;
+      for (let from = 0; ; from += PAGE) {
+        const r = await supabaseClient.from('facture_couts').select('facture_id, couts').eq('commerce_id', String(u.commerceId)).order('facture_id', { ascending: true }).range(from, from + PAGE - 1);
+        if (r.error) return null;   // table pas encore créée ou pas de réseau : on garde le calcul avec le prix actuel
+        r.data.forEach(x => { m[x.facture_id] = x.couts; });
+        if (r.data.length < PAGE) break;
+      }
+      return m;
+    })().then(m => {
+      fcAt = Date.now();
+      if (m && JSON.stringify(m) !== JSON.stringify(fcMap)) { fcMap = m; try { renderComptabilite(); renderRapports(); } catch (e) { console.error(e); } }
+    }).catch(() => { fcAt = Date.now(); }).finally(() => { fcBusy = false; });
+  }
+  // Prix d'achat unitaire d'une ligne : celui du jour de la vente si on le connaît, sinon le prix d'achat actuel du produit (null = inconnu)
+  function coutLigne(inv, idx, l) {
+    const c = fcMap[inv.id];
+    if (Array.isArray(c) && c[idx] != null && Number(c[idx]) > 0) return Number(c[idx]);
+    const prod = l.productId ? state.products.find(p => p.id === l.productId) : (l.ref ? state.products.find(p => p.ref === l.ref) : null);
+    return prod ? (Number(prod.prixAchat) || 0) : null;
+  }
+
   // ================= Comptabilité =================
   function applyCpPreset(preset) {
     const today = new Date();
@@ -28,10 +57,12 @@
     const factures = state.invoices.filter(i => !i.annulee && i.date >= du && i.date <= au);
     const ca = factures.reduce((s, i) => s + htOf(i), 0);
 
+    ensureFactureCouts();
     let cogs = 0;
-    factures.forEach(inv => (inv.lignes || []).forEach(l => {
-      const prod = l.productId ? state.products.find(p => p.id === l.productId) : null;
-      if (prod) cogs += (Number(prod.prixAchat) || 0) * (Number(l.qte) || 0);
+    factures.forEach(inv => (inv.lignes || []).forEach((l, idx) => {
+      if (!l.productId) return;
+      const pa = coutLigne(inv, idx, l);
+      if (pa != null) cogs += pa * (Number(l.qte) || 0);
     }));
 
     const depenses = depensesPeriode();

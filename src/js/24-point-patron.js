@@ -5,11 +5,11 @@
     const day = bossDate(offset), all = state.invoices || [];
     const inv = all.filter(i => !i.annulee && i.date === day);
     const ventes = inv.reduce((s, i) => s + (Number(i.total) || 0), 0);
-    const byProdId = {}; (state.products || []).forEach(p => { byProdId[p.ref] = p; });
     let benef = 0, sansCout = 0; const qte = {};
-    inv.forEach(i => (i.lignes || []).forEach(l => {
-      const p = l.ref && byProdId[l.ref], q = Number(l.qte) || 0, pv = Number(l.prix) || 0;
-      if (p && Number(p.prixAchat) > 0) benef += (pv - Number(p.prixAchat)) * q; else sansCout++;
+    inv.forEach(i => (i.lignes || []).forEach((l, idx) => {
+      const q = Number(l.qte) || 0, pv = Number(l.prix) || 0;
+      const pa = (l.productId || l.ref) ? coutLigne(i, idx, l) : null;   // prix d'achat du jour de la vente si connu
+      if (pa > 0) benef += (pv - pa) * q; else sansCout++;
       qte[l.nom] = (qte[l.nom] || 0) + q;
     }));
     const remises = inv.reduce((s, i) => s + (Number(i.remise) || 0), 0);
@@ -31,7 +31,7 @@
     inv.forEach(i => { const st = Number(i.sousTotal) || Number(i.total) || 0, r = Number(i.remise) || 0; if (r > 0 && st > 0 && r / st >= 0.15) alertes.push(`Grosse remise de ${Math.round(r / st * 100)} % sur FAC-${String(i.num).padStart(4, '0')} (${euros(r)})${i.operateur ? ' par ' + String(i.operateur).replace(/\s*\(.*\)$/, '') : ''}`); });
     inv.forEach(i => { if (!i.createdAt) return; const h = new Date(i.createdAt).getHours(); if (h >= 22 || h < 6) alertes.push(`Vente à ${String(h).padStart(2, '0')} h ${String(new Date(i.createdAt).getMinutes()).padStart(2, '0')} : FAC-${String(i.num).padStart(4, '0')} (${euros(i.total)})`); });
     // Ventes en dessous du prix d'achat (erreur ou « arrangement » avec un client)
-    const aPerte = []; inv.forEach(i => (i.lignes || []).forEach(l => { const p = l.ref && byProdId[l.ref], pv = Number(l.prix) || 0; if (p && Number(p.prixAchat) > 0 && pv < Number(p.prixAchat)) aPerte.push(`${l.nom} à ${euros(pv)} (achat ${euros(p.prixAchat)}, FAC-${String(i.num).padStart(4, '0')}${i.operateur ? ', ' + String(i.operateur).replace(/\s*\(.*\)$/, '') : ''})`); }));
+    const aPerte = []; inv.forEach(i => (i.lignes || []).forEach((l, idx) => { const pa = (l.productId || l.ref) ? coutLigne(i, idx, l) : null, pv = Number(l.prix) || 0; if (pa > 0 && pv < pa) aPerte.push(`${l.nom} à ${euros(pv)} (achat ${euros(pa)}, FAC-${String(i.num).padStart(4, '0')}${i.operateur ? ', ' + String(i.operateur).replace(/\s*\(.*\)$/, '') : ''})`); }));
     if (aPerte.length) alertes.push(`${aPerte.length} vente(s) à perte : ${aPerte.slice(0, 3).join(' ; ')}`);
     const pertes = (state.movements || []).filter(m => m.date === day && m.source === 'perte');
     if (pertes.length) alertes.push(`${pertes.length} perte(s) déclarée(s) : ${pertes.slice(0, 3).map(m => Math.abs(Number(m.quantite) || 0) + ' ' + (m.unite || '') + ' ' + m.nom + (m.raison ? ' (' + m.raison + ')' : '')).join(', ')}`);
