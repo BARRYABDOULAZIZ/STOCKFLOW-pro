@@ -186,6 +186,9 @@
 
     const inv = state.invoices.find(i => i.id === factureId);
     if (!inv) { toast('Facture introuvable.'); return; }
+    const resteDu = Math.max(0, (Number(inv.total) || 0) - (Number(inv.montantPaye) || 0));
+    if (resteDu <= 0) { toast('Cette facture est déjà entièrement payée.'); return; }
+    if (montant > resteDu) { toast(`Le paiement (${euros(montant)}) dépasse le reste dû sur cette facture (${euros(resteDu)}). Indique au maximum ${euros(resteDu)}.`); return; }
     const nouveauPaye = (Number(inv.montantPaye) || 0) + montant;
 
     try {

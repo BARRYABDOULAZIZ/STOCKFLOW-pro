@@ -310,7 +310,9 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
       document.querySelector('[data-tab="produits"]').click();
       document.getElementById('photoFillCard').style.display = '';
       const writes = [];
-      state.db = { doc: (path) => ({ set: async (v) => writes.push(['set', path, v]), update: async (v) => writes.push(['update', path, v]) }) };
+      const deltas = [];
+      state.db = { doc: (path) => ({ set: async (v) => writes.push(['set', path, v]), update: async (v) => writes.push(['update', path, v]) }), queueStock: async (id, d) => { deltas.push([id, d]); const pr = state.products.find(x => x.id === id); return (Number(pr && pr.stock) || 0) + d; } };
+      window.__deltas = deltas;
       state.products = [{ id: 'p-riz', ref: 'RIZ25', nom: 'Riz parfumé sac 25 kg', stock: 4, unite: 'sac', prixVente: 17500, prixAchat: 16000 }];
       window.logAction = () => {};
       supabaseClient = { functions: { invoke: async () => ({ data: { resultat: { fournisseur: 'Grossiste', total: 101000, lignes: [
@@ -322,10 +324,10 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
       document.getElementById('pfSave').click();
       await new Promise(r => setTimeout(r, 300));
       const prods = writes.filter(w => w[1].startsWith('produits'));
-      return { rows, riz: (prods.find(w => (w[2].nom || '').startsWith('Riz') || w[1].includes('p-riz')) || [])[2], nNew: prods.filter(w => w[0] === 'set').length };
+      return { rows, rizDelta: deltas.filter(d => d[0] === 'p-riz'), nNew: prods.filter(w => w[0] === 'set').length };
     })()`);
     eq(r.rows, [['Riz parfumé sac 25 kg', 5, 'p-riz'], ['Huile Dinor 1 L', 10, null]], 'lignes lues');
-    expect(r.riz && Number(r.riz.stock) === 9, 'stock du riz après la facture (4 + 5) : ' + JSON.stringify(r.riz));
+    eq(r.rizDelta, [['p-riz', 5]], 'stock du riz : +5 ajouté de façon atomique (4 + 5 = 9)');
     expect(r.nNew >= 1, 'le nouveau produit (huile) n\'a pas été créé');
     eq(p.errors, [], 'erreurs');
     await p.close2();
@@ -405,6 +407,109 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     eq([r.shown, r.rows], ['', 2], 'carte affichée');
     const hidden = await p.app(`(() => { smartOk = false; smartOrderRender(); return document.getElementById('smartOrderCard').style.display; })()`);
     eq(hidden, 'none', 'carte cachée quand la fonction est fermée');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
+  await test('Calculs : remise, TVA ajoutée, TVA incluse, arrondis', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(() => { document.getElementById('loginOverlay').style.display = 'none';
+      document.querySelector('[data-tab="ventes"]').click();
+      const L = [{ nom: 'Riz', prix: 17500, qte: 2 }, { nom: 'Bonbons', prix: 50, qte: 3 }];
+      const set = (rem, unit, mode, taux) => { document.getElementById('f-remise').value = rem; document.getElementById('f-remise-unit').value = unit; document.getElementById('f-tva-mode').value = mode; document.getElementById('f-tva-taux').value = taux; };
+      const out = {};
+      set(0, 'fcfa', 'none', 0); out.simple = computeTotals(L);
+      set(10, 'pct', 'add', 18); out.add = computeTotals(L);
+      set(10, 'pct', 'incl', 18); out.incl = computeTotals(L);
+      set(999999, 'fcfa', 'none', 0); out.trop = computeTotals(L);
+      set(150, 'pct', 'none', 0); out.pct = computeTotals(L);
+      set(0, 'fcfa', 'none', 0); out.virgule = computeTotals([{ nom: 'Sucre', prix: 333, qte: 1.5 }, { nom: 'Sel', prix: 333, qte: 0.5 }]);
+      set(0, 'fcfa', 'add', 0); out.taux0 = computeTotals(L);
+      return out; })()`);
+    eq([r.simple.sub, r.simple.remise, r.simple.tva, r.simple.total], [35150, 0, 0, 35150], 'sans remise ni TVA');
+    eq([r.add.remise, r.add.net, r.add.tva, r.add.total], [3515, 31635, 5694, 37329], 'remise 10 % puis TVA 18 % ajoutée');
+    eq([r.incl.net, r.incl.tva, r.incl.total], [31635, 4826, 31635], 'TVA 18 % incluse : le total ne bouge pas');
+    eq([r.trop.remise, r.trop.total], [35150, 0], 'une remise ne dépasse jamais le montant');
+    eq([r.pct.remise, r.pct.total], [35150, 0], 'une remise en % est limitée à 100 %');
+    eq(r.virgule.sub, 500 + 167, 'quantités à virgule : le total = somme des lignes affichées');
+    eq([r.taux0.mode, r.taux0.tva], ['none', 0], 'taux 0 = pas de TVA');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
+  await test('Stock sûr : réappro, modification de fiche, casse et réception passent par l’ajustement atomique', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(async () => { document.getElementById('loginOverlay').style.display = 'none';
+      document.querySelector('[data-tab="produits"]').click();
+      const writes = [], deltas = [];
+      window.__w = writes; window.__d = deltas;
+      state.db = { doc: (path) => ({ set: async (v) => writes.push(['set', path, v]), update: async (v) => writes.push(['update', path, v]), delete: async () => {} }),
+        collection: (c) => ({ doc: (id) => ({ set: async (v) => writes.push(['set', c + '/' + id, v]) }) }),
+        queueStock: async (id, d) => { const pr = state.products.find(x => x.id === id); const cur = Number(pr && pr.stock) || 0; if (d < 0 && cur + d < 0) throw new Error('Stock insuffisant'); deltas.push([id, d]); if (pr) pr.stock = cur + d; return cur + d; } };
+      window.logAction = () => {};
+      state.products = [{ id: 'p-riz', ref: 'RIZ25', nom: 'Riz 25 kg', stock: 10, unite: 'sac', prixAchat: 16000, prixVente: 17500, seuil: 2 }];
+      const wait = () => new Promise(r => setTimeout(r, 150));
+      const val = (id, v) => { document.getElementById(id).value = v; };
+      const res = {};
+      // 1) Réappro : même référence + 5
+      resetProductForm(); val('p-ref', 'RIZ25'); val('p-nom', 'Riz 25 kg'); val('p-stock', '5');
+      document.getElementById('btnAddProduct').click(); await wait();
+      res.reappro = deltas.slice(); res.reapproStockEcrit = writes.some(w => w[2] && 'stock' in w[2]);
+      // 2) Modification de la fiche : une vente de 3 a lieu pendant que le formulaire est ouvert ; on change seulement le prix
+      deltas.length = 0; writes.length = 0;
+      startEditProduct('p-riz'); state.products[0].stock -= 3; val('p-prixvente', '18000');
+      document.getElementById('btnAddProduct').click(); await wait();
+      res.editPrix = { deltas: deltas.slice(), stockEcrit: writes.some(w => w[2] && 'stock' in w[2]), stock: state.products[0].stock };
+      // 3) Modification de la fiche : stock corrigé de +2
+      deltas.length = 0;
+      startEditProduct('p-riz'); val('p-stock', String(Number(state.products[0].stock) + 2));
+      document.getElementById('btnAddProduct').click(); await wait();
+      res.editStock = deltas.slice();
+      // 4) Casse : 3 puis 999 (limité au stock restant)
+      deltas.length = 0;
+      const sel = document.getElementById('ps-produit'); if (!sel.querySelector('option[value="p-riz"]')) sel.insertAdjacentHTML('beforeend', '<option value="p-riz">Riz</option>');
+      sel.value = 'p-riz'; val('ps-qte', '3'); document.getElementById('btnAddPerte').click(); await wait();
+      val('ps-qte', '999'); document.getElementById('btnAddPerte').click(); await wait();
+      res.casse = deltas.slice(); res.apresCasse = state.products[0].stock;
+      // 5) Réception par scan : + 4
+      deltas.length = 0;
+      pendingScanBarcode = { productId: 'p-riz', source: 'scan-usb' }; val('sr-qte', '4');
+      document.getElementById('btnConfirmReception').click(); await wait();
+      res.scan = deltas.slice();
+      return res; })()`);
+    eq(r.reappro, [['p-riz', 5]], 'réappro : +5 ajouté par la base');
+    eq(r.reapproStockEcrit, false, 'réappro : le stock n\'est plus écrasé');
+    eq(r.editPrix.deltas, [], 'changement de prix : le stock n\'est pas touché');
+    eq(r.editPrix.stockEcrit, false, 'changement de prix : la vente faite pendant ce temps n\'est pas effacée');
+    eq(r.editStock, [['p-riz', 2]], 'correction de stock dans la fiche : seulement la différence');
+    eq(r.casse, [['p-riz', -3], ['p-riz', -11]], 'casse : retrait atomique, jamais sous zéro');
+    eq(r.apresCasse, 0, 'stock après la casse');
+    eq(r.scan, [['p-riz', 4]], 'réception par scan : +4 ajouté par la base');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
+  await test('Paiement client : impossible de payer plus que le reste dû', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(async () => { document.getElementById('loginOverlay').style.display = 'none';
+      const writes = [], deltas = [];
+      window.__w = writes; window.__d = deltas;
+      state.db = { doc: (path) => ({ set: async (v) => writes.push(['set', path, v]), update: async (v) => writes.push(['update', path, v]), delete: async () => {} }),
+        collection: (c) => ({ doc: (id) => ({ set: async (v) => writes.push(['set', c + '/' + id, v]) }) }),
+        queueStock: async (id, d) => { const pr = state.products.find(x => x.id === id); const cur = Number(pr && pr.stock) || 0; if (d < 0 && cur + d < 0) throw new Error('Stock insuffisant'); deltas.push([id, d]); if (pr) pr.stock = cur + d; return cur + d; } };
+      window.logAction = () => {};
+      state.clients = [{ id: 'c1', nom: 'Awa' }];
+      state.invoices = [{ id: 'f1', num: 1, clientId: 'c1', total: 10000, montantPaye: 4000, date: todayStr(), lignes: [] }];
+      selectedClientId = 'c1';
+      const s = document.getElementById('cld-facture-select'); s.innerHTML = '<option value="f1">FAC-0001</option>'; s.value = 'f1';
+      document.getElementById('cld-montant').value = '7000'; document.getElementById('btnAddPaiement').click();
+      await new Promise(r => setTimeout(r, 150));
+      const refuse = writes.length;
+      document.getElementById('cld-montant').value = '6000'; document.getElementById('btnAddPaiement').click();
+      await new Promise(r => setTimeout(r, 150));
+      return { refuse, apres: writes.map(w => [w[1].split('/')[0], w[2].montant || w[2].montantPaye]) }; })()`);
+    eq(r.refuse, 0, '7 000 alors qu\'il reste 6 000 : refusé');
+    eq(r.apres, [['paiements', 6000], ['factures', 10000]], '6 000 : accepté, facture soldée');
     eq(p.errors, [], 'erreurs');
     await p.close2();
   });

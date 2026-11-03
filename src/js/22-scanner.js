@@ -276,10 +276,9 @@
     if (qte <= 0) { toast('La quantité doit être positive.'); return; }
     if (!state.db) { toast('Connexion non disponible.'); return; }
 
-    const ancienStock = Number(prod.stock);
-    const nouveauStock = ancienStock + qte;
     try {
-      await state.db.doc('produits/' + prod.id).update({ stock: nouveauStock });
+      const nouveauStock = await adjustStock(prod.id, qte);   // ajout atomique côté base
+      const ancienStock = nouveauStock - qte;
       await logMovement({ productId: prod.id, ref: prod.ref, nom: prod.nom, quantite: qte, ancienStock, nouveauStock, unite: prod.unite || 'unité', source: pendingScanBarcode.source });
       toast(`${prod.nom} — stock ${ancienStock} → ${nouveauStock} ${prod.unite || 'unité'}.`);
       document.getElementById('scanResultCard').style.display = 'none';

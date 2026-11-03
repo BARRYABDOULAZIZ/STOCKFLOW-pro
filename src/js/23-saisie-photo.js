@@ -110,13 +110,16 @@
         const q = Number(r.quantite) || 0;
         const ex = r.matchId && state.products.find(p => p.id === r.matchId);
         if (ex) {
-          const ancien = Number(ex.stock) || 0, nouveau = isF ? ancien + q : q;
-          const up = { stock: nouveau };
+          const vu = Number(ex.stock) || 0, delta = isF ? q : q - vu;   // facture : on ajoute ; étagère : on corrige vers le compté
+          const up = {};
           if (isF && r.prixAchat) up.prixAchat = Number(r.prixAchat);
           if (r.prixVente && Number(r.prixVente) !== Number(ex.prixVente)) up.prixVente = Number(r.prixVente);
           if (fournisseur && !ex.fournisseur) up.fournisseur = fournisseur;
-          await state.db.doc('produits/' + ex.id).update(up);
-          if (nouveau !== ancien) logMovement({ productId: ex.id, ref: ex.ref, nom: ex.nom, quantite: nouveau - ancien, ancienStock: ancien, nouveauStock: nouveau, unite: ex.unite || r.unite, source: isF ? 'photo facture' : 'photo étagère' }).catch(() => {});
+          if (Object.keys(up).length) await state.db.doc('produits/' + ex.id).update(up);
+          let nouveau = vu;
+          if (delta !== 0) nouveau = await adjustStock(ex.id, delta);   // atomique côté base
+          const ancien = nouveau - delta;
+          if (delta !== 0) logMovement({ productId: ex.id, ref: ex.ref, nom: ex.nom, quantite: nouveau - ancien, ancienStock: ancien, nouveauStock: nouveau, unite: ex.unite || r.unite, source: isF ? 'photo facture' : 'photo étagère' }).catch(() => {});
           maj++;
         } else {
           let base = 'PH-' + pfNorm(r.nom).toUpperCase().replace(/ /g, '-').slice(0, 18), ref = base, n = 2;

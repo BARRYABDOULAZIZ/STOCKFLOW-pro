@@ -1,4 +1,5 @@
   // ================= Produits: add / restock / edit =================
+  let editingStock = 0; // stock affiché à l'ouverture du formulaire de modification
   let editingId = null; // null = mode ajout/réappro ; sinon = id du produit en cours de modification
 
   // Référence déjà connue : on remplit le formulaire avec la fiche du produit (réapprovisionnement),
@@ -43,6 +44,7 @@
     const p = state.products.find(x => x.id === id);
     if (!p) return;
     editingId = id;
+    editingStock = Number(p.stock) || 0;
     document.getElementById('p-ref').value = p.ref || '';
     document.getElementById('p-nom').value = p.nom || '';
     document.getElementById('p-barcode').value = p.codeBarre || '';
@@ -102,7 +104,17 @@
     try {
       if (editingId) {
         // Mode édition : remplace tous les champs, y compris le stock en valeur exacte.
-        await state.db.doc('produits/' + editingId).update({ ref, nom, codeBarre, fournisseur, categorie, emplacement, stock: stockInput, unite, prixAchat, prixVente, seuil });
+        // Le stock n'est jamais écrasé : on applique seulement la différence avec ce qui était affiché,
+        // pour ne pas effacer une vente faite pendant que le formulaire était ouvert.
+        await state.db.doc('produits/' + editingId).update({ ref, nom, codeBarre, fournisseur, categorie, emplacement, unite, prixAchat, prixVente, seuil });
+        const dStock = stockInput - editingStock;
+        if (dStock !== 0) {
+          const ed = state.products.find(x => x.id === editingId) || {};
+          try {
+            const nv = await adjustStock(editingId, dStock);
+            logMovement({ productId: editingId, ref, nom, quantite: Math.abs(dStock), ancienStock: nv - dStock, nouveauStock: nv, unite: unite || ed.unite || 'unité', source: 'manuel', note: 'Modification de la fiche produit' }).catch(() => {});
+          } catch (e) { console.error(e); toast(`"${nom}" mis à jour, mais le stock n'a pas pu être corrigé (stock insuffisant ?).`); resetProductForm(); return; }
+        }
         toast(`"${nom}" mis à jour.`);
         resetProductForm();
         return;
@@ -110,8 +122,7 @@
 
       const existing = state.products.find(p => p.ref === ref);
       if (existing) {
-        const newStock = Number(existing.stock) + stockInput;
-        const updates = { stock: newStock };
+        const updates = {};
         if (unite && unite !== existing.unite) updates.unite = unite;
         if (document.getElementById('p-prixachat').value !== '' && prixAchat !== existing.prixAchat) updates.prixAchat = prixAchat;
         if (document.getElementById('p-prixvente').value !== '' && prixVente !== existing.prixVente) updates.prixVente = prixVente;
@@ -120,11 +131,14 @@
         if (fournisseur && fournisseur !== existing.fournisseur) updates.fournisseur = fournisseur;
         if (categorie && categorie !== existing.categorie) updates.categorie = categorie;
         if (emplacement && emplacement !== existing.emplacement) updates.emplacement = emplacement;
-        await state.db.doc('produits/' + existing.id).update(updates);
-        if (stockInput > 0) {
-          logMovement({ productId: existing.id, ref: existing.ref, nom: existing.nom, quantite: stockInput, ancienStock: Number(existing.stock), nouveauStock: newStock, unite: updates.unite || existing.unite || 'unité', source: 'manuel' }).catch(() => {});
+        if (Object.keys(updates).length) await state.db.doc('produits/' + existing.id).update(updates);
+        // Réappro : ajout atomique côté base (une vente en même temps n'est jamais effacée)
+        let newStock = Number(existing.stock) || 0;
+        if (stockInput !== 0) {
+          newStock = await adjustStock(existing.id, stockInput);
+          logMovement({ productId: existing.id, ref: existing.ref, nom: existing.nom, quantite: stockInput, ancienStock: newStock - stockInput, nouveauStock: newStock, unite: updates.unite || existing.unite || 'unité', source: 'manuel' }).catch(() => {});
         }
-        toast(`Stock mis à jour : ${existing.nom} — ${existing.stock} + ${stockInput} = ${newStock} ${updates.unite || existing.unite || 'unité'}.`);
+        toast(`Stock mis à jour : ${existing.nom} — ${newStock - stockInput} + ${stockInput} = ${newStock} ${updates.unite || existing.unite || 'unité'}.`);
       } else {
         if (state.products.length >= 3000) toast("Catalogue proche de 3000 références — pense à archiver les articles inactifs.");
         const id = 'p-' + ref.toLowerCase().replace(/[^a-z0-9_.-]/g, '-').slice(0, 60) + '-' + Date.now().toString(36);

@@ -124,7 +124,7 @@
   // ---- Remise + TVA ----
   const htOf = (i) => (Number(i.total) || 0) - (Number(i.tvaMontant) || 0);   // montant hors TVA d'une facture
   function computeTotals(lines) {
-    const sub = Math.round((lines || []).reduce((s, l) => s + (Number(l.prix) || 0) * (Number(l.qte) || 0), 0));
+    const sub = (lines || []).reduce((s, l) => s + Math.round((Number(l.prix) || 0) * (Number(l.qte) || 0)), 0);   // chaque ligne arrondie comme à l'écran : les lignes tombent juste avec le total
     const noFiscal = currentDocType() === 'bon_livraison';
     const rv = Math.max(0, Number(document.getElementById('f-remise').value) || 0);
     const pct = document.getElementById('f-remise-unit').value === 'pct';

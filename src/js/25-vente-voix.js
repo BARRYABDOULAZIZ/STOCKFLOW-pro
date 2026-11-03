@@ -71,11 +71,11 @@
     if (qte <= 0) { toast('La quantité doit être supérieure à 0.'); return; }
     if (!state.db) { toast('Connexion non disponible.'); return; }
 
-    const ancienStock = Number(prod.stock) || 0;
-    const nouveauStock = Math.max(0, ancienStock - qte);
+    const retrait = Math.min(qte, Number(prod.stock) || 0);   // on ne descend jamais sous 0
 
     try {
-      await state.db.doc('produits/' + productId).update({ stock: nouveauStock });
+      const nouveauStock = retrait > 0 ? await adjustStock(productId, -retrait) : (Number(prod.stock) || 0);   // retrait atomique côté base
+      const ancienStock = nouveauStock + retrait;
       await logMovement({ productId, ref: prod.ref, nom: prod.nom, quantite: qte, ancienStock, nouveauStock, unite: prod.unite, source: 'perte', raison, note });
       document.getElementById('ps-qte').value = '1';
       document.getElementById('ps-note').value = '';
