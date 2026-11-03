@@ -22,7 +22,7 @@
         tr.style.opacity = annulee ? '0.5' : '1';
         tr.innerHTML = `
           <td>FAC-${String(inv.num).padStart(4, '0')}${annulee ? ' <span class="badge">Annulée</span>' : ''}</td>
-          <td class="muted">${escapeHtml(inv.date)}</td>
+          <td class="muted">${escapeHtml(inv.date)}${heureDoc(inv) ? ' <span style="white-space:nowrap;">' + escapeHtml(heureDoc(inv)) + '</span>' : ''}</td>
           <td>${escapeHtml(inv.client || '—')}</td>
           <td class="muted">${escapeHtml(inv.operateur || '—')}</td>
           <td class="num-cell">${nbArticles}</td>

@@ -92,6 +92,12 @@
   const invNum = (n, lang) => bidiIso(Math.round(Number(n) || 0).toLocaleString('fr-FR').replace(/[  ]/g, ' '), lang);
   const invMoney = (n, lang) => bidiIso(Math.round(Number(n) || 0).toLocaleString('fr-FR').replace(/[  ]/g, ' ') + ' ' + curSym(), lang);
   const frDate = (d) => String(d || '').split('-').reverse().join('/');
+  // Heure de création d'un document (« 14:05 »), ou '' si on ne la connaît pas
+  const heureDoc = (doc) => {
+    if (!doc || doc.createdAt == null || doc.createdAt === '') return '';
+    const v = doc.createdAt, d = new Date(/^\d+$/.test(String(v)) ? Number(v) : v);
+    return isNaN(d.getTime()) ? '' : d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  };
 
   // Ticket en texte (WhatsApp)
   function ticketText(inv) {
@@ -220,7 +226,7 @@
     document.getElementById('pi-client-sign').style.display = kind === 'facture' ? 'none' : '';
     const numPrefix = kind === 'devis' ? 'DEV' : (kind === 'bon_commande' ? 'BC' : (isBL ? 'BL' : 'FAC'));
     document.getElementById('pi-num').textContent = X.num + ' ' + iso(numPrefix + '-' + String(inv.num).padStart(4, '0'));
-    document.getElementById('pi-date').textContent = inv.date ? X.date + sp + iso(frDate(inv.date)) : '';
+    document.getElementById('pi-date').textContent = inv.date ? X.date + sp + iso(frDate(inv.date) + (heureDoc(inv) ? ' ' + heureDoc(inv) : '')) : '';
     document.getElementById('pi-commerce-nom').textContent = (state.commerce && state.commerce.nom) || 'BoromBoutik';
     document.getElementById('pi-commerce-adresse').textContent = state.commerce ? [state.commerce.adresse, state.commerce.telephone && iso(state.commerce.telephone), state.commerce.numeroFiscal && (X.fiscal + sp + iso(state.commerce.numeroFiscal))].filter(Boolean).join(' · ') : '';
     document.getElementById('pi-client').textContent = inv.client || '—';
