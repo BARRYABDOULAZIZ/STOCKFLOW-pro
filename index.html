@@ -1445,6 +1445,18 @@
       </div>
       <button class="primary" id="btnAddPaiement">Enregistrer le paiement</button>
 
+      <details class="card" id="cldDetteBox" style="margin-top:18px; padding:12px 14px;">
+        <summary style="cursor:pointer; font-weight:700;">➕ Ajouter une ancienne dette (cahier de crédit)</summary>
+        <p class="muted" style="margin:8px 0 10px;">Pour ce que ce client devait <b>avant</b> BoromBoutik. La dette est suivie et remboursable comme un crédit, mais elle ne compte <b>pas</b> comme une vente dans les chiffres.</p>
+        <div class="field-grid">
+          <div><label>Montant dû (<span class="cur-sym">FCFA</span>)</label><input id="cld-dette-montant" type="number" min="0" step="1" inputmode="numeric" placeholder="ex : 25000"></div>
+          <div><label>Depuis le (date approximative)</label><input id="cld-dette-date" type="date"></div>
+          <div><label>Payer avant le (facultatif)</label><input id="cld-dette-echeance" type="date"></div>
+          <div><label>Note (facultatif)</label><input id="cld-dette-note" type="text" maxlength="80" placeholder="ex : riz et huile, cahier 2025"></div>
+        </div>
+        <button class="primary" id="btnAddDette" type="button">➕ Ajouter la dette</button>
+      </details>
+
       <div class="row-head" style="margin-top:22px;"><h2>Factures de ce client</h2></div>
       <div class="table-wrap short">
         <table>
@@ -1905,6 +1917,8 @@
 (function () {
   "use strict";
 
+  // Ancienne dette (cahier de crédit d'avant BoromBoutik) : suivie comme une facture à crédit, mais ce n'est PAS une vente
+  const isDette = (i) => !!(i && Array.isArray(i.lignes) && i.lignes.length > 0 && i.lignes.every(l => l && l.dette));
   const state = { db: null, downloads: null, products: [], invoices: [], movements: [], fournisseurs: [], commandes: [], clients: [], paiements: [], depenses: [], documents: [], currentUser: null };
   state.recoveryInProgress = /type=recovery/.test(window.location.hash) || /[?&]type=recovery/.test(window.location.search);
   // Lien reçu par email invalide, expiré ou déjà utilisé : on l'explique au lieu d'afficher une simple page de connexion
@@ -3250,7 +3264,8 @@
     const boss = role === 'proprietaire' || role === 'admin';
     const shop = (state.commerce && state.commerce.nom) || 'notre boutique';
     const all = state.invoices || [];
-    const inv = all.filter(i => !i.annulee);
+    const invAll = all.filter(i => !i.annulee);          // ventes + anciennes dettes (pour les impayés)
+    const inv = invAll.filter(i => !isDette(i));          // ventes seulement
     const prods = state.products || [];
     const today = todayStr();
     const dayMs = 86400000;
@@ -3313,7 +3328,7 @@
     if (sousSeuil.length) add({ cat: 'stock', sev: 'warn', ic: '📦', tab: 'produits', t: `${sousSeuil.length} produit${sousSeuil.length > 1 ? 's' : ''} sous le seuil d'alerte`, d: `Par exemple : ${sousSeuil.slice(0, 3).map(p => nm(p)).join(', ')}.` });
 
     // ---- Argent : impayés par client + relance WhatsApp ----
-    const reste = inv.map(i => ({ i, r: Math.max(0, (Number(i.total) || 0) - (Number(i.montantPaye) || 0)) })).filter(o => o.r > 0);
+    const reste = invAll.map(i => ({ i, r: Math.max(0, (Number(i.total) || 0) - (Number(i.montantPaye) || 0)) })).filter(o => o.r > 0);
     let oldDebt = 0;
     if (reste.length) {
       const groups = {};
@@ -4128,7 +4143,8 @@
     const sum = (arr) => arr.reduce((t, x) => t + (Number(x) || 0), 0);
     const JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
     const allInv = state.invoices || [];
-    const invs = allInv.filter(i => !i.annulee);
+    const invsAll = allInv.filter(i => !i.annulee);        // ventes + anciennes dettes (pour les crédits)
+    const invs = invsAll.filter(i => !isDette(i));          // ventes seulement
     const L = [];
     L.push('Boutique : ' + (c.nom || '?') + (c.adresse ? ' — ' + c.adresse : '') + ' — date du jour : ' + today + ' (' + JOURS[new Date().getDay()] + ')');
     L.push('Utilisateur : ' + (state.currentUser ? state.currentUser.nom + ' (' + state.currentUser.role + ')' : '?'));
@@ -4183,7 +4199,7 @@
     const clients = state.clients || [];
     const phoneOf = (nom) => { const cl = clients.find(x => (x.nom || '').trim().toLowerCase() === String(nom || '').trim().toLowerCase()); return cl && cl.telephone ? cl.telephone : ''; };
     const dettes = {};
-    invs.forEach(i => { const r = (Number(i.total) || 0) - (Number(i.montantPaye) || 0); if (r > 0.5) { const k = i.client || 'Client sans nom'; const o = dettes[k] || (dettes[k] = { r: 0, n: 0, plusAncienne: i.date, ech: '', fac: [] }); o.r += r; o.n++; o.fac.push('FAC-' + String(i.num).padStart(4, '0')); if ((i.date || '') < (o.plusAncienne || '9')) o.plusAncienne = i.date; if (i.echeance && (!o.ech || i.echeance < o.ech)) o.ech = i.echeance; } });
+    invsAll.forEach(i => { const r = (Number(i.total) || 0) - (Number(i.montantPaye) || 0); if (r > 0.5) { const k = i.client || 'Client sans nom'; const o = dettes[k] || (dettes[k] = { r: 0, n: 0, plusAncienne: i.date, ech: '', fac: [] }); o.r += r; o.n++; o.fac.push('FAC-' + String(i.num).padStart(4, '0')); if ((i.date || '') < (o.plusAncienne || '9')) o.plusAncienne = i.date; if (i.echeance && (!o.ech || i.echeance < o.ech)) o.ech = i.echeance; } });
     const dl = Object.entries(dettes).sort((a, b) => b[1].r - a[1].r);
     L.push('\n## CRÉDITS : CLIENTS QUI DOIVENT DE L\'ARGENT — total ' + n0(sum(dl.map(([, o]) => o.r))) + ' ' + curSym() + ' — client | reste dû | factures | plus ancienne | échéance | téléphone');
     dl.slice(0, 200).forEach(([k, o]) => L.push('- ' + k + ' | ' + n0(o.r) + ' | ' + o.fac.join(',') + ' | ' + (o.plusAncienne || '-') + ' | ' + (o.ech || '-') + ' | ' + (phoneOf(k) ? 'oui' : 'non')));
@@ -4550,7 +4566,7 @@
       const k = i.clientId || belNorm(i.client); const g = retard[k] || (retard[k] = { nom: i.client || '?', r: 0 }); g.r += r;
     });
     const ret = Object.values(retard).sort((a, b) => b.r - a.r);
-    const hier = (state.invoices || []).filter(i => !i.annulee && i.date === y && (i.type || 'facture') === 'facture');
+    const hier = (state.invoices || []).filter(i => !i.annulee && !isDette(i) && i.date === y && (i.type || 'facture') === 'facture');
     return { manque, ret, hierN: hier.length, hierM: hier.reduce((s, i) => s + (Number(i.total) || 0), 0) };
   }
   function belMorningLines(D, forVoice) {
@@ -4798,7 +4814,7 @@
     document.getElementById('dbRupture').textContent = g.rupture;
     document.getElementById('dbReappro').textContent = g.reappro;
 
-    const activeInvoices = state.invoices.filter(i => !i.annulee);
+    const activeInvoices = state.invoices.filter(i => !i.annulee && !isDette(i));   // ventes seulement (pas les anciennes dettes)
     const today = todayStr();
     const ym = today.slice(0, 7);
     const ventesJour = activeInvoices.filter(i => i.date === today).reduce((s, i) => s + (Number(i.total) || 0), 0);
@@ -5219,7 +5235,7 @@
         }
         tr.style.opacity = annulee ? '0.5' : '1';
         tr.innerHTML = `
-          <td>FAC-${String(inv.num).padStart(4, '0')}${annulee ? ' <span class="badge">Annulée</span>' : ''}</td>
+          <td>FAC-${String(inv.num).padStart(4, '0')}${isDette(inv) ? ' <span class="badge">📒 Ancienne dette</span>' : ''}${annulee ? ' <span class="badge">Annulée</span>' : ''}</td>
           <td class="muted">${escapeHtml(inv.date)}${heureDoc(inv) ? ' <span style="white-space:nowrap;">' + escapeHtml(heureDoc(inv)) + '</span>' : ''}</td>
           <td>${escapeHtml(inv.client || '—')}</td>
           <td class="muted">${escapeHtml(inv.operateur || '—')}</td>
@@ -6779,7 +6795,7 @@
   function bossDate(offset) { const d = new Date(Date.now() - offset * 86400000); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
   function bossCompute(offset) {
     const day = bossDate(offset), all = state.invoices || [];
-    const inv = all.filter(i => !i.annulee && i.date === day);
+    const inv = all.filter(i => !i.annulee && !isDette(i) && i.date === day);
     const ventes = inv.reduce((s, i) => s + (Number(i.total) || 0), 0);
     let benef = 0, sansCout = 0; const qte = {};
     inv.forEach(i => (i.lignes || []).forEach((l, idx) => {
@@ -6791,7 +6807,7 @@
     const remises = inv.reduce((s, i) => s + (Number(i.remise) || 0), 0);
     benef -= remises;
     // moyenne des 7 jours précédents (jours avec ventes ou non)
-    let s7 = 0; for (let k = 1; k <= 7; k++) { const d = bossDate(offset + k); s7 += all.filter(i => !i.annulee && i.date === d).reduce((s, i) => s + (Number(i.total) || 0), 0); }
+    let s7 = 0; for (let k = 1; k <= 7; k++) { const d = bossDate(offset + k); s7 += all.filter(i => !i.annulee && !isDette(i) && i.date === d).reduce((s, i) => s + (Number(i.total) || 0), 0); }
     const moy7 = s7 / 7, delta = moy7 > 0 ? Math.round((ventes - moy7) / moy7 * 100) : null;
     const pays = (state.paiements || []).filter(p => p.date === day);
     const encaisse = pays.reduce((s, p) => s + (Number(p.montant) || 0), 0);
@@ -7139,7 +7155,7 @@
       btn: '📋 Inventaire', go: () => { const b = document.querySelector('nav.tabs button[data-tab="inventaire"]'); if (b) b.click(); } });
     // Caisse du jour à clôturer (le soir)
     const lastClose = clLastCloseGet();
-    if (new Date().getHours() >= 18 && lastClose !== today && (state.invoices || []).some(i => !i.annulee && i.date === today))
+    if (new Date().getHours() >= 18 && lastClose !== today && (state.invoices || []).some(i => !i.annulee && !isDette(i) && i.date === today))
       acts.push({ id: 'cloture', kind: 'caisse', score: 50, ic: '🔒', t: 'Clôturer la caisse', d: 'Compte le tiroir et compare avec les ventes de la journée.', btn: '🧾 Caisse', go: () => { const b = document.querySelector('nav.tabs button[data-tab="caisse"]'); if (b) b.click(); } });
     // Argent qui dort : produits sans vente depuis 45 jours
     if (F.span >= 45) {
@@ -7731,7 +7747,7 @@
     if (error) { tbody.innerHTML = '<tr><td colspan="4" style="padding:12px; text-align:center;" class="muted">Journal indisponible.</td></tr>'; return; }
     if (!data.length) { tbody.innerHTML = '<tr><td colspan="4" style="padding:12px; text-align:center;" class="muted">Aucune action enregistrée.</td></tr>'; return; }
     const colors = { ANNULATION_FACTURE: '#dc2626', TENTATIVE_ANNULATION: '#b91c1c', PERTE_STOCK: '#d97706', SUPPRESSION_PRODUIT: '#d97706', SUPPRESSION_DOCUMENT: '#d97706', REINITIALISATION_MDP: '#2563eb', INVENTAIRE: '#7c3aed', CLOTURE_CAISSE: '#059669' };
-    const labels = { CLOTURE_CAISSE: 'Clôture de caisse', ANNULATION_FACTURE: 'Annulation facture', TENTATIVE_ANNULATION: 'Tentative refusée', PERTE_STOCK: 'Perte / casse', SUPPRESSION_PRODUIT: 'Produit supprimé', SUPPRESSION_DOCUMENT: 'Document supprimé', REINITIALISATION_MDP: 'Mot de passe réinitialisé', INVENTAIRE: 'Inventaire validé' };
+    const labels = { CLOTURE_CAISSE: 'Clôture de caisse', ANNULATION_FACTURE: 'Annulation facture', TENTATIVE_ANNULATION: 'Tentative refusée', PERTE_STOCK: 'Perte / casse', SUPPRESSION_PRODUIT: 'Produit supprimé', SUPPRESSION_DOCUMENT: 'Document supprimé', REINITIALISATION_MDP: 'Mot de passe réinitialisé', INVENTAIRE: 'Inventaire validé', ANCIENNE_DETTE: 'Ancienne dette ajoutée' };
     tbody.innerHTML = data.map(l => `
       <tr style="border-bottom:1px solid var(--line);">
         <td style="padding:8px; white-space:nowrap;">${escapeHtml(new Date(l.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }))}</td>
@@ -8101,7 +8117,7 @@
       fBody.innerHTML = factures.slice().sort((a, b) => (b.num || 0) - (a.num || 0)).map(i => {
         const p = Number(i.montantPaye) || 0;
         const r = (Number(i.total) || 0) - p;
-        return `<tr><td>FAC-${String(i.num).padStart(4, '0')}</td><td class="muted">${escapeHtml(i.date || '')}</td><td class="num-cell">${euros(i.total)}</td><td class="num-cell">${euros(p)}</td><td class="num-cell ${r > 0 ? 'margin-neg' : 'margin-pos'}">${euros(r)}</td></tr>`;
+        return `<tr><td>FAC-${String(i.num).padStart(4, '0')}${isDette(i) ? ' <span class="badge">📒 Ancienne dette</span>' : ''}</td><td class="muted">${escapeHtml(i.date || '')}</td><td class="num-cell">${euros(i.total)}</td><td class="num-cell">${euros(p)}</td><td class="num-cell ${r > 0 ? 'margin-neg' : 'margin-pos'}">${euros(r)}</td></tr>`;
       }).join('');
     }
 
@@ -8119,7 +8135,46 @@
     }
 
     document.getElementById('cld-date').value = document.getElementById('cld-date').value || todayStr();
+    const dd = document.getElementById('cld-dette-date'); if (dd && !dd.value) dd.value = todayStr();
   }
+
+  // ---- Ancienne dette (cahier de crédit d'avant BoromBoutik) ----
+  document.getElementById('btnAddDette').addEventListener('click', async () => {
+    if (!selectedClientId) return;
+    const c = state.clients.find(x => x.id === selectedClientId);
+    if (!c) return;
+    const role = state.currentUser && state.currentUser.role;
+    if (role !== 'proprietaire' && role !== 'admin') { toast('Seul le propriétaire ou l\'admin peut ajouter une ancienne dette.'); return; }
+    if (typeof aboReadOnly === 'function' && aboReadOnly()) { toast('🔒 ' + ABO_RO_MSG); return; }
+    const montant = Math.round(Number(document.getElementById('cld-dette-montant').value) || 0);
+    if (montant <= 0) { toast('Indique le montant que ce client doit.'); return; }
+    const date = document.getElementById('cld-dette-date').value || todayStr();
+    if (date > todayStr()) { toast('La date de la dette ne peut pas être dans le futur.'); return; }
+    const echeance = document.getElementById('cld-dette-echeance').value;
+    const note = (document.getElementById('cld-dette-note').value || '').trim();
+    if (!state.db) { toast('Connexion non disponible.'); return; }
+    if (!confirm(`Ajouter une ancienne dette de ${euros(montant)} pour ${c.nom} ?`)) return;
+    const btn = document.getElementById('btnAddDette'); btn.disabled = true;
+    try {
+      const num = (state.invoices.reduce((m, i) => Math.max(m, Number(i.num) || 0), 0)) + 1;
+      const id = 'fac-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+      const doc = {
+        num, date, client: c.nom, clientId: c.id,
+        lignes: [{ ref: '', nom: 'Ancienne dette' + (note ? ' — ' + note : ''), qte: 1, prix: montant, unite: '', matched: false, productId: null, dette: true }],
+        total: montant, montantPaye: 0, createdAt: Date.now(), annulee: false,
+        operateur: state.currentUser ? `${state.currentUser.nom} (${ROLE_LABEL[state.currentUser.role]})` : '',
+      };
+      if (echeance) doc.echeance = echeance;
+      await state.db.collection('factures').doc(id).set(doc);
+      if (typeof logAction === 'function') logAction('ANCIENNE_DETTE', `Ancienne dette ajoutée : ${c.nom} — ${euros(montant)}${note ? ' (' + note + ')' : ''}`);
+      ['cld-dette-montant', 'cld-dette-echeance', 'cld-dette-note'].forEach(k => { document.getElementById(k).value = ''; });
+      document.getElementById('cldDetteBox').open = false;
+      toast(`📒 Ancienne dette ajoutée : ${c.nom} doit ${euros(montant)}.`);
+    } catch (err) {
+      console.error(err);
+      toast("Erreur lors de l'enregistrement : " + (err.message || err));
+    } finally { btn.disabled = false; }
+  });
 
   document.getElementById('btnAddPaiement').addEventListener('click', async () => {
     if (!selectedClientId) return;
@@ -8174,7 +8229,7 @@
   function facturesPeriode() {
     const du = document.getElementById('rp-du').value || '2000-01-01';
     const au = document.getElementById('rp-au').value || todayStr();
-    return state.invoices.filter(i => !i.annulee && i.date >= du && i.date <= au);
+    return state.invoices.filter(i => !i.annulee && !isDette(i) && i.date >= du && i.date <= au);
   }
 
   function renderRapports() {
@@ -8515,7 +8570,7 @@
     if (!document.getElementById('cp-du').value) return; // pas encore initialisé
     const du = document.getElementById('cp-du').value;
     const au = document.getElementById('cp-au').value;
-    const factures = state.invoices.filter(i => !i.annulee && i.date >= du && i.date <= au);
+    const factures = state.invoices.filter(i => !i.annulee && !isDette(i) && i.date >= du && i.date <= au);
     const ca = factures.reduce((s, i) => s + htOf(i), 0);
 
     ensureFactureCouts();

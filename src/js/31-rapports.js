@@ -19,7 +19,7 @@
   function facturesPeriode() {
     const du = document.getElementById('rp-du').value || '2000-01-01';
     const au = document.getElementById('rp-au').value || todayStr();
-    return state.invoices.filter(i => !i.annulee && i.date >= du && i.date <= au);
+    return state.invoices.filter(i => !i.annulee && !isDette(i) && i.date >= du && i.date <= au);
   }
 
   function renderRapports() {

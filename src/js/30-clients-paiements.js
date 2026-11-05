@@ -151,7 +151,7 @@
       fBody.innerHTML = factures.slice().sort((a, b) => (b.num || 0) - (a.num || 0)).map(i => {
         const p = Number(i.montantPaye) || 0;
         const r = (Number(i.total) || 0) - p;
-        return `<tr><td>FAC-${String(i.num).padStart(4, '0')}</td><td class="muted">${escapeHtml(i.date || '')}</td><td class="num-cell">${euros(i.total)}</td><td class="num-cell">${euros(p)}</td><td class="num-cell ${r > 0 ? 'margin-neg' : 'margin-pos'}">${euros(r)}</td></tr>`;
+        return `<tr><td>FAC-${String(i.num).padStart(4, '0')}${isDette(i) ? ' <span class="badge">📒 Ancienne dette</span>' : ''}</td><td class="muted">${escapeHtml(i.date || '')}</td><td class="num-cell">${euros(i.total)}</td><td class="num-cell">${euros(p)}</td><td class="num-cell ${r > 0 ? 'margin-neg' : 'margin-pos'}">${euros(r)}</td></tr>`;
       }).join('');
     }
 
@@ -169,7 +169,46 @@
     }
 
     document.getElementById('cld-date').value = document.getElementById('cld-date').value || todayStr();
+    const dd = document.getElementById('cld-dette-date'); if (dd && !dd.value) dd.value = todayStr();
   }
+
+  // ---- Ancienne dette (cahier de crédit d'avant BoromBoutik) ----
+  document.getElementById('btnAddDette').addEventListener('click', async () => {
+    if (!selectedClientId) return;
+    const c = state.clients.find(x => x.id === selectedClientId);
+    if (!c) return;
+    const role = state.currentUser && state.currentUser.role;
+    if (role !== 'proprietaire' && role !== 'admin') { toast('Seul le propriétaire ou l\'admin peut ajouter une ancienne dette.'); return; }
+    if (typeof aboReadOnly === 'function' && aboReadOnly()) { toast('🔒 ' + ABO_RO_MSG); return; }
+    const montant = Math.round(Number(document.getElementById('cld-dette-montant').value) || 0);
+    if (montant <= 0) { toast('Indique le montant que ce client doit.'); return; }
+    const date = document.getElementById('cld-dette-date').value || todayStr();
+    if (date > todayStr()) { toast('La date de la dette ne peut pas être dans le futur.'); return; }
+    const echeance = document.getElementById('cld-dette-echeance').value;
+    const note = (document.getElementById('cld-dette-note').value || '').trim();
+    if (!state.db) { toast('Connexion non disponible.'); return; }
+    if (!confirm(`Ajouter une ancienne dette de ${euros(montant)} pour ${c.nom} ?`)) return;
+    const btn = document.getElementById('btnAddDette'); btn.disabled = true;
+    try {
+      const num = (state.invoices.reduce((m, i) => Math.max(m, Number(i.num) || 0), 0)) + 1;
+      const id = 'fac-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+      const doc = {
+        num, date, client: c.nom, clientId: c.id,
+        lignes: [{ ref: '', nom: 'Ancienne dette' + (note ? ' — ' + note : ''), qte: 1, prix: montant, unite: '', matched: false, productId: null, dette: true }],
+        total: montant, montantPaye: 0, createdAt: Date.now(), annulee: false,
+        operateur: state.currentUser ? `${state.currentUser.nom} (${ROLE_LABEL[state.currentUser.role]})` : '',
+      };
+      if (echeance) doc.echeance = echeance;
+      await state.db.collection('factures').doc(id).set(doc);
+      if (typeof logAction === 'function') logAction('ANCIENNE_DETTE', `Ancienne dette ajoutée : ${c.nom} — ${euros(montant)}${note ? ' (' + note + ')' : ''}`);
+      ['cld-dette-montant', 'cld-dette-echeance', 'cld-dette-note'].forEach(k => { document.getElementById(k).value = ''; });
+      document.getElementById('cldDetteBox').open = false;
+      toast(`📒 Ancienne dette ajoutée : ${c.nom} doit ${euros(montant)}.`);
+    } catch (err) {
+      console.error(err);
+      toast("Erreur lors de l'enregistrement : " + (err.message || err));
+    } finally { btn.disabled = false; }
+  });
 
   document.getElementById('btnAddPaiement').addEventListener('click', async () => {
     if (!selectedClientId) return;

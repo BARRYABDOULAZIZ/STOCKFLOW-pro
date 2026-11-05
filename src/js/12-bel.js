@@ -96,7 +96,8 @@
     const sum = (arr) => arr.reduce((t, x) => t + (Number(x) || 0), 0);
     const JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
     const allInv = state.invoices || [];
-    const invs = allInv.filter(i => !i.annulee);
+    const invsAll = allInv.filter(i => !i.annulee);        // ventes + anciennes dettes (pour les crédits)
+    const invs = invsAll.filter(i => !isDette(i));          // ventes seulement
     const L = [];
     L.push('Boutique : ' + (c.nom || '?') + (c.adresse ? ' — ' + c.adresse : '') + ' — date du jour : ' + today + ' (' + JOURS[new Date().getDay()] + ')');
     L.push('Utilisateur : ' + (state.currentUser ? state.currentUser.nom + ' (' + state.currentUser.role + ')' : '?'));
@@ -151,7 +152,7 @@
     const clients = state.clients || [];
     const phoneOf = (nom) => { const cl = clients.find(x => (x.nom || '').trim().toLowerCase() === String(nom || '').trim().toLowerCase()); return cl && cl.telephone ? cl.telephone : ''; };
     const dettes = {};
-    invs.forEach(i => { const r = (Number(i.total) || 0) - (Number(i.montantPaye) || 0); if (r > 0.5) { const k = i.client || 'Client sans nom'; const o = dettes[k] || (dettes[k] = { r: 0, n: 0, plusAncienne: i.date, ech: '', fac: [] }); o.r += r; o.n++; o.fac.push('FAC-' + String(i.num).padStart(4, '0')); if ((i.date || '') < (o.plusAncienne || '9')) o.plusAncienne = i.date; if (i.echeance && (!o.ech || i.echeance < o.ech)) o.ech = i.echeance; } });
+    invsAll.forEach(i => { const r = (Number(i.total) || 0) - (Number(i.montantPaye) || 0); if (r > 0.5) { const k = i.client || 'Client sans nom'; const o = dettes[k] || (dettes[k] = { r: 0, n: 0, plusAncienne: i.date, ech: '', fac: [] }); o.r += r; o.n++; o.fac.push('FAC-' + String(i.num).padStart(4, '0')); if ((i.date || '') < (o.plusAncienne || '9')) o.plusAncienne = i.date; if (i.echeance && (!o.ech || i.echeance < o.ech)) o.ech = i.echeance; } });
     const dl = Object.entries(dettes).sort((a, b) => b[1].r - a[1].r);
     L.push('\n## CRÉDITS : CLIENTS QUI DOIVENT DE L\'ARGENT — total ' + n0(sum(dl.map(([, o]) => o.r))) + ' ' + curSym() + ' — client | reste dû | factures | plus ancienne | échéance | téléphone');
     dl.slice(0, 200).forEach(([k, o]) => L.push('- ' + k + ' | ' + n0(o.r) + ' | ' + o.fac.join(',') + ' | ' + (o.plusAncienne || '-') + ' | ' + (o.ech || '-') + ' | ' + (phoneOf(k) ? 'oui' : 'non')));

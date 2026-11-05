@@ -3,7 +3,7 @@
   function bossDate(offset) { const d = new Date(Date.now() - offset * 86400000); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
   function bossCompute(offset) {
     const day = bossDate(offset), all = state.invoices || [];
-    const inv = all.filter(i => !i.annulee && i.date === day);
+    const inv = all.filter(i => !i.annulee && !isDette(i) && i.date === day);
     const ventes = inv.reduce((s, i) => s + (Number(i.total) || 0), 0);
     let benef = 0, sansCout = 0; const qte = {};
     inv.forEach(i => (i.lignes || []).forEach((l, idx) => {
@@ -15,7 +15,7 @@
     const remises = inv.reduce((s, i) => s + (Number(i.remise) || 0), 0);
     benef -= remises;
     // moyenne des 7 jours précédents (jours avec ventes ou non)
-    let s7 = 0; for (let k = 1; k <= 7; k++) { const d = bossDate(offset + k); s7 += all.filter(i => !i.annulee && i.date === d).reduce((s, i) => s + (Number(i.total) || 0), 0); }
+    let s7 = 0; for (let k = 1; k <= 7; k++) { const d = bossDate(offset + k); s7 += all.filter(i => !i.annulee && !isDette(i) && i.date === d).reduce((s, i) => s + (Number(i.total) || 0), 0); }
     const moy7 = s7 / 7, delta = moy7 > 0 ? Math.round((ventes - moy7) / moy7 * 100) : null;
     const pays = (state.paiements || []).filter(p => p.date === day);
     const encaisse = pays.reduce((s, p) => s + (Number(p.montant) || 0), 0);

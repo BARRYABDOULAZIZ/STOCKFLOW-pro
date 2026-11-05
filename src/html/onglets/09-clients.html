@@ -62,6 +62,18 @@
       </div>
       <button class="primary" id="btnAddPaiement">Enregistrer le paiement</button>
 
+      <details class="card" id="cldDetteBox" style="margin-top:18px; padding:12px 14px;">
+        <summary style="cursor:pointer; font-weight:700;">➕ Ajouter une ancienne dette (cahier de crédit)</summary>
+        <p class="muted" style="margin:8px 0 10px;">Pour ce que ce client devait <b>avant</b> BoromBoutik. La dette est suivie et remboursable comme un crédit, mais elle ne compte <b>pas</b> comme une vente dans les chiffres.</p>
+        <div class="field-grid">
+          <div><label>Montant dû (<span class="cur-sym">FCFA</span>)</label><input id="cld-dette-montant" type="number" min="0" step="1" inputmode="numeric" placeholder="ex : 25000"></div>
+          <div><label>Depuis le (date approximative)</label><input id="cld-dette-date" type="date"></div>
+          <div><label>Payer avant le (facultatif)</label><input id="cld-dette-echeance" type="date"></div>
+          <div><label>Note (facultatif)</label><input id="cld-dette-note" type="text" maxlength="80" placeholder="ex : riz et huile, cahier 2025"></div>
+        </div>
+        <button class="primary" id="btnAddDette" type="button">➕ Ajouter la dette</button>
+      </details>
+
       <div class="row-head" style="margin-top:22px;"><h2>Factures de ce client</h2></div>
       <div class="table-wrap short">
         <table>

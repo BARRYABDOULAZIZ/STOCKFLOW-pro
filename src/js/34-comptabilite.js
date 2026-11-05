@@ -54,7 +54,7 @@
     if (!document.getElementById('cp-du').value) return; // pas encore initialisé
     const du = document.getElementById('cp-du').value;
     const au = document.getElementById('cp-au').value;
-    const factures = state.invoices.filter(i => !i.annulee && i.date >= du && i.date <= au);
+    const factures = state.invoices.filter(i => !i.annulee && !isDette(i) && i.date >= du && i.date <= au);
     const ca = factures.reduce((s, i) => s + htOf(i), 0);
 
     ensureFactureCouts();

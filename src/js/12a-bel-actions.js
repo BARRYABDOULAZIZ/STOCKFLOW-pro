@@ -153,7 +153,7 @@
       const k = i.clientId || belNorm(i.client); const g = retard[k] || (retard[k] = { nom: i.client || '?', r: 0 }); g.r += r;
     });
     const ret = Object.values(retard).sort((a, b) => b.r - a.r);
-    const hier = (state.invoices || []).filter(i => !i.annulee && i.date === y && (i.type || 'facture') === 'facture');
+    const hier = (state.invoices || []).filter(i => !i.annulee && !isDette(i) && i.date === y && (i.type || 'facture') === 'facture');
     return { manque, ret, hierN: hier.length, hierM: hier.reduce((s, i) => s + (Number(i.total) || 0), 0) };
   }
   function belMorningLines(D, forVoice) {

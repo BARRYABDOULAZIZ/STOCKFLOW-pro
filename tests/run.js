@@ -535,6 +535,34 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     await p.close2();
   });
 
+  await test('Ancienne dette : suivie dans les crédits, mais pas comptée comme une vente', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(async () => { document.getElementById('loginOverlay').style.display = 'none';
+      const writes = [];
+      state.db = { collection: (c) => ({ doc: (id) => ({ set: async (v) => { writes.push([c, id, v]); state.invoices.push({ id, ...v }); } }) }), doc: () => ({ set: async () => {}, update: async () => {} }) };
+      window.logAction = () => {}; window.confirm = () => true;
+      state.currentUser = { nom: 'Test', role: 'proprietaire', commerceId: 'c-test' };
+      state.clients = [{ id: 'c1', nom: 'Fatou' }];
+      state.invoices = [{ id: 'v1', num: 1, date: todayStr(), clientId: 'c1', client: 'Fatou', total: 10000, montantPaye: 10000, lignes: [{ nom: 'Riz', qte: 1, prix: 10000 }] }];
+      selectedClientId = 'c1';
+      document.getElementById('cld-dette-montant').value = '25000';
+      document.getElementById('cld-dette-date').value = todayStr();
+      document.getElementById('cld-dette-note').value = 'cahier';
+      document.getElementById('btnAddDette').click();
+      await new Promise(r => setTimeout(r, 200));
+      const st = clientStats('c1');
+      renderDashboard();
+      return { n: writes.length, doc: writes[0] && writes[0][2], reste: st.reste, ventesJour: document.getElementById('dbVentesJour').textContent.replace(/\\D/g, ''),
+        dette: isDette(state.invoices[1]), vente: isDette(state.invoices[0]) }; })()`);
+    eq(r.n, 1, 'une ancienne dette enregistrée');
+    eq([r.doc.total, r.doc.montantPaye, r.doc.lignes[0].dette, r.doc.lignes[0].nom], [25000, 0, true, 'Ancienne dette — cahier'], 'contenu de la dette');
+    eq(r.reste, 25000, 'le client doit 25 000');
+    eq(r.ventesJour, '10000', 'les ventes du jour ne comptent pas la dette');
+    eq([r.dette, r.vente], [true, false], 'repérage dette / vente');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
   await test('Anti-erreur à la caisse : vente à perte, prix à 0, zéro en trop', async () => {
     const p = await open(browser);
     const r = await p.app(`(async () => { document.getElementById('loginOverlay').style.display = 'none'; document.querySelector('[data-tab="ventes"]').click();

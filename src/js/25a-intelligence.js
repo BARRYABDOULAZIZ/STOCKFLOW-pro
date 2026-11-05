@@ -165,7 +165,7 @@
       btn: '📋 Inventaire', go: () => { const b = document.querySelector('nav.tabs button[data-tab="inventaire"]'); if (b) b.click(); } });
     // Caisse du jour à clôturer (le soir)
     const lastClose = clLastCloseGet();
-    if (new Date().getHours() >= 18 && lastClose !== today && (state.invoices || []).some(i => !i.annulee && i.date === today))
+    if (new Date().getHours() >= 18 && lastClose !== today && (state.invoices || []).some(i => !i.annulee && !isDette(i) && i.date === today))
       acts.push({ id: 'cloture', kind: 'caisse', score: 50, ic: '🔒', t: 'Clôturer la caisse', d: 'Compte le tiroir et compare avec les ventes de la journée.', btn: '🧾 Caisse', go: () => { const b = document.querySelector('nav.tabs button[data-tab="caisse"]'); if (b) b.click(); } });
     // Argent qui dort : produits sans vente depuis 45 jours
     if (F.span >= 45) {

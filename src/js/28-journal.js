@@ -15,7 +15,7 @@
     if (error) { tbody.innerHTML = '<tr><td colspan="4" style="padding:12px; text-align:center;" class="muted">Journal indisponible.</td></tr>'; return; }
     if (!data.length) { tbody.innerHTML = '<tr><td colspan="4" style="padding:12px; text-align:center;" class="muted">Aucune action enregistrée.</td></tr>'; return; }
     const colors = { ANNULATION_FACTURE: '#dc2626', TENTATIVE_ANNULATION: '#b91c1c', PERTE_STOCK: '#d97706', SUPPRESSION_PRODUIT: '#d97706', SUPPRESSION_DOCUMENT: '#d97706', REINITIALISATION_MDP: '#2563eb', INVENTAIRE: '#7c3aed', CLOTURE_CAISSE: '#059669' };
-    const labels = { CLOTURE_CAISSE: 'Clôture de caisse', ANNULATION_FACTURE: 'Annulation facture', TENTATIVE_ANNULATION: 'Tentative refusée', PERTE_STOCK: 'Perte / casse', SUPPRESSION_PRODUIT: 'Produit supprimé', SUPPRESSION_DOCUMENT: 'Document supprimé', REINITIALISATION_MDP: 'Mot de passe réinitialisé', INVENTAIRE: 'Inventaire validé' };
+    const labels = { CLOTURE_CAISSE: 'Clôture de caisse', ANNULATION_FACTURE: 'Annulation facture', TENTATIVE_ANNULATION: 'Tentative refusée', PERTE_STOCK: 'Perte / casse', SUPPRESSION_PRODUIT: 'Produit supprimé', SUPPRESSION_DOCUMENT: 'Document supprimé', REINITIALISATION_MDP: 'Mot de passe réinitialisé', INVENTAIRE: 'Inventaire validé', ANCIENNE_DETTE: 'Ancienne dette ajoutée' };
     tbody.innerHTML = data.map(l => `
       <tr style="border-bottom:1px solid var(--line);">
         <td style="padding:8px; white-space:nowrap;">${escapeHtml(new Date(l.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }))}</td>

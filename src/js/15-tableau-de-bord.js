@@ -23,7 +23,7 @@
     document.getElementById('dbRupture').textContent = g.rupture;
     document.getElementById('dbReappro').textContent = g.reappro;
 
-    const activeInvoices = state.invoices.filter(i => !i.annulee);
+    const activeInvoices = state.invoices.filter(i => !i.annulee && !isDette(i));   // ventes seulement (pas les anciennes dettes)
     const today = todayStr();
     const ym = today.slice(0, 7);
     const ventesJour = activeInvoices.filter(i => i.date === today).reduce((s, i) => s + (Number(i.total) || 0), 0);

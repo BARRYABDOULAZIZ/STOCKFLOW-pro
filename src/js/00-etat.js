@@ -1,4 +1,6 @@
 
+  // Ancienne dette (cahier de crédit d'avant BoromBoutik) : suivie comme une facture à crédit, mais ce n'est PAS une vente
+  const isDette = (i) => !!(i && Array.isArray(i.lignes) && i.lignes.length > 0 && i.lignes.every(l => l && l.dette));
   const state = { db: null, downloads: null, products: [], invoices: [], movements: [], fournisseurs: [], commandes: [], clients: [], paiements: [], depenses: [], documents: [], currentUser: null };
   state.recoveryInProgress = /type=recovery/.test(window.location.hash) || /[?&]type=recovery/.test(window.location.search);
   // Lien reçu par email invalide, expiré ou déjà utilisé : on l'explique au lieu d'afficher une simple page de connexion

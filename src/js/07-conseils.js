@@ -24,7 +24,8 @@
     const boss = role === 'proprietaire' || role === 'admin';
     const shop = (state.commerce && state.commerce.nom) || 'notre boutique';
     const all = state.invoices || [];
-    const inv = all.filter(i => !i.annulee);
+    const invAll = all.filter(i => !i.annulee);          // ventes + anciennes dettes (pour les impayés)
+    const inv = invAll.filter(i => !isDette(i));          // ventes seulement
     const prods = state.products || [];
     const today = todayStr();
     const dayMs = 86400000;
@@ -87,7 +88,7 @@
     if (sousSeuil.length) add({ cat: 'stock', sev: 'warn', ic: '📦', tab: 'produits', t: `${sousSeuil.length} produit${sousSeuil.length > 1 ? 's' : ''} sous le seuil d'alerte`, d: `Par exemple : ${sousSeuil.slice(0, 3).map(p => nm(p)).join(', ')}.` });
 
     // ---- Argent : impayés par client + relance WhatsApp ----
-    const reste = inv.map(i => ({ i, r: Math.max(0, (Number(i.total) || 0) - (Number(i.montantPaye) || 0)) })).filter(o => o.r > 0);
+    const reste = invAll.map(i => ({ i, r: Math.max(0, (Number(i.total) || 0) - (Number(i.montantPaye) || 0)) })).filter(o => o.r > 0);
     let oldDebt = 0;
     if (reste.length) {
       const groups = {};
