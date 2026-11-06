@@ -324,11 +324,24 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
       document.getElementById('pfSave').click();
       await new Promise(r => setTimeout(r, 300));
       const prods = writes.filter(w => w[1].startsWith('produits'));
-      return { rows, rizDelta: deltas.filter(d => d[0] === 'p-riz'), nNew: prods.filter(w => w[0] === 'set').length };
+      // Anti-doublon : les mouvements enregistrés portent l'empreinte ; on rescanne la même facture
+      state.movements = writes.filter(w => w[1].startsWith('mouvements')).map(w => w[2]);
+      const notesOk = state.movements.length > 0 && state.movements.every(m => /\[m[0-9a-z]+\]/.test(m.note || ''));
+      const avant = deltas.length; let question = '';
+      window.confirm = (m) => { question = m; return false; };
+      await pfAnalyse([new File([blob], 'f.png', { type: 'image/png' })]);
+      document.getElementById('pfSave').click();
+      await new Promise(r => setTimeout(r, 300));
+      const refuse = deltas.length === avant;
+      return { rows, rizDelta: deltas.filter(d => d[0] === 'p-riz'), nNew: prods.filter(w => w[0] === 'set').length, notesOk, question: /DÉJÀ enregistrée/.test(question), refuse,
+        etagere: !!document.querySelector('[data-pf="etagere"]') };
     })()`);
     eq(r.rows, [['Riz parfumé sac 25 kg', 5, 'p-riz'], ['Huile Dinor 1 L', 10, null]], 'lignes lues');
     eq(r.rizDelta, [['p-riz', 5]], 'stock du riz : +5 ajouté de façon atomique (4 + 5 = 9)');
     expect(r.nNew >= 1, 'le nouveau produit (huile) n\'a pas été créé');
+    eq(r.notesOk, true, 'chaque mouvement porte l\'empreinte de la facture');
+    eq([r.question, r.refuse], [true, true], 'même facture rescannée : alerte doublon, et rien n\'est ajouté si on refuse');
+    eq(r.etagere, false, 'le mode étagère est retiré');
     eq(p.errors, [], 'erreurs');
     await p.close2();
   });

@@ -1,5 +1,5 @@
   // ================= Saisie par photo (test) : étagère → produits, facture fournisseur → réassort =================
-  let pfMode = 'etagere', pfRows = [], pfMeta = {}, pfBusy = false;
+  let pfMode = 'facture', pfRows = [], pfMeta = {}, pfBusy = false;
   const pfNorm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
   function pfMatch(nom) {
     const a = new Set(pfNorm(nom).split(' ').filter(w => w.length > 1));
@@ -97,12 +97,38 @@
       document.getElementById('pfFile').value = '';
     }
   }
+  // ---- Anti-doublon : empreinte d'une facture fournisseur (fournisseur + date + total, et liste des lignes) ----
+  function pfHash(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0; return h.toString(36); }
+  function pfSignature(rows) {
+    const f = pfNorm(pfMeta.fournisseur || ''), d = String(pfMeta.date || '').trim(), t = Math.round(Number(pfMeta.total) || 0);
+    const meta = (f && (d || t)) ? 'm' + pfHash(f + '|' + d + '|' + t) : '';
+    const lines = rows.map(r => pfNorm(r.nom) + ':' + (Number(r.quantite) || 0)).sort().join(';');
+    return { meta, lines: lines ? 'l' + pfHash(lines) : '' };
+  }
+  function pfDejaEnregistree(sig) {
+    const keys = [sig.meta, sig.lines].filter(Boolean).map(k => '[' + k + ']');
+    if (!keys.length) return null;
+    return (state.movements || []).filter(m => m.source === 'photo facture' && m.note && keys.some(k => String(m.note).includes(k)))
+      .sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0))[0] || null;
+  }
+
   async function pfSave() {
     const rows = pfRows.filter(r => r.on && r.nom && Number(r.quantite) >= 0);
     if (!rows.length) { toast(tr('Coche au moins un produit.')); return; }
     if (!state.db) { toast('Connexion non disponible — réessaie dans un instant.'); return; }
     const btn = document.getElementById('pfSave'); if (btn) btn.disabled = true;
     const isF = pfMode === 'facture', fournisseur = isF ? (pfMeta.fournisseur || '') : '';
+    let pfNote = '';
+    if (isF) {
+      const sig = pfSignature(rows);
+      const deja = pfDejaEnregistree(sig);
+      if (deja) {
+        const quand = deja.createdAt ? new Date(Number(deja.createdAt)).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : (deja.date || '');
+        const msg = `⚠️ Cette facture semble DÉJÀ enregistrée${quand ? ' (le ' + quand + (deja.operateur ? ', par ' + deja.operateur : '') + ')' : ''}.\n\nSi tu continues, la marchandise sera ajoutée DEUX FOIS au stock.\n\nContinuer quand même ?`;
+        if (!confirm(msg)) { if (btn) btn.disabled = false; toast('Facture non enregistrée (doublon évité).'); return; }
+      }
+      pfNote = 'Facture photo' + (fournisseur ? ' · ' + fournisseur : '') + (pfMeta.date ? ' · ' + pfMeta.date : '') + (pfMeta.total ? ' · total ' + Math.round(pfMeta.total) : '') + ' ' + [sig.meta, sig.lines].filter(Boolean).map(k => '[' + k + ']').join('');
+    }
     let crees = 0, maj = 0;
     const refs = new Set((state.products || []).map(p => p.ref));
     try {
@@ -119,7 +145,7 @@
           let nouveau = vu;
           if (delta !== 0) nouveau = await adjustStock(ex.id, delta);   // atomique côté base
           const ancien = nouveau - delta;
-          if (delta !== 0) logMovement({ productId: ex.id, ref: ex.ref, nom: ex.nom, quantite: nouveau - ancien, ancienStock: ancien, nouveauStock: nouveau, unite: ex.unite || r.unite, source: isF ? 'photo facture' : 'photo étagère' }).catch(() => {});
+          if (delta !== 0) logMovement({ productId: ex.id, ref: ex.ref, nom: ex.nom, quantite: nouveau - ancien, ancienStock: ancien, nouveauStock: nouveau, unite: ex.unite || r.unite, source: isF ? 'photo facture' : 'photo étagère', note: pfNote || undefined }).catch(() => {});
           maj++;
         } else {
           let base = 'PH-' + pfNorm(r.nom).toUpperCase().replace(/ /g, '-').slice(0, 18), ref = base, n = 2;
@@ -127,7 +153,7 @@
           refs.add(ref);
           const id = 'p-' + ref.toLowerCase().replace(/[^a-z0-9_.-]/g, '-').slice(0, 60) + '-' + Date.now().toString(36);
           await state.db.doc('produits/' + id).set({ ref, nom: r.nom, codeBarre: '', fournisseur, categorie: r.categorie || '', emplacement: '', stock: q, unite: r.unite || 'unité', prixAchat: Number(r.prixAchat) || 0, prixVente: Number(r.prixVente) || 0, seuil: Math.max(1, Math.round(q * 0.2)), createdAt: Date.now() });
-          if (q > 0) logMovement({ productId: id, ref, nom: r.nom, quantite: q, ancienStock: 0, nouveauStock: q, unite: r.unite || 'unité', source: isF ? 'photo facture' : 'photo étagère' }).catch(() => {});
+          if (q > 0) logMovement({ productId: id, ref, nom: r.nom, quantite: q, ancienStock: 0, nouveauStock: q, unite: r.unite || 'unité', source: isF ? 'photo facture' : 'photo étagère', note: pfNote || undefined }).catch(() => {});
           crees++;
         }
       }
