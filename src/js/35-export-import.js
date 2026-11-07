@@ -108,7 +108,7 @@
 
       const factureLignes = [];
       state.invoices.forEach(inv => (inv.lignes || []).forEach(l => {
-        factureLignes.push({ Facture: 'FAC-' + String(inv.num).padStart(4, '0'), Date: inv.date, Client: inv.client || '', Annulée: inv.annulee ? 'Oui' : 'Non', Référence: l.ref || '', Désignation: l.nom, Quantité: l.qte, Unité: l.unite || '', 'Prix unitaire': l.prix, 'Total ligne': (Number(l.prix) || 0) * (Number(l.qte) || 0) });
+        factureLignes.push({ Facture: numFac(inv), Date: inv.date, Client: inv.client || '', Annulée: inv.annulee ? 'Oui' : 'Non', Référence: l.ref || '', Désignation: l.nom, Quantité: l.qte, Unité: l.unite || '', 'Prix unitaire': l.prix, 'Total ligne': (Number(l.prix) || 0) * (Number(l.qte) || 0) });
       }));
       const wsFactures = window.XLSX.utils.json_to_sheet(factureLignes);
       window.XLSX.utils.book_append_sheet(wb, wsFactures, 'Factures');
@@ -125,7 +125,7 @@
 
       const wsPaiements = window.XLSX.utils.json_to_sheet(state.paiements.map(p => {
         const inv = state.invoices.find(i => i.id === p.factureId);
-        return { Date: p.date, Client: clientNom(p.clientId), Facture: inv ? 'FAC-' + String(inv.num).padStart(4, '0') : '', Montant: p.montant, Mode: p.mode || '', Opérateur: p.operateur || '' };
+        return { Date: p.date, Client: clientNom(p.clientId), Facture: inv ? numFac(inv) : '', Montant: p.montant, Mode: p.mode || '', Opérateur: p.operateur || '' };
       }));
       window.XLSX.utils.book_append_sheet(wb, wsPaiements, 'Paiements');
 

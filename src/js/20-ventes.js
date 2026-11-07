@@ -206,6 +206,7 @@
     inp.placeholder = t === 'credit' ? 'Vide = rien payé maintenant' : 'Laisse vide si le client paie tout';
     if (t === 'credit' && !document.getElementById('f-echeance').value) { const d = new Date(Date.now() + 7 * 86400000); document.getElementById('f-echeance').value = d.toISOString().slice(0, 10); }
     updateGrandTotal();
+    try { afApply(); } catch (e) {}
   }
   document.querySelectorAll('.st-btn').forEach(b => b.addEventListener('click', () => setSaleType(b.dataset.st)));
   document.getElementById('modeChips').addEventListener('click', (e) => {
@@ -223,6 +224,8 @@
     }).filter(Boolean);
     const customLines = invoiceLines.filter(l => !l.matched && l.nom && l.nom.trim()).length;
     hint.classList.remove('fh-warn');
+    { const w = document.getElementById('afWrap'); if (w) w.style.display = (currentDocType() === 'facture' && afIsBoss()) ? '' : 'none'; }
+    if (afActive()) { hint.textContent = '📜 Ancienne facture : le stock, les ventes et le bénéfice ne seront pas touchés. Seule la dette du client augmente.'; hint.style.color = ''; try { saleGuardRender(); } catch (e) {} return; }
     if (shortages.length) { hint.textContent = '⚠ Stock insuffisant — ' + shortages.join(', '); hint.style.color = ''; hint.classList.add('fh-warn'); }
     else if (customLines) { hint.textContent = `⚠ ${customLines} ligne(s) hors catalogue (produit non enregistré dans ton stock) — le stock ne sera PAS déduit pour ces lignes.`; hint.style.color = ''; hint.classList.add('fh-warn'); }
     else { hint.textContent = 'La finalisation déduit automatiquement les quantités du stock pour les articles du catalogue.'; hint.style.color = ''; }
@@ -269,6 +272,7 @@
   }
 
   async function finalizeInvoice() {
+    if (afActive()) return finalizeAncienneFacture();
     const validLines = invoiceLines.filter(l => l.nom && Number(l.qte) > 0);
     if (validLines.length === 0) { toast('Ajoute au moins une ligne valide (désignation + quantité).'); return; }
     if (aboReadOnly()) { toast('🔒 ' + ABO_RO_MSG); aboGoto(); return; }
@@ -381,3 +385,98 @@
     }
   }
 
+
+  // ================= Ancienne facture (recopiée du carnet, d'avant BoromBoutik) =================
+  // Ne touche pas au stock, ne compte pas dans les ventes / bénéfice / compta.
+  // Compte dans la dette du client. Numérotation à part : AF-001, AF-002… (numéro négatif en base).
+  const afIsBoss = () => { const r = state.currentUser && state.currentUser.role; return r === 'proprietaire' || r === 'admin'; };
+  function afActive() {
+    const cb = document.getElementById('f-ancienne');
+    return !!(cb && cb.checked && currentDocType() === 'facture' && afIsBoss());
+  }
+  function afApply() {
+    const wrap = document.getElementById('afWrap'); if (!wrap) return;
+    const isInv = currentDocType() === 'facture';
+    wrap.style.display = (isInv && afIsBoss()) ? '' : 'none';
+    const on = afActive();
+    wrap.classList.toggle('on', on);
+    document.getElementById('afBox').style.display = on ? '' : 'none';
+    if (on && !document.getElementById('f-af-date').value) document.getElementById('f-af-date').value = todayStr();
+    document.getElementById('f-af-date').max = todayStr();
+    document.getElementById('clientOpt').textContent = on ? '(obligatoire)' : '(facultatif)';
+    if (!isInv) return;
+    const st = document.querySelector('.sale-type'); if (st) st.style.display = on ? 'none' : '';
+    document.getElementById('f-mode-wrap').style.display = on ? 'none' : '';
+    document.getElementById('f-echeance-wrap').style.display = (on || saleType === 'credit') ? '' : 'none';
+    const lab = document.querySelector('#f-paye-wrap label'), inp = document.getElementById('f-paye');
+    if (on) {
+      if (lab) lab.textContent = 'Montant déjà payé par le client (' + curSym() + ') — facultatif';
+      inp.placeholder = 'Vide = rien payé';
+    }
+    document.getElementById('btnFinalize').textContent = on ? '📜 Enregistrer l\'ancienne facture' : 'Finaliser la vente';
+    document.getElementById('ventesTitle').textContent = on ? 'Ancienne facture (carnet)' : 'Nouvelle vente';
+    updateFinalizeHint();
+  }
+  document.getElementById('f-ancienne').addEventListener('change', () => {
+    if (!document.getElementById('f-ancienne').checked) setSaleType(saleType); else afApply();
+  });
+
+  async function finalizeAncienneFacture() {
+    const validLines = invoiceLines.filter(l => l.nom && Number(l.qte) > 0);
+    if (!afIsBoss()) { toast('🔒 Seul le propriétaire ou l\'admin peut ajouter une ancienne facture.'); return; }
+    if (validLines.length === 0) { toast('Ajoute au moins une ligne valide (désignation + quantité).'); return; }
+    if (aboReadOnly()) { toast('🔒 ' + ABO_RO_MSG); aboGoto(); return; }
+    if (!state.db) { toast('Connexion non disponible — réessaie dans un instant.'); return; }
+    const client = document.getElementById('f-client').value.trim();
+    if (!client) { toast('⚠ Pour une ancienne facture, indique le nom du client : c\'est lui qui doit l\'argent.'); document.getElementById('f-client').focus(); return; }
+    const date = document.getElementById('f-af-date').value || todayStr();
+    if (date > todayStr()) { toast('La date d\'origine ne peut pas être dans le futur.'); return; }
+    const T = computeTotals(validLines);
+    const total = T.total;
+    if (!(total > 0)) { toast('Le total de l\'ancienne facture doit être supérieur à 0.'); return; }
+    const payeRaw = document.getElementById('f-paye').value.trim();
+    const montantPaye = payeRaw === '' ? 0 : Math.max(0, Math.min(total, Math.round(Number(payeRaw) || 0)));
+    if (!confirm(`Enregistrer l'ancienne facture de ${client} : ${euros(total)}${montantPaye ? ', déjà payé ' + euros(montantPaye) : ''} → reste dû ${euros(total - montantPaye)} ?\n\nLe stock et les ventes ne seront pas touchés.`)) return;
+
+    const btn = document.getElementById('btnFinalize');
+    btn.disabled = true;
+    try {
+      let clientId = null;
+      const existing = state.clients.find(c => (c.nom || '').trim().toLowerCase() === client.toLowerCase());
+      if (existing) clientId = existing.id;
+      else {
+        clientId = 'cl-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+        await state.db.doc('clients/' + clientId).set({ nom: client, telephone: '', adresse: '', createdAt: Date.now() });
+      }
+      // Numéro à part : -1 = AF-001, -2 = AF-002… (ne prend jamais un numéro de vraie facture)
+      const num = Math.min(0, ...state.invoices.map(i => Number(i.num) || 0)) - 1;
+      const invDoc = {
+        num, date, client, clientId,
+        lignes: validLines.map(l => ({ ref: l.ref || '', nom: l.nom, qte: Number(l.qte), prix: Number(l.prix) || 0, unite: l.unite || '', matched: false, productId: null, dette: true, ancienne: true })),
+        total, ...fiscalExtra(T), montantPaye, createdAt: Date.now(), annulee: false,
+        operateur: state.currentUser ? `${state.currentUser.nom} (${ROLE_LABEL[state.currentUser.role]})` : '',
+      };
+      const remarque = (document.getElementById('f-remarque').value || '').trim();
+      if (remarque) invDoc.remarque = remarque;
+      const ech = document.getElementById('f-echeance').value;
+      if (ech && montantPaye < total) invDoc.echeance = ech;
+      const invId = 'fac-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+      // Pas de adjust_stock, pas de paiement dans la caisse : l'argent déjà payé l'a été avant BoromBoutik.
+      await state.db.collection('factures').doc(invId).set(invDoc);
+      const label = numFac(invDoc);
+      if (typeof logAction === 'function') logAction('ANCIENNE_FACTURE', `Ancienne facture ${label} ajoutée : ${client} — ${euros(total)} (du ${frDate(date)})${montantPaye ? ', déjà payé ' + euros(montantPaye) : ''}, ${validLines.length} article(s)`);
+
+      invoiceLines = [freshLine()];
+      ['f-client', 'f-paye', 'f-remise', 'f-remarque', 'f-echeance', 'f-af-date'].forEach(k => { document.getElementById(k).value = ''; });
+      document.getElementById('f-ancienne').checked = false;
+      setSaleType('comptant');
+      renderInvoiceLines();
+      toast(`📜 Ancienne facture ${label} enregistrée — ${client} doit ${euros(total - montantPaye)}. Stock et ventes non touchés.`);
+      if (document.getElementById('tkWa') && document.getElementById('tkWa').checked) sendTicketWhatsApp(invDoc, false);
+    } catch (err) {
+      console.error(err);
+      toast('Erreur : ' + ((err && err.message) || String(err)));
+    } finally {
+      btn.disabled = false;
+    }
+  }

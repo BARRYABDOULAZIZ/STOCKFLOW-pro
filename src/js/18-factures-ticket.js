@@ -3,10 +3,14 @@
     const body = document.getElementById('histBody');
     const empty = document.getElementById('histEmpty');
     body.innerHTML = '';
-    if (state.invoices.length === 0) { empty.style.display = 'block'; }
+    const flt = (document.getElementById('histFilter') || {}).value || '';
+    const list = state.invoices.filter(i => !flt || (flt === 'af' ? isAncienneFacture(i) : flt === 'dette' ? (isDette(i) && !isAncienneFacture(i)) : !isDette(i)));
+    empty.textContent = state.invoices.length && !list.length ? 'Aucune facture pour ce filtre.' : 'Aucune facture émise pour l\'instant.';
+    if (list.length === 0) { empty.style.display = 'block'; }
     else {
       empty.style.display = 'none';
-      state.invoices.slice().sort((a, b) => (b.num || 0) - (a.num || 0)).forEach(inv => {
+      // Plus récentes d'abord (les anciennes factures AF-… ont un numéro négatif : on trie par date de saisie)
+      list.slice().sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0) || (b.num || 0) - (a.num || 0)).forEach(inv => {
         const tr = document.createElement('tr');
         const nbArticles = (inv.lignes || []).reduce((s, l) => s + (Number(l.qte) || 0), 0);
         const annulee = !!inv.annulee;
@@ -21,7 +25,7 @@
         }
         tr.style.opacity = annulee ? '0.5' : '1';
         tr.innerHTML = `
-          <td>FAC-${String(inv.num).padStart(4, '0')}${isDette(inv) ? ' <span class="badge">📒 Ancienne dette</span>' : ''}${annulee ? ' <span class="badge">Annulée</span>' : ''}</td>
+          <td>${numFac(inv)}${badgeDette(inv)}${annulee ? ' <span class="badge">Annulée</span>' : ''}</td>
           <td class="muted">${escapeHtml(inv.date)}${heureDoc(inv) ? ' <span style="white-space:nowrap;">' + escapeHtml(heureDoc(inv)) + '</span>' : ''}</td>
           <td>${escapeHtml(inv.client || '—')}</td>
           <td class="muted">${escapeHtml(inv.operateur || '—')}</td>
@@ -52,10 +56,12 @@
     }
   }
 
+  { const hf = document.getElementById('histFilter'); if (hf) hf.addEventListener('change', renderHistory); }
+
   async function cancelInvoice(invId) {
     const inv = state.invoices.find(i => i.id === invId);
     if (!inv || inv.annulee) return;
-    const numLabel = 'FAC-' + String(inv.num).padStart(4, '0');
+    const numLabel = numFac(inv);
     const role = state.currentUser && state.currentUser.role;
 
     // 1. Réservé au propriétaire et à l'admin (vérifié aussi côté base)
@@ -68,7 +74,7 @@
     const reason = prompt(`Motif de l'annulation de la facture ${numLabel} (obligatoire) :`);
     if (!reason || !reason.trim()) { toast('Annulation abandonnée : un motif est requis.'); return; }
     // 3. Confirmation finale
-    if (!confirm(`Annuler définitivement la facture ${numLabel} (${euros(inv.total)}) ? Les quantités seront remises en stock.`)) return;
+    if (!confirm(`Annuler définitivement la facture ${numLabel} (${euros(inv.total)}) ? ${isDette(inv) ? 'La dette du client sera retirée.' : 'Les quantités seront remises en stock.'}`)) return;
     if (!supabaseClient) { toast('Connexion non disponible.'); return; }
     if (!needOnline('annuler une facture')) return;
 

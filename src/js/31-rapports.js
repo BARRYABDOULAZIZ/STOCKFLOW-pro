@@ -72,7 +72,7 @@
         let statut = '<span class="badge" style="background:var(--good,#16a34a); color:#fff;">Payée</span>';
         if (paye <= 0) statut = '<span class="badge" style="background:var(--danger); color:#fff;">Non payée</span>';
         else if (reste > 0) statut = '<span class="badge" style="background:#d97706; color:#fff;">Partielle</span>';
-        return `<tr><td>FAC-${String(inv.num).padStart(4, '0')}</td><td class="muted">${escapeHtml(inv.date || '')}</td><td>${escapeHtml(inv.client || '—')}</td><td class="num-cell">${euros(inv.total)}</td><td>${statut}</td></tr>`;
+        return `<tr><td>${numFac(inv)}</td><td class="muted">${escapeHtml(inv.date || '')}</td><td>${escapeHtml(inv.client || '—')}</td><td class="num-cell">${euros(inv.total)}</td><td>${statut}</td></tr>`;
       }).join('');
     }
   }
@@ -95,7 +95,7 @@
 
       const lignes = [];
       factures.forEach(inv => (inv.lignes || []).forEach(l => {
-        lignes.push({ Facture: 'FAC-' + String(inv.num).padStart(4, '0'), Date: inv.date, Client: inv.client || '', Référence: l.ref || '', Désignation: l.nom, Quantité: l.qte, Unité: l.unite || '', 'Prix unitaire': l.prix, 'Total ligne': (Number(l.prix) || 0) * (Number(l.qte) || 0) });
+        lignes.push({ Facture: numFac(inv), Date: inv.date, Client: inv.client || '', Référence: l.ref || '', Désignation: l.nom, Quantité: l.qte, Unité: l.unite || '', 'Prix unitaire': l.prix, 'Total ligne': (Number(l.prix) || 0) * (Number(l.qte) || 0) });
       }));
       window.XLSX.utils.book_append_sheet(wb, window.XLSX.utils.json_to_sheet(lignes), 'Ventes détaillées');
 

@@ -83,7 +83,7 @@
       const clientNom = cl ? cl.nom : ((inv && inv.client) || 'Client de passage');
       return `<tr>
         <td>${escapeHtml(p.date || '')}</td>
-        <td>${inv ? 'FAC-' + String(inv.num).padStart(4, '0') : '—'}</td>
+        <td>${inv ? numFac(inv) : '—'}</td>
         <td>${escapeHtml(clientNom)}</td>
         <td>${escapeHtml(p.mode || '—')}</td>
         <td class="num-cell">${euros(p.montant)}</td>

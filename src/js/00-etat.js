@@ -1,6 +1,12 @@
 
   // Ancienne dette (cahier de crédit d'avant BoromBoutik) : suivie comme une facture à crédit, mais ce n'est PAS une vente
   const isDette = (i) => !!(i && Array.isArray(i.lignes) && i.lignes.length > 0 && i.lignes.every(l => l && l.dette));
+  // Ancienne facture (recopiée du carnet, avec ses articles) : numéro négatif en base (-1 = AF-001), lignes marquées « ancienne ».
+  // C'est aussi une « dette » (isDette) : comptée dans les crédits clients, jamais dans les ventes, le stock ou le bénéfice.
+  const isAncienneFacture = (i) => !!(i && (Number(i.num) < 0 || (Array.isArray(i.lignes) && i.lignes.length > 0 && i.lignes.some(l => l && l.ancienne))));
+  const numFac = (i) => isAncienneFacture(i) ? 'AF-' + String(Math.abs(Number(i.num) || 0)).padStart(3, '0') : 'FAC-' + String(i && i.num).padStart(4, '0');
+  const AF_MENTION = 'Ancienne facture – reprise du carnet';
+  const badgeDette = (i) => isAncienneFacture(i) ? ' <span class="badge">📜 Ancienne facture</span>' : (isDette(i) ? ' <span class="badge">📒 Ancienne dette</span>' : '');
   const state = { db: null, downloads: null, products: [], invoices: [], movements: [], fournisseurs: [], commandes: [], clients: [], paiements: [], depenses: [], documents: [], currentUser: null };
   state.recoveryInProgress = /type=recovery/.test(window.location.hash) || /[?&]type=recovery/.test(window.location.search);
   // Lien reçu par email invalide, expiré ou déjà utilisé : on l'explique au lieu d'afficher une simple page de connexion

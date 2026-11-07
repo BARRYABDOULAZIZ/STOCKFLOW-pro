@@ -102,9 +102,9 @@
   // Ticket en texte (WhatsApp)
   function ticketText(inv) {
     const c = state.commerce || {};
-    const num = 'FAC-' + String(inv.num).padStart(4, '0');
+    const num = numFac(inv);
     const dt = inv.createdAt ? new Date(inv.createdAt) : new Date();
-    const dateTxt = (inv.date ? inv.date.split('-').reverse().join('/') : dt.toLocaleDateString('fr-FR')) + ' ' + dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const dateTxt = (inv.date ? inv.date.split('-').reverse().join('/') : dt.toLocaleDateString('fr-FR')) + (isAncienneFacture(inv) ? '' : ' ' + dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
     const n0 = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR').replace(/[  ]/g, ' ');
     const L = [];
     const lg = invLang(), X = invT(lg), sp = lg === 'fr' ? ' : ' : ': ', m0 = (n) => invMoney(n, lg);
@@ -114,6 +114,7 @@
     if (c.telephone) L.push(X.tel + sp + bidiIso(c.telephone, lg));
     L.push('─────────────');
     L.push(X.ticket + ' ' + bidiIso(num, lg) + ' — ' + bidiIso(dateTxt, lg));
+    if (isAncienneFacture(inv)) L.push('📜 *' + AF_MENTION + '*');
     if (inv.client) L.push(X.client + sp + inv.client);
     L.push('─────────────');
     (inv.lignes || []).forEach(l => {
@@ -156,9 +157,9 @@
   function printTicket(inv) {
     const w = (document.getElementById('tkWidth') && document.getElementById('tkWidth').value === '58') ? 58 : 80;
     const c = state.commerce || {};
-    const num = 'FAC-' + String(inv.num).padStart(4, '0');
+    const num = numFac(inv);
     const dt = inv.createdAt ? new Date(inv.createdAt) : new Date();
-    const dateTxt = (inv.date ? inv.date.split('-').reverse().join('/') : dt.toLocaleDateString('fr-FR')) + ' ' + dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const dateTxt = (inv.date ? inv.date.split('-').reverse().join('/') : dt.toLocaleDateString('fr-FR')) + (isAncienneFacture(inv) ? '' : ' ' + dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
     const lg = invLang(), X = invT(lg), sp = lg === 'fr' ? ' : ' : ': ';
     const num0 = (n) => invNum(n, lg), iso = (s) => bidiIso(s, lg);
     const lignes = (inv.lignes || []).map(l => {
@@ -182,6 +183,7 @@
         ${c.adresse ? `<div>${escapeHtml(c.adresse)}</div>` : ''}${c.telephone ? `<div>${X.tel}${sp}${iso(escapeHtml(c.telephone))}</div>` : ''}${c.numeroFiscal ? `<div>${X.fiscal}${sp}${iso(escapeHtml(c.numeroFiscal))}</div>` : ''}</div>
       <div class="tk-sep"></div>
       <div class="tk-row"><span>${X.ticket} ${iso(num)}</span><span>${iso(escapeHtml(dateTxt))}</span></div>
+      ${isAncienneFacture(inv) ? `<div class="tk-center"><b>${escapeHtml(AF_MENTION)}</b></div>` : ''}
       ${inv.operateur ? `<div>${X.vendeur}${sp}${escapeHtml(String(inv.operateur).replace(/\s*\(.*\)$/, ''))}</div>` : ''}
       ${inv.client ? `<div>${X.client}${sp}${escapeHtml(inv.client)}</div>` : ''}
       <div class="tk-sep"></div>
@@ -225,8 +227,8 @@
     document.getElementById('pi-title').textContent = X[kind] || X.facture;
     document.getElementById('pi-client-sign').style.display = kind === 'facture' ? 'none' : '';
     const numPrefix = kind === 'devis' ? 'DEV' : (kind === 'bon_commande' ? 'BC' : (isBL ? 'BL' : 'FAC'));
-    document.getElementById('pi-num').textContent = X.num + ' ' + iso(numPrefix + '-' + String(inv.num).padStart(4, '0'));
-    document.getElementById('pi-date').textContent = inv.date ? X.date + sp + iso(frDate(inv.date) + (heureDoc(inv) ? ' ' + heureDoc(inv) : '')) : '';
+    document.getElementById('pi-num').textContent = X.num + ' ' + iso(kind === 'facture' ? numFac(inv) : numPrefix + '-' + String(inv.num).padStart(4, '0'));
+    document.getElementById('pi-date').textContent = inv.date ? X.date + sp + iso(frDate(inv.date) + (heureDoc(inv) && !isAncienneFacture(inv) ? ' ' + heureDoc(inv) : '')) : '';
     document.getElementById('pi-commerce-nom').textContent = (state.commerce && state.commerce.nom) || 'BoromBoutik';
     document.getElementById('pi-commerce-adresse').textContent = state.commerce ? [state.commerce.adresse, state.commerce.telephone && iso(state.commerce.telephone), state.commerce.numeroFiscal && (X.fiscal + sp + iso(state.commerce.numeroFiscal))].filter(Boolean).join(' · ') : '';
     document.getElementById('pi-client').textContent = inv.client || '—';
@@ -260,7 +262,8 @@
       const lt = document.getElementById('pi-lettres');
       lt.textContent = isBL ? '' : (X.lettres[kind] || X.lettres.facture) + montantEnLettres(inv.total, lg);
       const rm = document.getElementById('pi-remarque');
-      if (inv.remarque) { rm.style.display = ''; rm.textContent = X.remarque + sp + inv.remarque; } else { rm.style.display = 'none'; rm.textContent = ''; }
+      const afTxt = (kind === 'facture' && isAncienneFacture(inv)) ? '📜 ' + AF_MENTION : '';
+      if (inv.remarque || afTxt) { rm.style.display = ''; rm.textContent = [afTxt, inv.remarque ? X.remarque + sp + inv.remarque : ''].filter(Boolean).join(' — '); } else { rm.style.display = 'none'; rm.textContent = ''; }
     }
     const paye = Number(inv.montantPaye) || 0;
     const reste = Math.max(0, Number(inv.total || 0) - paye);

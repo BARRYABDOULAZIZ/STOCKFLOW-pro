@@ -27,11 +27,11 @@
     // Alertes : ce qu'un patron absent doit savoir
     const alertes = [];
     const annulees = all.filter(i => i.annulee && i.date === day);
-    if (annulees.length) alertes.push(`${annulees.length} vente(s) annulée(s) : ${annulees.slice(0, 3).map(i => 'FAC-' + String(i.num).padStart(4, '0') + ' (' + euros(i.total) + (i.operateur ? ', ' + String(i.operateur).replace(/\s*\(.*\)$/, '') : '') + ')').join(', ')}`);
-    inv.forEach(i => { const st = Number(i.sousTotal) || Number(i.total) || 0, r = Number(i.remise) || 0; if (r > 0 && st > 0 && r / st >= 0.15) alertes.push(`Grosse remise de ${Math.round(r / st * 100)} % sur FAC-${String(i.num).padStart(4, '0')} (${euros(r)})${i.operateur ? ' par ' + String(i.operateur).replace(/\s*\(.*\)$/, '') : ''}`); });
-    inv.forEach(i => { if (!i.createdAt) return; const h = new Date(i.createdAt).getHours(); if (h >= 22 || h < 6) alertes.push(`Vente à ${String(h).padStart(2, '0')} h ${String(new Date(i.createdAt).getMinutes()).padStart(2, '0')} : FAC-${String(i.num).padStart(4, '0')} (${euros(i.total)})`); });
+    if (annulees.length) alertes.push(`${annulees.length} vente(s) annulée(s) : ${annulees.slice(0, 3).map(i => numFac(i) + ' (' + euros(i.total) + (i.operateur ? ', ' + String(i.operateur).replace(/\s*\(.*\)$/, '') : '') + ')').join(', ')}`);
+    inv.forEach(i => { const st = Number(i.sousTotal) || Number(i.total) || 0, r = Number(i.remise) || 0; if (r > 0 && st > 0 && r / st >= 0.15) alertes.push(`Grosse remise de ${Math.round(r / st * 100)} % sur ${numFac(i)} (${euros(r)})${i.operateur ? ' par ' + String(i.operateur).replace(/\s*\(.*\)$/, '') : ''}`); });
+    inv.forEach(i => { if (!i.createdAt) return; const h = new Date(i.createdAt).getHours(); if (h >= 22 || h < 6) alertes.push(`Vente à ${String(h).padStart(2, '0')} h ${String(new Date(i.createdAt).getMinutes()).padStart(2, '0')} : ${numFac(i)} (${euros(i.total)})`); });
     // Ventes en dessous du prix d'achat (erreur ou « arrangement » avec un client)
-    const aPerte = []; inv.forEach(i => (i.lignes || []).forEach((l, idx) => { const pa = (l.productId || l.ref) ? coutLigne(i, idx, l) : null, pv = Number(l.prix) || 0; if (pa > 0 && pv < pa) aPerte.push(`${l.nom} à ${euros(pv)} (achat ${euros(pa)}, FAC-${String(i.num).padStart(4, '0')}${i.operateur ? ', ' + String(i.operateur).replace(/\s*\(.*\)$/, '') : ''})`); }));
+    const aPerte = []; inv.forEach(i => (i.lignes || []).forEach((l, idx) => { const pa = (l.productId || l.ref) ? coutLigne(i, idx, l) : null, pv = Number(l.prix) || 0; if (pa > 0 && pv < pa) aPerte.push(`${l.nom} à ${euros(pv)} (achat ${euros(pa)}, ${numFac(i)}${i.operateur ? ', ' + String(i.operateur).replace(/\s*\(.*\)$/, '') : ''})`); }));
     if (aPerte.length) alertes.push(`${aPerte.length} vente(s) à perte : ${aPerte.slice(0, 3).join(' ; ')}`);
     const pertes = (state.movements || []).filter(m => m.date === day && m.source === 'perte');
     if (pertes.length) alertes.push(`${pertes.length} perte(s) déclarée(s) : ${pertes.slice(0, 3).map(m => Math.abs(Number(m.quantite) || 0) + ' ' + (m.unite || '') + ' ' + m.nom + (m.raison ? ' (' + m.raison + ')' : '')).join(', ')}`);

@@ -142,7 +142,7 @@
     L.push('\n## DÉTAIL DES FACTURES (90 j, les plus récentes d\'abord) — date | n° | client | total | payé | type | articles');
     recent.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 400).forEach(i => {
       const art = (i.lignes || []).map(l => (l.nom || '?') + '×' + (Number(l.qte) || 0) + '@' + n0(l.prix)).join('; ');
-      L.push('- ' + i.date + ' | FAC-' + String(i.num).padStart(4, '0') + ' | ' + (i.client || 'passage') + ' | ' + n0(i.total) + ' | ' + n0(i.montantPaye) + ' | ' + ((Number(i.montantPaye) || 0) < (Number(i.total) || 0) ? 'crédit' : 'comptant') + ' | ' + art);
+      L.push('- ' + i.date + ' | ' + numFac(i) + ' | ' + (i.client || 'passage') + ' | ' + n0(i.total) + ' | ' + n0(i.montantPaye) + ' | ' + ((Number(i.montantPaye) || 0) < (Number(i.total) || 0) ? 'crédit' : 'comptant') + ' | ' + art);
     });
     // ---- Paiements
     const pays = (state.paiements || []).filter(p => (p.date || '') >= d90);
@@ -152,7 +152,7 @@
     const clients = state.clients || [];
     const phoneOf = (nom) => { const cl = clients.find(x => (x.nom || '').trim().toLowerCase() === String(nom || '').trim().toLowerCase()); return cl && cl.telephone ? cl.telephone : ''; };
     const dettes = {};
-    invsAll.forEach(i => { const r = (Number(i.total) || 0) - (Number(i.montantPaye) || 0); if (r > 0.5) { const k = i.client || 'Client sans nom'; const o = dettes[k] || (dettes[k] = { r: 0, n: 0, plusAncienne: i.date, ech: '', fac: [] }); o.r += r; o.n++; o.fac.push('FAC-' + String(i.num).padStart(4, '0')); if ((i.date || '') < (o.plusAncienne || '9')) o.plusAncienne = i.date; if (i.echeance && (!o.ech || i.echeance < o.ech)) o.ech = i.echeance; } });
+    invsAll.forEach(i => { const r = (Number(i.total) || 0) - (Number(i.montantPaye) || 0); if (r > 0.5) { const k = i.client || 'Client sans nom'; const o = dettes[k] || (dettes[k] = { r: 0, n: 0, plusAncienne: i.date, ech: '', fac: [] }); o.r += r; o.n++; o.fac.push(numFac(i)); if ((i.date || '') < (o.plusAncienne || '9')) o.plusAncienne = i.date; if (i.echeance && (!o.ech || i.echeance < o.ech)) o.ech = i.echeance; } });
     const dl = Object.entries(dettes).sort((a, b) => b[1].r - a[1].r);
     L.push('\n## CRÉDITS : CLIENTS QUI DOIVENT DE L\'ARGENT — total ' + n0(sum(dl.map(([, o]) => o.r))) + ' ' + curSym() + ' — client | reste dû | factures | plus ancienne | échéance | téléphone');
     dl.slice(0, 200).forEach(([k, o]) => L.push('- ' + k + ' | ' + n0(o.r) + ' | ' + o.fac.join(',') + ' | ' + (o.plusAncienne || '-') + ' | ' + (o.ech || '-') + ' | ' + (phoneOf(k) ? 'oui' : 'non')));

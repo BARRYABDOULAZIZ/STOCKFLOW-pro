@@ -72,3 +72,7 @@
   .il2 .qty-box .line-qty{width:34px;}
   .il2 input{font-size:13px;padding:6px 4px;}
 }
+/* Ancienne facture (carnet d'avant BoromBoutik) */
+.af-wrap{border:1.5px dashed var(--line,#d6d3d1);border-radius:12px;padding:8px 10px;margin-bottom:10px;font-size:13px;}
+.af-wrap.on{border-color:#b45309;background:rgba(217,119,6,.08);}
+.af-wrap input[type=date]{margin-top:4px;}

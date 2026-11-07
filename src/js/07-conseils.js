@@ -92,7 +92,7 @@
     let oldDebt = 0;
     if (reste.length) {
       const groups = {};
-      reste.forEach(o => { const k = o.i.clientId || (o.i.client || 'Client comptoir'); const g = groups[k] || (groups[k] = { name: o.i.client || 'Client comptoir', cid: o.i.clientId, sum: 0, oldest: 0, nums: [] }); g.sum += o.r; g.oldest = Math.max(g.oldest, ago(o.i.date)); if (o.i.echeance && o.i.echeance < today) g.late = Math.max(g.late || 0, ago(o.i.echeance)); g.nums.push('FAC-' + String(o.i.num).padStart(4, '0')); });
+      reste.forEach(o => { const k = o.i.clientId || (o.i.client || 'Client comptoir'); const g = groups[k] || (groups[k] = { name: o.i.client || 'Client comptoir', cid: o.i.clientId, sum: 0, oldest: 0, nums: [] }); g.sum += o.r; g.oldest = Math.max(g.oldest, ago(o.i.date)); if (o.i.echeance && o.i.echeance < today) g.late = Math.max(g.late || 0, ago(o.i.echeance)); g.nums.push(numFac(o.i)); });
       const sum = reste.reduce((t, o) => t + o.r, 0), old = reste.filter(o => ago(o.i.date) > 7).length; oldDebt = old;
       add({ cat: 'argent', sev: old ? 'warn' : 'info', ic: '💰', tab: 'clients', t: `${reste.length} facture${reste.length > 1 ? 's' : ''} impayée${reste.length > 1 ? 's' : ''} : ${euros(sum)} à encaisser`, d: old ? `Dont ${old} depuis plus de 7 jours. Les plus gros débiteurs sont juste en dessous.` : 'Aucune n\'est en retard de plus de 7 jours.' });
       Object.values(groups).sort((a, b) => b.sum - a.sum).slice(0, 3).forEach((g, idx) => {

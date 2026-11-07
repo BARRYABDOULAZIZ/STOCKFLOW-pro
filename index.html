@@ -1198,7 +1198,14 @@
         </div>
 
         <div class="sale-right">
-          <div class="sale-step"><span class="sn">2</span> Client <em>(facultatif)</em></div>
+          <div id="afWrap" class="af-wrap" style="display:none;">
+            <label class="tk-opt"><input type="checkbox" id="f-ancienne"> 📜 <b>Ancienne facture</b> (avant BoromBoutik)</label>
+            <div id="afBox" style="display:none; margin-top:6px;">
+              <label>Date d'origine de la facture</label><input id="f-af-date" type="date">
+              <small class="muted" style="display:block; margin-top:4px;">Recopie une facture à crédit de ton carnet : elle s'ajoute à la dette du client, sans toucher au stock, aux ventes ni au bénéfice.</small>
+            </div>
+          </div>
+          <div class="sale-step"><span class="sn">2</span> Client <em id="clientOpt">(facultatif)</em></div>
           <div style="position:relative;"><input id="f-client" placeholder="Nom du client" autocomplete="off"><div id="clientSuggest" class="client-suggest" style="display:none;"></div></div>
 
           <div id="saleStep3">
@@ -1273,7 +1280,13 @@
 
   <!-- FACTURES -->
   <section class="panel" id="panel-factures">
-    <div class="row-head"><h2>Factures émises</h2></div>
+    <div class="row-head"><h2>Factures émises</h2>
+      <select id="histFilter" style="max-width:240px;" title="Filtrer les factures">
+        <option value="">Toutes les factures</option>
+        <option value="ventes">🧾 Ventes seulement</option>
+        <option value="af">📜 Anciennes factures (carnet)</option>
+        <option value="dette">📒 Anciennes dettes</option>
+      </select></div>
     <div class="table-wrap">
       <table>
         <thead><tr><th>N°</th><th>Date</th><th>Client</th><th>Vendeur</th><th class="num-cell">Articles</th><th class="num-cell">Total</th><th>Paiement</th><th></th></tr></thead>
@@ -1918,6 +1931,12 @@
 
   // Ancienne dette (cahier de crédit d'avant BoromBoutik) : suivie comme une facture à crédit, mais ce n'est PAS une vente
   const isDette = (i) => !!(i && Array.isArray(i.lignes) && i.lignes.length > 0 && i.lignes.every(l => l && l.dette));
+  // Ancienne facture (recopiée du carnet, avec ses articles) : numéro négatif en base (-1 = AF-001), lignes marquées « ancienne ».
+  // C'est aussi une « dette » (isDette) : comptée dans les crédits clients, jamais dans les ventes, le stock ou le bénéfice.
+  const isAncienneFacture = (i) => !!(i && (Number(i.num) < 0 || (Array.isArray(i.lignes) && i.lignes.length > 0 && i.lignes.some(l => l && l.ancienne))));
+  const numFac = (i) => isAncienneFacture(i) ? 'AF-' + String(Math.abs(Number(i.num) || 0)).padStart(3, '0') : 'FAC-' + String(i && i.num).padStart(4, '0');
+  const AF_MENTION = 'Ancienne facture – reprise du carnet';
+  const badgeDette = (i) => isAncienneFacture(i) ? ' <span class="badge">📜 Ancienne facture</span>' : (isDette(i) ? ' <span class="badge">📒 Ancienne dette</span>' : '');
   const state = { db: null, downloads: null, products: [], invoices: [], movements: [], fournisseurs: [], commandes: [], clients: [], paiements: [], depenses: [], documents: [], currentUser: null };
   state.recoveryInProgress = /type=recovery/.test(window.location.hash) || /[?&]type=recovery/.test(window.location.search);
   // Lien reçu par email invalide, expiré ou déjà utilisé : on l'explique au lieu d'afficher une simple page de connexion
@@ -3331,7 +3350,7 @@
     let oldDebt = 0;
     if (reste.length) {
       const groups = {};
-      reste.forEach(o => { const k = o.i.clientId || (o.i.client || 'Client comptoir'); const g = groups[k] || (groups[k] = { name: o.i.client || 'Client comptoir', cid: o.i.clientId, sum: 0, oldest: 0, nums: [] }); g.sum += o.r; g.oldest = Math.max(g.oldest, ago(o.i.date)); if (o.i.echeance && o.i.echeance < today) g.late = Math.max(g.late || 0, ago(o.i.echeance)); g.nums.push('FAC-' + String(o.i.num).padStart(4, '0')); });
+      reste.forEach(o => { const k = o.i.clientId || (o.i.client || 'Client comptoir'); const g = groups[k] || (groups[k] = { name: o.i.client || 'Client comptoir', cid: o.i.clientId, sum: 0, oldest: 0, nums: [] }); g.sum += o.r; g.oldest = Math.max(g.oldest, ago(o.i.date)); if (o.i.echeance && o.i.echeance < today) g.late = Math.max(g.late || 0, ago(o.i.echeance)); g.nums.push(numFac(o.i)); });
       const sum = reste.reduce((t, o) => t + o.r, 0), old = reste.filter(o => ago(o.i.date) > 7).length; oldDebt = old;
       add({ cat: 'argent', sev: old ? 'warn' : 'info', ic: '💰', tab: 'clients', t: `${reste.length} facture${reste.length > 1 ? 's' : ''} impayée${reste.length > 1 ? 's' : ''} : ${euros(sum)} à encaisser`, d: old ? `Dont ${old} depuis plus de 7 jours. Les plus gros débiteurs sont juste en dessous.` : 'Aucune n\'est en retard de plus de 7 jours.' });
       Object.values(groups).sort((a, b) => b.sum - a.sum).slice(0, 3).forEach((g, idx) => {
@@ -4188,7 +4207,7 @@
     L.push('\n## DÉTAIL DES FACTURES (90 j, les plus récentes d\'abord) — date | n° | client | total | payé | type | articles');
     recent.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 400).forEach(i => {
       const art = (i.lignes || []).map(l => (l.nom || '?') + '×' + (Number(l.qte) || 0) + '@' + n0(l.prix)).join('; ');
-      L.push('- ' + i.date + ' | FAC-' + String(i.num).padStart(4, '0') + ' | ' + (i.client || 'passage') + ' | ' + n0(i.total) + ' | ' + n0(i.montantPaye) + ' | ' + ((Number(i.montantPaye) || 0) < (Number(i.total) || 0) ? 'crédit' : 'comptant') + ' | ' + art);
+      L.push('- ' + i.date + ' | ' + numFac(i) + ' | ' + (i.client || 'passage') + ' | ' + n0(i.total) + ' | ' + n0(i.montantPaye) + ' | ' + ((Number(i.montantPaye) || 0) < (Number(i.total) || 0) ? 'crédit' : 'comptant') + ' | ' + art);
     });
     // ---- Paiements
     const pays = (state.paiements || []).filter(p => (p.date || '') >= d90);
@@ -4198,7 +4217,7 @@
     const clients = state.clients || [];
     const phoneOf = (nom) => { const cl = clients.find(x => (x.nom || '').trim().toLowerCase() === String(nom || '').trim().toLowerCase()); return cl && cl.telephone ? cl.telephone : ''; };
     const dettes = {};
-    invsAll.forEach(i => { const r = (Number(i.total) || 0) - (Number(i.montantPaye) || 0); if (r > 0.5) { const k = i.client || 'Client sans nom'; const o = dettes[k] || (dettes[k] = { r: 0, n: 0, plusAncienne: i.date, ech: '', fac: [] }); o.r += r; o.n++; o.fac.push('FAC-' + String(i.num).padStart(4, '0')); if ((i.date || '') < (o.plusAncienne || '9')) o.plusAncienne = i.date; if (i.echeance && (!o.ech || i.echeance < o.ech)) o.ech = i.echeance; } });
+    invsAll.forEach(i => { const r = (Number(i.total) || 0) - (Number(i.montantPaye) || 0); if (r > 0.5) { const k = i.client || 'Client sans nom'; const o = dettes[k] || (dettes[k] = { r: 0, n: 0, plusAncienne: i.date, ech: '', fac: [] }); o.r += r; o.n++; o.fac.push(numFac(i)); if ((i.date || '') < (o.plusAncienne || '9')) o.plusAncienne = i.date; if (i.echeance && (!o.ech || i.echeance < o.ech)) o.ech = i.echeance; } });
     const dl = Object.entries(dettes).sort((a, b) => b[1].r - a[1].r);
     L.push('\n## CRÉDITS : CLIENTS QUI DOIVENT DE L\'ARGENT — total ' + n0(sum(dl.map(([, o]) => o.r))) + ' ' + curSym() + ' — client | reste dû | factures | plus ancienne | échéance | téléphone');
     dl.slice(0, 200).forEach(([k, o]) => L.push('- ' + k + ' | ' + n0(o.r) + ' | ' + o.fac.join(',') + ' | ' + (o.plusAncienne || '-') + ' | ' + (o.ech || '-') + ' | ' + (phoneOf(k) ? 'oui' : 'non')));
@@ -4862,7 +4881,7 @@
     if (recent.length === 0) { recentBox.innerHTML = ''; recentEmpty.style.display = 'block'; }
     else {
       recentEmpty.style.display = 'none';
-      recentBox.innerHTML = recent.map(inv => `<li><span>FAC-${String(inv.num).padStart(4,'0')} — ${escapeHtml(inv.client || 'Client')}</span><span class="r">${euros(inv.total)}</span></li>`).join('');
+      recentBox.innerHTML = recent.map(inv => `<li><span>${numFac(inv)} — ${escapeHtml(inv.client || 'Client')}</span><span class="r">${euros(inv.total)}</span></li>`).join('');
     }
 
     // Stock à surveiller
@@ -5216,10 +5235,14 @@
     const body = document.getElementById('histBody');
     const empty = document.getElementById('histEmpty');
     body.innerHTML = '';
-    if (state.invoices.length === 0) { empty.style.display = 'block'; }
+    const flt = (document.getElementById('histFilter') || {}).value || '';
+    const list = state.invoices.filter(i => !flt || (flt === 'af' ? isAncienneFacture(i) : flt === 'dette' ? (isDette(i) && !isAncienneFacture(i)) : !isDette(i)));
+    empty.textContent = state.invoices.length && !list.length ? 'Aucune facture pour ce filtre.' : 'Aucune facture émise pour l\'instant.';
+    if (list.length === 0) { empty.style.display = 'block'; }
     else {
       empty.style.display = 'none';
-      state.invoices.slice().sort((a, b) => (b.num || 0) - (a.num || 0)).forEach(inv => {
+      // Plus récentes d'abord (les anciennes factures AF-… ont un numéro négatif : on trie par date de saisie)
+      list.slice().sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0) || (b.num || 0) - (a.num || 0)).forEach(inv => {
         const tr = document.createElement('tr');
         const nbArticles = (inv.lignes || []).reduce((s, l) => s + (Number(l.qte) || 0), 0);
         const annulee = !!inv.annulee;
@@ -5234,7 +5257,7 @@
         }
         tr.style.opacity = annulee ? '0.5' : '1';
         tr.innerHTML = `
-          <td>FAC-${String(inv.num).padStart(4, '0')}${isDette(inv) ? ' <span class="badge">📒 Ancienne dette</span>' : ''}${annulee ? ' <span class="badge">Annulée</span>' : ''}</td>
+          <td>${numFac(inv)}${badgeDette(inv)}${annulee ? ' <span class="badge">Annulée</span>' : ''}</td>
           <td class="muted">${escapeHtml(inv.date)}${heureDoc(inv) ? ' <span style="white-space:nowrap;">' + escapeHtml(heureDoc(inv)) + '</span>' : ''}</td>
           <td>${escapeHtml(inv.client || '—')}</td>
           <td class="muted">${escapeHtml(inv.operateur || '—')}</td>
@@ -5265,10 +5288,12 @@
     }
   }
 
+  { const hf = document.getElementById('histFilter'); if (hf) hf.addEventListener('change', renderHistory); }
+
   async function cancelInvoice(invId) {
     const inv = state.invoices.find(i => i.id === invId);
     if (!inv || inv.annulee) return;
-    const numLabel = 'FAC-' + String(inv.num).padStart(4, '0');
+    const numLabel = numFac(inv);
     const role = state.currentUser && state.currentUser.role;
 
     // 1. Réservé au propriétaire et à l'admin (vérifié aussi côté base)
@@ -5281,7 +5306,7 @@
     const reason = prompt(`Motif de l'annulation de la facture ${numLabel} (obligatoire) :`);
     if (!reason || !reason.trim()) { toast('Annulation abandonnée : un motif est requis.'); return; }
     // 3. Confirmation finale
-    if (!confirm(`Annuler définitivement la facture ${numLabel} (${euros(inv.total)}) ? Les quantités seront remises en stock.`)) return;
+    if (!confirm(`Annuler définitivement la facture ${numLabel} (${euros(inv.total)}) ? ${isDette(inv) ? 'La dette du client sera retirée.' : 'Les quantités seront remises en stock.'}`)) return;
     if (!supabaseClient) { toast('Connexion non disponible.'); return; }
     if (!needOnline('annuler une facture')) return;
 
@@ -5420,9 +5445,9 @@
   // Ticket en texte (WhatsApp)
   function ticketText(inv) {
     const c = state.commerce || {};
-    const num = 'FAC-' + String(inv.num).padStart(4, '0');
+    const num = numFac(inv);
     const dt = inv.createdAt ? new Date(inv.createdAt) : new Date();
-    const dateTxt = (inv.date ? inv.date.split('-').reverse().join('/') : dt.toLocaleDateString('fr-FR')) + ' ' + dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const dateTxt = (inv.date ? inv.date.split('-').reverse().join('/') : dt.toLocaleDateString('fr-FR')) + (isAncienneFacture(inv) ? '' : ' ' + dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
     const n0 = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR').replace(/[  ]/g, ' ');
     const L = [];
     const lg = invLang(), X = invT(lg), sp = lg === 'fr' ? ' : ' : ': ', m0 = (n) => invMoney(n, lg);
@@ -5432,6 +5457,7 @@
     if (c.telephone) L.push(X.tel + sp + bidiIso(c.telephone, lg));
     L.push('─────────────');
     L.push(X.ticket + ' ' + bidiIso(num, lg) + ' — ' + bidiIso(dateTxt, lg));
+    if (isAncienneFacture(inv)) L.push('📜 *' + AF_MENTION + '*');
     if (inv.client) L.push(X.client + sp + inv.client);
     L.push('─────────────');
     (inv.lignes || []).forEach(l => {
@@ -5474,9 +5500,9 @@
   function printTicket(inv) {
     const w = (document.getElementById('tkWidth') && document.getElementById('tkWidth').value === '58') ? 58 : 80;
     const c = state.commerce || {};
-    const num = 'FAC-' + String(inv.num).padStart(4, '0');
+    const num = numFac(inv);
     const dt = inv.createdAt ? new Date(inv.createdAt) : new Date();
-    const dateTxt = (inv.date ? inv.date.split('-').reverse().join('/') : dt.toLocaleDateString('fr-FR')) + ' ' + dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const dateTxt = (inv.date ? inv.date.split('-').reverse().join('/') : dt.toLocaleDateString('fr-FR')) + (isAncienneFacture(inv) ? '' : ' ' + dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
     const lg = invLang(), X = invT(lg), sp = lg === 'fr' ? ' : ' : ': ';
     const num0 = (n) => invNum(n, lg), iso = (s) => bidiIso(s, lg);
     const lignes = (inv.lignes || []).map(l => {
@@ -5500,6 +5526,7 @@
         ${c.adresse ? `<div>${escapeHtml(c.adresse)}</div>` : ''}${c.telephone ? `<div>${X.tel}${sp}${iso(escapeHtml(c.telephone))}</div>` : ''}${c.numeroFiscal ? `<div>${X.fiscal}${sp}${iso(escapeHtml(c.numeroFiscal))}</div>` : ''}</div>
       <div class="tk-sep"></div>
       <div class="tk-row"><span>${X.ticket} ${iso(num)}</span><span>${iso(escapeHtml(dateTxt))}</span></div>
+      ${isAncienneFacture(inv) ? `<div class="tk-center"><b>${escapeHtml(AF_MENTION)}</b></div>` : ''}
       ${inv.operateur ? `<div>${X.vendeur}${sp}${escapeHtml(String(inv.operateur).replace(/\s*\(.*\)$/, ''))}</div>` : ''}
       ${inv.client ? `<div>${X.client}${sp}${escapeHtml(inv.client)}</div>` : ''}
       <div class="tk-sep"></div>
@@ -5543,8 +5570,8 @@
     document.getElementById('pi-title').textContent = X[kind] || X.facture;
     document.getElementById('pi-client-sign').style.display = kind === 'facture' ? 'none' : '';
     const numPrefix = kind === 'devis' ? 'DEV' : (kind === 'bon_commande' ? 'BC' : (isBL ? 'BL' : 'FAC'));
-    document.getElementById('pi-num').textContent = X.num + ' ' + iso(numPrefix + '-' + String(inv.num).padStart(4, '0'));
-    document.getElementById('pi-date').textContent = inv.date ? X.date + sp + iso(frDate(inv.date) + (heureDoc(inv) ? ' ' + heureDoc(inv) : '')) : '';
+    document.getElementById('pi-num').textContent = X.num + ' ' + iso(kind === 'facture' ? numFac(inv) : numPrefix + '-' + String(inv.num).padStart(4, '0'));
+    document.getElementById('pi-date').textContent = inv.date ? X.date + sp + iso(frDate(inv.date) + (heureDoc(inv) && !isAncienneFacture(inv) ? ' ' + heureDoc(inv) : '')) : '';
     document.getElementById('pi-commerce-nom').textContent = (state.commerce && state.commerce.nom) || 'BoromBoutik';
     document.getElementById('pi-commerce-adresse').textContent = state.commerce ? [state.commerce.adresse, state.commerce.telephone && iso(state.commerce.telephone), state.commerce.numeroFiscal && (X.fiscal + sp + iso(state.commerce.numeroFiscal))].filter(Boolean).join(' · ') : '';
     document.getElementById('pi-client').textContent = inv.client || '—';
@@ -5578,7 +5605,8 @@
       const lt = document.getElementById('pi-lettres');
       lt.textContent = isBL ? '' : (X.lettres[kind] || X.lettres.facture) + montantEnLettres(inv.total, lg);
       const rm = document.getElementById('pi-remarque');
-      if (inv.remarque) { rm.style.display = ''; rm.textContent = X.remarque + sp + inv.remarque; } else { rm.style.display = 'none'; rm.textContent = ''; }
+      const afTxt = (kind === 'facture' && isAncienneFacture(inv)) ? '📜 ' + AF_MENTION : '';
+      if (inv.remarque || afTxt) { rm.style.display = ''; rm.textContent = [afTxt, inv.remarque ? X.remarque + sp + inv.remarque : ''].filter(Boolean).join(' — '); } else { rm.style.display = 'none'; rm.textContent = ''; }
     }
     const paye = Number(inv.montantPaye) || 0;
     const reste = Math.max(0, Number(inv.total || 0) - paye);
@@ -5942,6 +5970,7 @@
     inp.placeholder = t === 'credit' ? 'Vide = rien payé maintenant' : 'Laisse vide si le client paie tout';
     if (t === 'credit' && !document.getElementById('f-echeance').value) { const d = new Date(Date.now() + 7 * 86400000); document.getElementById('f-echeance').value = d.toISOString().slice(0, 10); }
     updateGrandTotal();
+    try { afApply(); } catch (e) {}
   }
   document.querySelectorAll('.st-btn').forEach(b => b.addEventListener('click', () => setSaleType(b.dataset.st)));
   document.getElementById('modeChips').addEventListener('click', (e) => {
@@ -5959,6 +5988,8 @@
     }).filter(Boolean);
     const customLines = invoiceLines.filter(l => !l.matched && l.nom && l.nom.trim()).length;
     hint.classList.remove('fh-warn');
+    { const w = document.getElementById('afWrap'); if (w) w.style.display = (currentDocType() === 'facture' && afIsBoss()) ? '' : 'none'; }
+    if (afActive()) { hint.textContent = '📜 Ancienne facture : le stock, les ventes et le bénéfice ne seront pas touchés. Seule la dette du client augmente.'; hint.style.color = ''; try { saleGuardRender(); } catch (e) {} return; }
     if (shortages.length) { hint.textContent = '⚠ Stock insuffisant — ' + shortages.join(', '); hint.style.color = ''; hint.classList.add('fh-warn'); }
     else if (customLines) { hint.textContent = `⚠ ${customLines} ligne(s) hors catalogue (produit non enregistré dans ton stock) — le stock ne sera PAS déduit pour ces lignes.`; hint.style.color = ''; hint.classList.add('fh-warn'); }
     else { hint.textContent = 'La finalisation déduit automatiquement les quantités du stock pour les articles du catalogue.'; hint.style.color = ''; }
@@ -6005,6 +6036,7 @@
   }
 
   async function finalizeInvoice() {
+    if (afActive()) return finalizeAncienneFacture();
     const validLines = invoiceLines.filter(l => l.nom && Number(l.qte) > 0);
     if (validLines.length === 0) { toast('Ajoute au moins une ligne valide (désignation + quantité).'); return; }
     if (aboReadOnly()) { toast('🔒 ' + ABO_RO_MSG); aboGoto(); return; }
@@ -6117,6 +6149,101 @@
     }
   }
 
+
+  // ================= Ancienne facture (recopiée du carnet, d'avant BoromBoutik) =================
+  // Ne touche pas au stock, ne compte pas dans les ventes / bénéfice / compta.
+  // Compte dans la dette du client. Numérotation à part : AF-001, AF-002… (numéro négatif en base).
+  const afIsBoss = () => { const r = state.currentUser && state.currentUser.role; return r === 'proprietaire' || r === 'admin'; };
+  function afActive() {
+    const cb = document.getElementById('f-ancienne');
+    return !!(cb && cb.checked && currentDocType() === 'facture' && afIsBoss());
+  }
+  function afApply() {
+    const wrap = document.getElementById('afWrap'); if (!wrap) return;
+    const isInv = currentDocType() === 'facture';
+    wrap.style.display = (isInv && afIsBoss()) ? '' : 'none';
+    const on = afActive();
+    wrap.classList.toggle('on', on);
+    document.getElementById('afBox').style.display = on ? '' : 'none';
+    if (on && !document.getElementById('f-af-date').value) document.getElementById('f-af-date').value = todayStr();
+    document.getElementById('f-af-date').max = todayStr();
+    document.getElementById('clientOpt').textContent = on ? '(obligatoire)' : '(facultatif)';
+    if (!isInv) return;
+    const st = document.querySelector('.sale-type'); if (st) st.style.display = on ? 'none' : '';
+    document.getElementById('f-mode-wrap').style.display = on ? 'none' : '';
+    document.getElementById('f-echeance-wrap').style.display = (on || saleType === 'credit') ? '' : 'none';
+    const lab = document.querySelector('#f-paye-wrap label'), inp = document.getElementById('f-paye');
+    if (on) {
+      if (lab) lab.textContent = 'Montant déjà payé par le client (' + curSym() + ') — facultatif';
+      inp.placeholder = 'Vide = rien payé';
+    }
+    document.getElementById('btnFinalize').textContent = on ? '📜 Enregistrer l\'ancienne facture' : 'Finaliser la vente';
+    document.getElementById('ventesTitle').textContent = on ? 'Ancienne facture (carnet)' : 'Nouvelle vente';
+    updateFinalizeHint();
+  }
+  document.getElementById('f-ancienne').addEventListener('change', () => {
+    if (!document.getElementById('f-ancienne').checked) setSaleType(saleType); else afApply();
+  });
+
+  async function finalizeAncienneFacture() {
+    const validLines = invoiceLines.filter(l => l.nom && Number(l.qte) > 0);
+    if (!afIsBoss()) { toast('🔒 Seul le propriétaire ou l\'admin peut ajouter une ancienne facture.'); return; }
+    if (validLines.length === 0) { toast('Ajoute au moins une ligne valide (désignation + quantité).'); return; }
+    if (aboReadOnly()) { toast('🔒 ' + ABO_RO_MSG); aboGoto(); return; }
+    if (!state.db) { toast('Connexion non disponible — réessaie dans un instant.'); return; }
+    const client = document.getElementById('f-client').value.trim();
+    if (!client) { toast('⚠ Pour une ancienne facture, indique le nom du client : c\'est lui qui doit l\'argent.'); document.getElementById('f-client').focus(); return; }
+    const date = document.getElementById('f-af-date').value || todayStr();
+    if (date > todayStr()) { toast('La date d\'origine ne peut pas être dans le futur.'); return; }
+    const T = computeTotals(validLines);
+    const total = T.total;
+    if (!(total > 0)) { toast('Le total de l\'ancienne facture doit être supérieur à 0.'); return; }
+    const payeRaw = document.getElementById('f-paye').value.trim();
+    const montantPaye = payeRaw === '' ? 0 : Math.max(0, Math.min(total, Math.round(Number(payeRaw) || 0)));
+    if (!confirm(`Enregistrer l'ancienne facture de ${client} : ${euros(total)}${montantPaye ? ', déjà payé ' + euros(montantPaye) : ''} → reste dû ${euros(total - montantPaye)} ?\n\nLe stock et les ventes ne seront pas touchés.`)) return;
+
+    const btn = document.getElementById('btnFinalize');
+    btn.disabled = true;
+    try {
+      let clientId = null;
+      const existing = state.clients.find(c => (c.nom || '').trim().toLowerCase() === client.toLowerCase());
+      if (existing) clientId = existing.id;
+      else {
+        clientId = 'cl-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+        await state.db.doc('clients/' + clientId).set({ nom: client, telephone: '', adresse: '', createdAt: Date.now() });
+      }
+      // Numéro à part : -1 = AF-001, -2 = AF-002… (ne prend jamais un numéro de vraie facture)
+      const num = Math.min(0, ...state.invoices.map(i => Number(i.num) || 0)) - 1;
+      const invDoc = {
+        num, date, client, clientId,
+        lignes: validLines.map(l => ({ ref: l.ref || '', nom: l.nom, qte: Number(l.qte), prix: Number(l.prix) || 0, unite: l.unite || '', matched: false, productId: null, dette: true, ancienne: true })),
+        total, ...fiscalExtra(T), montantPaye, createdAt: Date.now(), annulee: false,
+        operateur: state.currentUser ? `${state.currentUser.nom} (${ROLE_LABEL[state.currentUser.role]})` : '',
+      };
+      const remarque = (document.getElementById('f-remarque').value || '').trim();
+      if (remarque) invDoc.remarque = remarque;
+      const ech = document.getElementById('f-echeance').value;
+      if (ech && montantPaye < total) invDoc.echeance = ech;
+      const invId = 'fac-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+      // Pas de adjust_stock, pas de paiement dans la caisse : l'argent déjà payé l'a été avant BoromBoutik.
+      await state.db.collection('factures').doc(invId).set(invDoc);
+      const label = numFac(invDoc);
+      if (typeof logAction === 'function') logAction('ANCIENNE_FACTURE', `Ancienne facture ${label} ajoutée : ${client} — ${euros(total)} (du ${frDate(date)})${montantPaye ? ', déjà payé ' + euros(montantPaye) : ''}, ${validLines.length} article(s)`);
+
+      invoiceLines = [freshLine()];
+      ['f-client', 'f-paye', 'f-remise', 'f-remarque', 'f-echeance', 'f-af-date'].forEach(k => { document.getElementById(k).value = ''; });
+      document.getElementById('f-ancienne').checked = false;
+      setSaleType('comptant');
+      renderInvoiceLines();
+      toast(`📜 Ancienne facture ${label} enregistrée — ${client} doit ${euros(total - montantPaye)}. Stock et ventes non touchés.`);
+      if (document.getElementById('tkWa') && document.getElementById('tkWa').checked) sendTicketWhatsApp(invDoc, false);
+    } catch (err) {
+      console.error(err);
+      toast('Erreur : ' + ((err && err.message) || String(err)));
+    } finally {
+      btn.disabled = false;
+    }
+  }
   // ================= Devis et bons de commande =================
   const DOC_LABELS = { devis: 'Devis', bon_commande: 'Bon de commande', bon_livraison: 'Bon de livraison' };
   const DOC_PREFIX = { devis: 'DEV', bon_commande: 'BC', bon_livraison: 'BL' };
@@ -6142,6 +6269,7 @@
     document.getElementById('f-validite-wrap').style.display = t === 'devis' ? '' : 'none';
     document.getElementById('finalizeHint').style.display = isInv ? '' : 'none';
     document.getElementById('btnFinalize').textContent = isInv ? 'Finaliser la vente' : (t === 'devis' ? 'Enregistrer le devis' : (t === 'bon_livraison' ? 'Enregistrer le bon de livraison' : 'Enregistrer le bon de commande'));
+    try { afApply(); } catch (e) { console.error(e); }
     if (t === 'devis' && !document.getElementById('f-validite').value) {
       const d = new Date(); d.setDate(d.getDate() + 15);
       document.getElementById('f-validite').value = d.toISOString().slice(0, 10);
@@ -6844,11 +6972,11 @@
     // Alertes : ce qu'un patron absent doit savoir
     const alertes = [];
     const annulees = all.filter(i => i.annulee && i.date === day);
-    if (annulees.length) alertes.push(`${annulees.length} vente(s) annulée(s) : ${annulees.slice(0, 3).map(i => 'FAC-' + String(i.num).padStart(4, '0') + ' (' + euros(i.total) + (i.operateur ? ', ' + String(i.operateur).replace(/\s*\(.*\)$/, '') : '') + ')').join(', ')}`);
-    inv.forEach(i => { const st = Number(i.sousTotal) || Number(i.total) || 0, r = Number(i.remise) || 0; if (r > 0 && st > 0 && r / st >= 0.15) alertes.push(`Grosse remise de ${Math.round(r / st * 100)} % sur FAC-${String(i.num).padStart(4, '0')} (${euros(r)})${i.operateur ? ' par ' + String(i.operateur).replace(/\s*\(.*\)$/, '') : ''}`); });
-    inv.forEach(i => { if (!i.createdAt) return; const h = new Date(i.createdAt).getHours(); if (h >= 22 || h < 6) alertes.push(`Vente à ${String(h).padStart(2, '0')} h ${String(new Date(i.createdAt).getMinutes()).padStart(2, '0')} : FAC-${String(i.num).padStart(4, '0')} (${euros(i.total)})`); });
+    if (annulees.length) alertes.push(`${annulees.length} vente(s) annulée(s) : ${annulees.slice(0, 3).map(i => numFac(i) + ' (' + euros(i.total) + (i.operateur ? ', ' + String(i.operateur).replace(/\s*\(.*\)$/, '') : '') + ')').join(', ')}`);
+    inv.forEach(i => { const st = Number(i.sousTotal) || Number(i.total) || 0, r = Number(i.remise) || 0; if (r > 0 && st > 0 && r / st >= 0.15) alertes.push(`Grosse remise de ${Math.round(r / st * 100)} % sur ${numFac(i)} (${euros(r)})${i.operateur ? ' par ' + String(i.operateur).replace(/\s*\(.*\)$/, '') : ''}`); });
+    inv.forEach(i => { if (!i.createdAt) return; const h = new Date(i.createdAt).getHours(); if (h >= 22 || h < 6) alertes.push(`Vente à ${String(h).padStart(2, '0')} h ${String(new Date(i.createdAt).getMinutes()).padStart(2, '0')} : ${numFac(i)} (${euros(i.total)})`); });
     // Ventes en dessous du prix d'achat (erreur ou « arrangement » avec un client)
-    const aPerte = []; inv.forEach(i => (i.lignes || []).forEach((l, idx) => { const pa = (l.productId || l.ref) ? coutLigne(i, idx, l) : null, pv = Number(l.prix) || 0; if (pa > 0 && pv < pa) aPerte.push(`${l.nom} à ${euros(pv)} (achat ${euros(pa)}, FAC-${String(i.num).padStart(4, '0')}${i.operateur ? ', ' + String(i.operateur).replace(/\s*\(.*\)$/, '') : ''})`); }));
+    const aPerte = []; inv.forEach(i => (i.lignes || []).forEach((l, idx) => { const pa = (l.productId || l.ref) ? coutLigne(i, idx, l) : null, pv = Number(l.prix) || 0; if (pa > 0 && pv < pa) aPerte.push(`${l.nom} à ${euros(pv)} (achat ${euros(pa)}, ${numFac(i)}${i.operateur ? ', ' + String(i.operateur).replace(/\s*\(.*\)$/, '') : ''})`); }));
     if (aPerte.length) alertes.push(`${aPerte.length} vente(s) à perte : ${aPerte.slice(0, 3).join(' ; ')}`);
     const pertes = (state.movements || []).filter(m => m.date === day && m.source === 'perte');
     if (pertes.length) alertes.push(`${pertes.length} perte(s) déclarée(s) : ${pertes.slice(0, 3).map(m => Math.abs(Number(m.quantite) || 0) + ' ' + (m.unite || '') + ' ' + m.nom + (m.raison ? ' (' + m.raison + ')' : '')).join(', ')}`);
@@ -7772,7 +7900,7 @@
     if (error) { tbody.innerHTML = '<tr><td colspan="4" style="padding:12px; text-align:center;" class="muted">Journal indisponible.</td></tr>'; return; }
     if (!data.length) { tbody.innerHTML = '<tr><td colspan="4" style="padding:12px; text-align:center;" class="muted">Aucune action enregistrée.</td></tr>'; return; }
     const colors = { ANNULATION_FACTURE: '#dc2626', TENTATIVE_ANNULATION: '#b91c1c', PERTE_STOCK: '#d97706', SUPPRESSION_PRODUIT: '#d97706', SUPPRESSION_DOCUMENT: '#d97706', REINITIALISATION_MDP: '#2563eb', INVENTAIRE: '#7c3aed', CLOTURE_CAISSE: '#059669' };
-    const labels = { CLOTURE_CAISSE: 'Clôture de caisse', ANNULATION_FACTURE: 'Annulation facture', TENTATIVE_ANNULATION: 'Tentative refusée', PERTE_STOCK: 'Perte / casse', SUPPRESSION_PRODUIT: 'Produit supprimé', SUPPRESSION_DOCUMENT: 'Document supprimé', REINITIALISATION_MDP: 'Mot de passe réinitialisé', INVENTAIRE: 'Inventaire validé', ANCIENNE_DETTE: 'Ancienne dette ajoutée' };
+    const labels = { CLOTURE_CAISSE: 'Clôture de caisse', ANNULATION_FACTURE: 'Annulation facture', TENTATIVE_ANNULATION: 'Tentative refusée', PERTE_STOCK: 'Perte / casse', SUPPRESSION_PRODUIT: 'Produit supprimé', SUPPRESSION_DOCUMENT: 'Document supprimé', REINITIALISATION_MDP: 'Mot de passe réinitialisé', INVENTAIRE: 'Inventaire validé', ANCIENNE_DETTE: 'Ancienne dette ajoutée', ANCIENNE_FACTURE: 'Ancienne facture ajoutée' };
     tbody.innerHTML = data.map(l => `
       <tr style="border-bottom:1px solid var(--line);">
         <td style="padding:8px; white-space:nowrap;">${escapeHtml(new Date(l.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }))}</td>
@@ -8130,7 +8258,7 @@
       ? '<option value="">Aucune facture avec un solde dû</option>'
       : withBalance.slice().sort((a, b) => (b.num || 0) - (a.num || 0)).map(i => {
           const r = (Number(i.total) || 0) - (Number(i.montantPaye) || 0);
-          return `<option value="${i.id}">FAC-${String(i.num).padStart(4, '0')} — reste ${euros(r)}</option>`;
+          return `<option value="${i.id}">${numFac(i)} — reste ${euros(r)}</option>`;
         }).join('');
 
     // Liste des factures
@@ -8142,7 +8270,7 @@
       fBody.innerHTML = factures.slice().sort((a, b) => (b.num || 0) - (a.num || 0)).map(i => {
         const p = Number(i.montantPaye) || 0;
         const r = (Number(i.total) || 0) - p;
-        return `<tr><td>FAC-${String(i.num).padStart(4, '0')}${isDette(i) ? ' <span class="badge">📒 Ancienne dette</span>' : ''}</td><td class="muted">${escapeHtml(i.date || '')}</td><td class="num-cell">${euros(i.total)}</td><td class="num-cell">${euros(p)}</td><td class="num-cell ${r > 0 ? 'margin-neg' : 'margin-pos'}">${euros(r)}</td></tr>`;
+        return `<tr><td>${numFac(i)}${badgeDette(i)}</td><td class="muted">${escapeHtml(i.date || '')}</td><td class="num-cell">${euros(i.total)}</td><td class="num-cell">${euros(p)}</td><td class="num-cell ${r > 0 ? 'margin-neg' : 'margin-pos'}">${euros(r)}</td></tr>`;
       }).join('');
     }
 
@@ -8155,7 +8283,7 @@
       pEmpty.style.display = 'none';
       pBody.innerHTML = payments.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).map(p => {
         const inv = state.invoices.find(i => i.id === p.factureId);
-        return `<tr><td class="muted">${escapeHtml(p.date || '')}</td><td>${inv ? 'FAC-' + String(inv.num).padStart(4, '0') : '—'}</td><td class="num-cell">${euros(p.montant)}</td><td class="muted">${escapeHtml(p.mode || '')}</td></tr>`;
+        return `<tr><td class="muted">${escapeHtml(p.date || '')}</td><td>${inv ? numFac(inv) : '—'}</td><td class="num-cell">${euros(p.montant)}</td><td class="muted">${escapeHtml(p.mode || '')}</td></tr>`;
       }).join('');
     }
 
@@ -8307,7 +8435,7 @@
         let statut = '<span class="badge" style="background:var(--good,#16a34a); color:#fff;">Payée</span>';
         if (paye <= 0) statut = '<span class="badge" style="background:var(--danger); color:#fff;">Non payée</span>';
         else if (reste > 0) statut = '<span class="badge" style="background:#d97706; color:#fff;">Partielle</span>';
-        return `<tr><td>FAC-${String(inv.num).padStart(4, '0')}</td><td class="muted">${escapeHtml(inv.date || '')}</td><td>${escapeHtml(inv.client || '—')}</td><td class="num-cell">${euros(inv.total)}</td><td>${statut}</td></tr>`;
+        return `<tr><td>${numFac(inv)}</td><td class="muted">${escapeHtml(inv.date || '')}</td><td>${escapeHtml(inv.client || '—')}</td><td class="num-cell">${euros(inv.total)}</td><td>${statut}</td></tr>`;
       }).join('');
     }
   }
@@ -8330,7 +8458,7 @@
 
       const lignes = [];
       factures.forEach(inv => (inv.lignes || []).forEach(l => {
-        lignes.push({ Facture: 'FAC-' + String(inv.num).padStart(4, '0'), Date: inv.date, Client: inv.client || '', Référence: l.ref || '', Désignation: l.nom, Quantité: l.qte, Unité: l.unite || '', 'Prix unitaire': l.prix, 'Total ligne': (Number(l.prix) || 0) * (Number(l.qte) || 0) });
+        lignes.push({ Facture: numFac(inv), Date: inv.date, Client: inv.client || '', Référence: l.ref || '', Désignation: l.nom, Quantité: l.qte, Unité: l.unite || '', 'Prix unitaire': l.prix, 'Total ligne': (Number(l.prix) || 0) * (Number(l.qte) || 0) });
       }));
       window.XLSX.utils.book_append_sheet(wb, window.XLSX.utils.json_to_sheet(lignes), 'Ventes détaillées');
 
@@ -8530,7 +8658,7 @@
       const clientNom = cl ? cl.nom : ((inv && inv.client) || 'Client de passage');
       return `<tr>
         <td>${escapeHtml(p.date || '')}</td>
-        <td>${inv ? 'FAC-' + String(inv.num).padStart(4, '0') : '—'}</td>
+        <td>${inv ? numFac(inv) : '—'}</td>
         <td>${escapeHtml(clientNom)}</td>
         <td>${escapeHtml(p.mode || '—')}</td>
         <td class="num-cell">${euros(p.montant)}</td>
@@ -8786,7 +8914,7 @@
 
       const factureLignes = [];
       state.invoices.forEach(inv => (inv.lignes || []).forEach(l => {
-        factureLignes.push({ Facture: 'FAC-' + String(inv.num).padStart(4, '0'), Date: inv.date, Client: inv.client || '', Annulée: inv.annulee ? 'Oui' : 'Non', Référence: l.ref || '', Désignation: l.nom, Quantité: l.qte, Unité: l.unite || '', 'Prix unitaire': l.prix, 'Total ligne': (Number(l.prix) || 0) * (Number(l.qte) || 0) });
+        factureLignes.push({ Facture: numFac(inv), Date: inv.date, Client: inv.client || '', Annulée: inv.annulee ? 'Oui' : 'Non', Référence: l.ref || '', Désignation: l.nom, Quantité: l.qte, Unité: l.unite || '', 'Prix unitaire': l.prix, 'Total ligne': (Number(l.prix) || 0) * (Number(l.qte) || 0) });
       }));
       const wsFactures = window.XLSX.utils.json_to_sheet(factureLignes);
       window.XLSX.utils.book_append_sheet(wb, wsFactures, 'Factures');
@@ -8803,7 +8931,7 @@
 
       const wsPaiements = window.XLSX.utils.json_to_sheet(state.paiements.map(p => {
         const inv = state.invoices.find(i => i.id === p.factureId);
-        return { Date: p.date, Client: clientNom(p.clientId), Facture: inv ? 'FAC-' + String(inv.num).padStart(4, '0') : '', Montant: p.montant, Mode: p.mode || '', Opérateur: p.operateur || '' };
+        return { Date: p.date, Client: clientNom(p.clientId), Facture: inv ? numFac(inv) : '', Montant: p.montant, Mode: p.mode || '', Opérateur: p.operateur || '' };
       }));
       window.XLSX.utils.book_append_sheet(wb, wsPaiements, 'Paiements');
 
@@ -9285,7 +9413,7 @@
     function opLabel(op) {
       const n = { produits: 'produit', factures: 'facture', paiements: 'paiement', clients: 'client', depenses: 'dépense', fournisseurs: 'fournisseur', commandes_fournisseurs: 'commande', documents: 'document', mouvements: 'mouvement de stock' }[op.table] || op.table;
       if (op.k === 'stock') { const p = (T.produits && T.produits.server.get(String(op.id))); return 'stock de ' + (p ? p.nom : 'un produit'); }
-      if (op.table === 'factures' && op.data && op.data.num) return 'facture FAC-' + String(op.data.num).padStart(4, '0');
+      if (op.table === 'factures' && op.data && op.data.num) return 'facture ' + numFac(op.data);
       const nm = op.data && (op.data.nom || op.data.ref); return n + (nm ? ' « ' + nm + ' »' : '');
     }
 
@@ -9295,12 +9423,14 @@
       if (op.table === 'factures' && op.k === 'set' && e.code === '23505' && (op.tries || 0) < 4) {
         op.tries = (op.tries || 0) + 1;
         try {
-          const r = await client.from('factures').select('num').eq('commerce_id', op.cid || CURRENT_COMMERCE_ID).order('num', { ascending: false }).limit(1);
-          const max = (r.data && r.data[0] && Number(r.data[0].num)) || 0;
-          const mine = outbox.filter(o => o.table === 'factures' && o.k === 'set' && o.data && o.data.num).reduce((m, o) => Math.max(m, Number(o.data.num) || 0), 0);
-          const old = op.data.num; op.data.num = Math.max(max, mine) + 1;
+          const af = Number(op.data.num) < 0;   // ancienne facture : numéros négatifs (-1 = AF-001), on prend le suivant vers le bas
+          const r = await client.from('factures').select('num').eq('commerce_id', op.cid || CURRENT_COMMERCE_ID).order('num', { ascending: af }).limit(1);
+          const ext = (r.data && r.data[0] && Number(r.data[0].num)) || 0;
+          const mine = outbox.filter(o => o.table === 'factures' && o.k === 'set' && o.data && o.data.num).map(o => Number(o.data.num) || 0);
+          const oldLabel = numFac(op.data);
+          op.data.num = af ? Math.min(ext, 0, ...mine) - 1 : Math.max(ext, 0, ...mine) + 1;
           persistOutbox();
-          try { toast('Facture FAC-' + String(old).padStart(4, '0') + ' renumérotée FAC-' + String(op.data.num).padStart(4, '0') + ' (numéro déjà pris).'); } catch (x) {}
+          try { toast('Facture ' + oldLabel + ' renumérotée ' + numFac(op.data) + ' (numéro déjà pris).'); } catch (x) {}
           return 'retry';
         } catch (x) { return isNetErr(x) ? 'net' : 'drop'; }
       }
@@ -9910,6 +10040,10 @@ body.hide-amounts #stockValue,body.hide-amounts #heroInvesti,body.hide-amounts #
   .il2 .qty-box .line-qty{width:34px;}
   .il2 input{font-size:13px;padding:6px 4px;}
 }
+/* Ancienne facture (carnet d'avant BoromBoutik) */
+.af-wrap{border:1.5px dashed var(--line,#d6d3d1);border-radius:12px;padding:8px 10px;margin-bottom:10px;font-size:13px;}
+.af-wrap.on{border-color:#b45309;background:rgba(217,119,6,.08);}
+.af-wrap input[type=date]{margin-top:4px;}
 </style>
 <style id="perf-css">
 /* Performance : plus d'animation permanente sur l'en-tête (elle redessinait l'écran en continu sur les téléphones modestes) */

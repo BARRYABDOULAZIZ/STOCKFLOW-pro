@@ -1,5 +1,11 @@
   <section class="panel" id="panel-factures">
-    <div class="row-head"><h2>Factures émises</h2></div>
+    <div class="row-head"><h2>Factures émises</h2>
+      <select id="histFilter" style="max-width:240px;" title="Filtrer les factures">
+        <option value="">Toutes les factures</option>
+        <option value="ventes">🧾 Ventes seulement</option>
+        <option value="af">📜 Anciennes factures (carnet)</option>
+        <option value="dette">📒 Anciennes dettes</option>
+      </select></div>
     <div class="table-wrap">
       <table>
         <thead><tr><th>N°</th><th>Date</th><th>Client</th><th>Vendeur</th><th class="num-cell">Articles</th><th class="num-cell">Total</th><th>Paiement</th><th></th></tr></thead>

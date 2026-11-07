@@ -72,7 +72,7 @@
     if (recent.length === 0) { recentBox.innerHTML = ''; recentEmpty.style.display = 'block'; }
     else {
       recentEmpty.style.display = 'none';
-      recentBox.innerHTML = recent.map(inv => `<li><span>FAC-${String(inv.num).padStart(4,'0')} — ${escapeHtml(inv.client || 'Client')}</span><span class="r">${euros(inv.total)}</span></li>`).join('');
+      recentBox.innerHTML = recent.map(inv => `<li><span>${numFac(inv)} — ${escapeHtml(inv.client || 'Client')}</span><span class="r">${euros(inv.total)}</span></li>`).join('');
     }
 
     // Stock à surveiller

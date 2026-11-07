@@ -30,7 +30,14 @@
         </div>
 
         <div class="sale-right">
-          <div class="sale-step"><span class="sn">2</span> Client <em>(facultatif)</em></div>
+          <div id="afWrap" class="af-wrap" style="display:none;">
+            <label class="tk-opt"><input type="checkbox" id="f-ancienne"> 📜 <b>Ancienne facture</b> (avant BoromBoutik)</label>
+            <div id="afBox" style="display:none; margin-top:6px;">
+              <label>Date d'origine de la facture</label><input id="f-af-date" type="date">
+              <small class="muted" style="display:block; margin-top:4px;">Recopie une facture à crédit de ton carnet : elle s'ajoute à la dette du client, sans toucher au stock, aux ventes ni au bénéfice.</small>
+            </div>
+          </div>
+          <div class="sale-step"><span class="sn">2</span> Client <em id="clientOpt">(facultatif)</em></div>
           <div style="position:relative;"><input id="f-client" placeholder="Nom du client" autocomplete="off"><div id="clientSuggest" class="client-suggest" style="display:none;"></div></div>
 
           <div id="saleStep3">

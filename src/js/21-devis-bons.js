@@ -23,6 +23,7 @@
     document.getElementById('f-validite-wrap').style.display = t === 'devis' ? '' : 'none';
     document.getElementById('finalizeHint').style.display = isInv ? '' : 'none';
     document.getElementById('btnFinalize').textContent = isInv ? 'Finaliser la vente' : (t === 'devis' ? 'Enregistrer le devis' : (t === 'bon_livraison' ? 'Enregistrer le bon de livraison' : 'Enregistrer le bon de commande'));
+    try { afApply(); } catch (e) { console.error(e); }
     if (t === 'devis' && !document.getElementById('f-validite').value) {
       const d = new Date(); d.setDate(d.getDate() + 15);
       document.getElementById('f-validite').value = d.toISOString().slice(0, 10);

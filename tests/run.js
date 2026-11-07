@@ -576,6 +576,69 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     await p.close2();
   });
 
+  await test('Ancienne facture du carnet : dette du client, sans stock ni ventes, numérotée AF-', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(async () => { document.getElementById('loginOverlay').style.display = 'none'; document.querySelector('[data-tab="ventes"]').click();
+      const writes = [], stock = [], logs = [];
+      state.db = { logAudit: (row) => logs.push([row.action || row.type, row]), queueStock: async (id, d) => { stock.push([id, d]); return 0; }, collection: (c) => ({ doc: (id) => ({ set: async (v) => { writes.push([c, id, v]); if (c === 'factures') state.invoices.push({ id, ...v }); } }) }), doc: (path) => ({ set: async (v) => writes.push([path, v]), update: async () => {} }) };
+      window.confirm = () => true; const sbAvant = supabaseClient; if (!supabaseClient) supabaseClient = {};
+      state.currentUser = { nom: 'Test', role: 'proprietaire', commerceId: 'c-test' };
+      state.clients = [{ id: 'c1', nom: 'Fatou' }];
+      state.products = [{ id: 'p-riz', ref: 'R1', nom: 'Riz 25 kg', prixVente: 17500, prixAchat: 15000, stock: 1, unite: 'sac' }];
+      state.invoices = [{ id: 'v1', num: 7, date: todayStr(), clientId: 'c1', client: 'Fatou', total: 10000, montantPaye: 10000, lignes: [{ nom: 'Sucre', qte: 1, prix: 10000 }], createdAt: Date.now() - 1000 }];
+      state.paiements = [];
+      applyDocMode();
+      const res = { wrapShown: document.getElementById('afWrap').style.display !== 'none' };
+      document.getElementById('f-ancienne').checked = true; document.getElementById('f-ancienne').dispatchEvent(new Event('change'));
+      res.btn = document.getElementById('btnFinalize').textContent;
+      // sans client : refusé
+      invoiceLines = [{ ref: 'R1', nom: 'Riz 25 kg', qte: 3, prix: 17500, unite: 'sac', matched: true }, { ref: '', nom: 'Huile 5 L', qte: 1, prix: 6000, unite: '', matched: false }];
+      renderInvoiceLines();
+      await finalizeInvoice(); res.sansClient = writes.length;
+      document.getElementById('f-client').value = 'Fatou';
+      document.getElementById('f-af-date').value = '2026-03-15';
+      document.getElementById('f-paye').value = '8500';
+      await finalizeInvoice();
+      const af = state.invoices.find(i => i.num < 0);
+      res.doc = af && { num: af.num, total: af.total, paye: af.montantPaye, date: af.date, flags: af.lignes.map(l => [l.dette, l.ancienne, l.matched, l.productId]) };
+      res.stock = stock.length; res.paiements = writes.filter(w => /^paiements/.test(w[0])).length;
+      res.label = numFac(af); res.isDette = isDette(af);
+      res.reste = clientStats('c1').reste;
+      renderDashboard(); res.ventesJour = document.getElementById('dbVentesJour').textContent.replace(/\\D/g, '');
+      res.log = logs.map(l => l[0]);
+      // la 2e ancienne facture prend AF-002, la vraie facture suivante reste FAC-0008
+      document.getElementById('f-ancienne').checked = true; document.getElementById('f-ancienne').dispatchEvent(new Event('change'));
+      invoiceLines = [{ ref: '', nom: 'Savon', qte: 2, prix: 500, unite: '', matched: false }]; renderInvoiceLines();
+      document.getElementById('f-client').value = 'Fatou';
+      await finalizeInvoice();
+      res.label2 = numFac(state.invoices[state.invoices.length - 1]);
+      res.nextFac = state.invoices.reduce((m, i) => Math.max(m, Number(i.num) || 0), 0) + 1;
+      // affichage : badge, filtre, ticket WhatsApp
+      renderHistory();
+      res.badge = /📜 Ancienne facture/.test(document.getElementById('histBody').innerHTML) && /AF-001/.test(document.getElementById('histBody').innerHTML);
+      document.getElementById('histFilter').value = 'af'; renderHistory();
+      res.filtreAf = document.querySelectorAll('#histBody tr').length;
+      document.getElementById('histFilter').value = 'ventes'; renderHistory();
+      res.filtreVentes = document.querySelectorAll('#histBody tr').length;
+      document.getElementById('histFilter').value = '';
+      const txt = ticketText(af); res.ticket = /AF-001/.test(txt) && /reprise du carnet/.test(txt);
+      res.after = document.getElementById('f-ancienne').checked;
+      supabaseClient = sbAvant;
+      return res; })()`);
+    expect(r.wrapShown, 'case « Ancienne facture » visible pour le propriétaire');
+    expect(/ancienne facture/i.test(r.btn), 'bouton : ' + r.btn);
+    eq(r.sansClient, 0, 'sans client, rien n\'est enregistré');
+    eq(r.doc, { num: -1, total: 58500, paye: 8500, date: '2026-03-15', flags: [[true, true, false, null], [true, true, false, null]] }, 'contenu de l\'ancienne facture');
+    eq([r.stock, r.paiements], [0, 0], 'aucun mouvement de stock, aucun paiement dans la caisse');
+    eq([r.label, r.isDette, r.reste], ['AF-001', true, 50000], 'numéro AF-001, comptée comme dette : Fatou doit 50 000');
+    eq(r.ventesJour, '10000', 'les ventes du jour ne comptent pas l\'ancienne facture');
+    eq(r.log, ['ANCIENNE_FACTURE'], 'journal des actions');
+    eq([r.label2, r.nextFac], ['AF-002', 8], 'numérotation séparée');
+    eq([r.badge, r.filtreAf, r.filtreVentes, r.ticket, r.after], [true, 2, 1, true, false], '[badge, filtre AF, filtre ventes, mention sur le ticket, case décochée après]');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
   await test('Anti-erreur à la caisse : vente à perte, prix à 0, zéro en trop', async () => {
     const p = await open(browser);
     const r = await p.app(`(async () => { document.getElementById('loginOverlay').style.display = 'none'; document.querySelector('[data-tab="ventes"]').click();

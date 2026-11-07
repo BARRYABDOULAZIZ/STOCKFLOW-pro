@@ -336,7 +336,7 @@
     function opLabel(op) {
       const n = { produits: 'produit', factures: 'facture', paiements: 'paiement', clients: 'client', depenses: 'dépense', fournisseurs: 'fournisseur', commandes_fournisseurs: 'commande', documents: 'document', mouvements: 'mouvement de stock' }[op.table] || op.table;
       if (op.k === 'stock') { const p = (T.produits && T.produits.server.get(String(op.id))); return 'stock de ' + (p ? p.nom : 'un produit'); }
-      if (op.table === 'factures' && op.data && op.data.num) return 'facture FAC-' + String(op.data.num).padStart(4, '0');
+      if (op.table === 'factures' && op.data && op.data.num) return 'facture ' + numFac(op.data);
       const nm = op.data && (op.data.nom || op.data.ref); return n + (nm ? ' « ' + nm + ' »' : '');
     }
 
@@ -346,12 +346,14 @@
       if (op.table === 'factures' && op.k === 'set' && e.code === '23505' && (op.tries || 0) < 4) {
         op.tries = (op.tries || 0) + 1;
         try {
-          const r = await client.from('factures').select('num').eq('commerce_id', op.cid || CURRENT_COMMERCE_ID).order('num', { ascending: false }).limit(1);
-          const max = (r.data && r.data[0] && Number(r.data[0].num)) || 0;
-          const mine = outbox.filter(o => o.table === 'factures' && o.k === 'set' && o.data && o.data.num).reduce((m, o) => Math.max(m, Number(o.data.num) || 0), 0);
-          const old = op.data.num; op.data.num = Math.max(max, mine) + 1;
+          const af = Number(op.data.num) < 0;   // ancienne facture : numéros négatifs (-1 = AF-001), on prend le suivant vers le bas
+          const r = await client.from('factures').select('num').eq('commerce_id', op.cid || CURRENT_COMMERCE_ID).order('num', { ascending: af }).limit(1);
+          const ext = (r.data && r.data[0] && Number(r.data[0].num)) || 0;
+          const mine = outbox.filter(o => o.table === 'factures' && o.k === 'set' && o.data && o.data.num).map(o => Number(o.data.num) || 0);
+          const oldLabel = numFac(op.data);
+          op.data.num = af ? Math.min(ext, 0, ...mine) - 1 : Math.max(ext, 0, ...mine) + 1;
           persistOutbox();
-          try { toast('Facture FAC-' + String(old).padStart(4, '0') + ' renumérotée FAC-' + String(op.data.num).padStart(4, '0') + ' (numéro déjà pris).'); } catch (x) {}
+          try { toast('Facture ' + oldLabel + ' renumérotée ' + numFac(op.data) + ' (numéro déjà pris).'); } catch (x) {}
           return 'retry';
         } catch (x) { return isNetErr(x) ? 'net' : 'drop'; }
       }

@@ -139,7 +139,7 @@
       ? '<option value="">Aucune facture avec un solde dû</option>'
       : withBalance.slice().sort((a, b) => (b.num || 0) - (a.num || 0)).map(i => {
           const r = (Number(i.total) || 0) - (Number(i.montantPaye) || 0);
-          return `<option value="${i.id}">FAC-${String(i.num).padStart(4, '0')} — reste ${euros(r)}</option>`;
+          return `<option value="${i.id}">${numFac(i)} — reste ${euros(r)}</option>`;
         }).join('');
 
     // Liste des factures
@@ -151,7 +151,7 @@
       fBody.innerHTML = factures.slice().sort((a, b) => (b.num || 0) - (a.num || 0)).map(i => {
         const p = Number(i.montantPaye) || 0;
         const r = (Number(i.total) || 0) - p;
-        return `<tr><td>FAC-${String(i.num).padStart(4, '0')}${isDette(i) ? ' <span class="badge">📒 Ancienne dette</span>' : ''}</td><td class="muted">${escapeHtml(i.date || '')}</td><td class="num-cell">${euros(i.total)}</td><td class="num-cell">${euros(p)}</td><td class="num-cell ${r > 0 ? 'margin-neg' : 'margin-pos'}">${euros(r)}</td></tr>`;
+        return `<tr><td>${numFac(i)}${badgeDette(i)}</td><td class="muted">${escapeHtml(i.date || '')}</td><td class="num-cell">${euros(i.total)}</td><td class="num-cell">${euros(p)}</td><td class="num-cell ${r > 0 ? 'margin-neg' : 'margin-pos'}">${euros(r)}</td></tr>`;
       }).join('');
     }
 
@@ -164,7 +164,7 @@
       pEmpty.style.display = 'none';
       pBody.innerHTML = payments.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).map(p => {
         const inv = state.invoices.find(i => i.id === p.factureId);
-        return `<tr><td class="muted">${escapeHtml(p.date || '')}</td><td>${inv ? 'FAC-' + String(inv.num).padStart(4, '0') : '—'}</td><td class="num-cell">${euros(p.montant)}</td><td class="muted">${escapeHtml(p.mode || '')}</td></tr>`;
+        return `<tr><td class="muted">${escapeHtml(p.date || '')}</td><td>${inv ? numFac(inv) : '—'}</td><td class="num-cell">${euros(p.montant)}</td><td class="muted">${escapeHtml(p.mode || '')}</td></tr>`;
       }).join('');
     }
 
