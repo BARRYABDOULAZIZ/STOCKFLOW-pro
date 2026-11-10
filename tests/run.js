@@ -314,8 +314,8 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
       applyDocMode();
       const vente = async () => { invoiceLines = [{ ref: 'R1', nom: 'Riz 25 kg', qte: 2, prix: 17500, unite: 'sac', matched: true }]; renderInvoiceLines(); await finalizeInvoice(); };
       const res = {};
-      aiAskOk = false; await vente(); res.sansTest = !!document.getElementById('feteVente');
-      aiAskOk = true;
+      aiAskOk = false; state.currentUser.role = 'caissier'; await vente(); res.pourTous = !!document.getElementById('feteVente');
+      document.getElementById('feteVente') && document.getElementById('feteVente').remove();
       invoiceLines = [freshLine()]; renderInvoiceLines(); await finalizeInvoice(); res.venteVide = !!document.getElementById('feteVente');
       await vente();
       const f = document.getElementById('feteVente');
@@ -324,7 +324,7 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
       await vente(); res.uneSeule = document.querySelectorAll('.fete').length;
       await new Promise((ok) => setTimeout(ok, 1600)); res.partie = !document.getElementById('feteVente');
       return res; })()`);
-    eq(r.sansTest, false, 'pas de fête hors compte de test tant que FETE_POUR_TOUS est à false');
+    eq(r.pourTous, true, 'fête pour tous, même un caissier sans accès à l\'IA');
     eq(r.venteVide, false, 'pas de fête si la vente est refusée');
     eq(r.montree, true, 'fête affichée après la vente');
     expect(r.texte.replace(/\D/g, '') === '35000', 'montant de la vente affiché : ' + r.texte);

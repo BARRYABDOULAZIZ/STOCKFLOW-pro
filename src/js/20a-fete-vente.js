@@ -1,8 +1,8 @@
   // ================= Petite fête quand une vente est finalisée 🎉 =================
   // Confettis + montant au milieu de l'écran pendant 1 seconde. Ne bloque rien : on peut continuer à taper pendant ce temps.
   // Légère : quelques petits carrés animés par le téléphone lui-même (transform / opacity), retirés de la page juste après.
-  // false = visible seulement sur le compte de test (aiAskOk) ; true = pour tous les commerçants.
-  const FETE_POUR_TOUS = false;
+  // true = pour tous les commerçants et leurs caissiers ; false = seulement sur le compte de test (aiAskOk).
+  const FETE_POUR_TOUS = true;
   const FETE_COULEURS = ['#5b3df5', '#e2387e', '#ffb400', '#18b877', '#2aa7ff'];
   function feteVente(montant) {
     try {
