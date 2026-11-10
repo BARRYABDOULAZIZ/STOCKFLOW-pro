@@ -6138,6 +6138,7 @@
       const nbHors = invDoc.lignes.filter(l => !l.matched).length;
       const stockMsg = nbHors === invDoc.lignes.length ? 'aucun article du catalogue, stock inchangé' : (nbHors ? `stock mis à jour (sauf ${nbHors} ligne(s) hors catalogue)` : 'stock mis à jour');
       toast(`Facture FAC-${String(num).padStart(4, '0')} finalisée — ${stockMsg}${resteMsg}.`);
+      feteVente(total);
       if (document.getElementById('tkAuto') && document.getElementById('tkAuto').checked) printTicket(invDoc);
       if (document.getElementById('tkWa') && document.getElementById('tkWa').checked) sendTicketWhatsApp(invDoc, false);
     } catch (err) {
@@ -6243,6 +6244,38 @@
     } finally {
       btn.disabled = false;
     }
+  }
+  // ================= Petite fête quand une vente est finalisée 🎉 =================
+  // Confettis + montant au milieu de l'écran pendant 1 seconde. Ne bloque rien : on peut continuer à taper pendant ce temps.
+  // Légère : quelques petits carrés animés par le téléphone lui-même (transform / opacity), retirés de la page juste après.
+  // false = visible seulement sur le compte de test (aiAskOk) ; true = pour tous les commerçants.
+  const FETE_POUR_TOUS = false;
+  const FETE_COULEURS = ['#5b3df5', '#e2387e', '#ffb400', '#18b877', '#2aa7ff'];
+  function feteVente(montant) {
+    try {
+      if (!FETE_POUR_TOUS && !aiAskOk) return false;
+      if (document.hidden) return false;
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+      const old = document.getElementById('feteVente'); if (old) old.remove();
+      // Téléphone modeste (peu de mémoire ou peu de cœurs) : moins de confettis
+      const petit = (navigator.deviceMemory && navigator.deviceMemory <= 2) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
+      const n = petit ? 10 : 18;
+      const box = document.createElement('div');
+      box.className = 'fete'; box.id = 'feteVente'; box.setAttribute('aria-hidden', 'true');
+      let html = '';
+      for (let k = 0; k < n; k++) {
+        const angle = (k / n) * 2 * Math.PI + Math.random() * 0.5;
+        const dist = 90 + Math.random() * 110;
+        const x = Math.round(Math.cos(angle) * dist), y = Math.round(Math.sin(angle) * dist * 0.8 + 70);
+        html += `<i${k % 3 === 0 ? ' class="rond"' : ''} style="background:${FETE_COULEURS[k % FETE_COULEURS.length]};--x:${x}px;--y:${y}px;--r:${Math.round(Math.random() * 540 - 270)}deg;animation-delay:${k % 4 * 25}ms"></i>`;
+      }
+      const txt = Number(montant) > 0 ? '+ ' + escapeHtml(euros(montant)) : '✓';
+      box.innerHTML = html + `<b><span>🎉</span>${txt}</b>`;
+      document.body.appendChild(box);
+      clearTimeout(feteVente._h);
+      feteVente._h = setTimeout(() => box.remove(), 1400);
+      return true;
+    } catch (e) { console.error(e); return false; }   // une fête ratée ne doit jamais gêner une vente
   }
   // ================= Devis et bons de commande =================
   const DOC_LABELS = { devis: 'Devis', bon_commande: 'Bon de commande', bon_livraison: 'Bon de livraison' };
@@ -10160,6 +10193,17 @@ header.top{animation:none !important;background-size:100% 100% !important;}
   .il2 .scan-in > button.scan-in-btn { width: 32px !important; height: 32px !important; right: 2px !important; }
   .il2 .scan-in > button.scan-in-btn svg { width: 19px; height: 19px; }
 }
+</style>
+<style id="fete-css">
+/* Petite fête quand une vente est finalisée : confettis + montant.
+   Légère pour les petits téléphones : seulement transform et opacity, 1 seconde, puis tout est retiré de la page. */
+.fete{position:fixed;inset:0;z-index:60;pointer-events:none;overflow:hidden;contain:strict;}
+.fete i{position:absolute;left:50%;top:42%;width:9px;height:13px;margin:-6px 0 0 -4px;border-radius:2px;opacity:0;will-change:transform,opacity;animation:feteVol 1s cubic-bezier(.15,.7,.3,1) forwards;}
+.fete i.rond{width:10px;height:10px;border-radius:50%;}
+.fete b{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%) scale(.4);opacity:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 20px;border-radius:18px;background:#fff;color:#17153b;box-shadow:0 8px 28px rgba(23,21,59,.25);font-size:19px;font-weight:800;white-space:nowrap;will-change:transform,opacity;animation:feteBadge 1.25s ease-out forwards;}
+.fete b span{font-size:40px;line-height:1;}
+@keyframes feteVol{0%{opacity:1;transform:translate3d(0,0,0) rotate(0)}70%{opacity:1}100%{opacity:0;transform:translate3d(var(--x),var(--y),0) rotate(var(--r))}}
+@keyframes feteBadge{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}30%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-60%) scale(.96)}}
 </style>
 </body>
 </html>

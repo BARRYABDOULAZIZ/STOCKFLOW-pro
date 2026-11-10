@@ -374,6 +374,7 @@
       const nbHors = invDoc.lignes.filter(l => !l.matched).length;
       const stockMsg = nbHors === invDoc.lignes.length ? 'aucun article du catalogue, stock inchangé' : (nbHors ? `stock mis à jour (sauf ${nbHors} ligne(s) hors catalogue)` : 'stock mis à jour');
       toast(`Facture FAC-${String(num).padStart(4, '0')} finalisée — ${stockMsg}${resteMsg}.`);
+      feteVente(total);
       if (document.getElementById('tkAuto') && document.getElementById('tkAuto').checked) printTicket(invDoc);
       if (document.getElementById('tkWa') && document.getElementById('tkWa').checked) sendTicketWhatsApp(invDoc, false);
     } catch (err) {

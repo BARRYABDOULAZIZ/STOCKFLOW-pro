@@ -1,0 +1,9 @@
+/* Petite fête quand une vente est finalisée : confettis + montant.
+   Légère pour les petits téléphones : seulement transform et opacity, 1 seconde, puis tout est retiré de la page. */
+.fete{position:fixed;inset:0;z-index:60;pointer-events:none;overflow:hidden;contain:strict;}
+.fete i{position:absolute;left:50%;top:42%;width:9px;height:13px;margin:-6px 0 0 -4px;border-radius:2px;opacity:0;will-change:transform,opacity;animation:feteVol 1s cubic-bezier(.15,.7,.3,1) forwards;}
+.fete i.rond{width:10px;height:10px;border-radius:50%;}
+.fete b{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%) scale(.4);opacity:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 20px;border-radius:18px;background:#fff;color:#17153b;box-shadow:0 8px 28px rgba(23,21,59,.25);font-size:19px;font-weight:800;white-space:nowrap;will-change:transform,opacity;animation:feteBadge 1.25s ease-out forwards;}
+.fete b span{font-size:40px;line-height:1;}
+@keyframes feteVol{0%{opacity:1;transform:translate3d(0,0,0) rotate(0)}70%{opacity:1}100%{opacity:0;transform:translate3d(var(--x),var(--y),0) rotate(var(--r))}}
+@keyframes feteBadge{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}30%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-60%) scale(.96)}}

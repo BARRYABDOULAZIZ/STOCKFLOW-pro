@@ -303,6 +303,40 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     await p.close2();
   });
 
+  await test('Petite fête 🎉 : après une vraie vente seulement, puis elle disparaît toute seule', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(async () => { document.getElementById('loginOverlay').style.display = 'none'; document.querySelector('[data-tab="ventes"]').click();
+      state.db = { logAudit: () => {}, queueStock: async () => 0, refresh: () => {}, collection: (c) => ({ doc: (id) => ({ set: async (v) => { if (c === 'factures') state.invoices.push({ id, ...v }); } }) }), doc: () => ({ set: async () => {}, update: async () => {} }) };
+      adjustStock = async () => 0;
+      state.currentUser = { nom: 'Test', role: 'proprietaire', commerceId: 'c-test' };
+      state.clients = []; state.invoices = []; state.paiements = [];
+      state.products = [{ id: 'p-riz', ref: 'R1', nom: 'Riz 25 kg', prixVente: 17500, prixAchat: 15000, stock: 9, unite: 'sac' }];
+      applyDocMode();
+      const vente = async () => { invoiceLines = [{ ref: 'R1', nom: 'Riz 25 kg', qte: 2, prix: 17500, unite: 'sac', matched: true }]; renderInvoiceLines(); await finalizeInvoice(); };
+      const res = {};
+      aiAskOk = false; await vente(); res.sansTest = !!document.getElementById('feteVente');
+      aiAskOk = true;
+      invoiceLines = [freshLine()]; renderInvoiceLines(); await finalizeInvoice(); res.venteVide = !!document.getElementById('feteVente');
+      await vente();
+      const f = document.getElementById('feteVente');
+      res.montree = !!f; res.texte = f ? f.querySelector('b').textContent : ''; res.confettis = f ? f.querySelectorAll('i').length : 0;
+      res.clics = f ? getComputedStyle(f).pointerEvents : ''; res.ventes = state.invoices.length;
+      await vente(); res.uneSeule = document.querySelectorAll('.fete').length;
+      await new Promise((ok) => setTimeout(ok, 1600)); res.partie = !document.getElementById('feteVente');
+      return res; })()`);
+    eq(r.sansTest, false, 'pas de fête hors compte de test tant que FETE_POUR_TOUS est à false');
+    eq(r.venteVide, false, 'pas de fête si la vente est refusée');
+    eq(r.montree, true, 'fête affichée après la vente');
+    expect(r.texte.replace(/\D/g, '') === '35000', 'montant de la vente affiché : ' + r.texte);
+    expect(r.confettis >= 8 && r.confettis <= 18, 'nombre de confettis raisonnable : ' + r.confettis);
+    eq(r.clics, 'none', 'la fête ne bloque pas les touches');
+    eq(r.ventes, 2, 'les ventes sont bien enregistrées (avec ou sans fête)');
+    eq(r.uneSeule, 1, 'une seule fête à la fois');
+    eq(r.partie, true, 'la fête est retirée de la page');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
   await test('Saisie par photo : facture fournisseur → stock (IA simulée)', async () => {
     const p = await open(browser);
     const r = await p.app(`(async () => {
