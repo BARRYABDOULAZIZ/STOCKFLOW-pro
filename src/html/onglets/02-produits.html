@@ -53,6 +53,7 @@
         <div class="cost-col"><label>Prix d'achat unitaire (<span class="cur-sym">FCFA</span>)</label><input id="p-prixachat" type="number" min="0" step="1" value="0"></div>
         <div><label>Prix de vente unitaire (<span class="cur-sym">FCFA</span>)</label><input id="p-prixvente" type="number" min="0" step="1" value="0"></div>
         <div><label>Seuil d'alerte (stock mini)</label><input id="p-seuil" type="number" min="0" step="any" value="5"></div>
+        <div id="p-exp-box" style="display:none;"><label>Date d'expiration <span class="muted" style="font-weight:500;">(facultatif)</span></label><input id="p-expiration" type="date"></div>
       </div>
       <p class="hint-text">Si la référence existe déjà, la quantité saisie s'ajoutera au stock actuel (réapprovisionnement).</p>
       <p class="hint-text" id="restockHint" style="display:none; color: var(--gold);"></p>

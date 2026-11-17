@@ -9,6 +9,7 @@
     ['p-nom', p => p.nom, ''], ['p-barcode', p => p.codeBarre, ''], ['p-fournisseur', p => p.fournisseur, ''],
     ['p-categorie', p => p.categorie, ''], ['p-emplacement', p => p.emplacement, ''], ['p-unite', p => p.unite, ''],
     ['p-prixachat', p => p.prixAchat, '0'], ['p-prixvente', p => p.prixVente, '0'], ['p-seuil', p => p.seuil, '5'],
+    ['p-expiration', p => expDate(p), ''],
   ];
   document.getElementById('p-ref').addEventListener('input', e => {
     if (editingId) return; // en mode édition, on ne bascule pas en mode réappro
@@ -56,6 +57,7 @@
     document.getElementById('p-prixachat').value = p.prixAchat ?? 0;
     document.getElementById('p-prixvente').value = p.prixVente ?? 0;
     document.getElementById('p-seuil').value = p.seuil ?? 0;
+    document.getElementById('p-expiration').value = expDate(p);
 
     document.getElementById('lbl-stock').textContent = 'Quantité en stock (valeur exacte)';
     document.getElementById('restockHint').style.display = 'block';
@@ -71,7 +73,7 @@
   function resetProductForm() {
     editingId = null;
     autofilledRef = null;
-    ['p-ref','p-nom','p-barcode','p-fournisseur','p-categorie','p-emplacement','p-unite'].forEach(id => document.getElementById(id).value = '');
+    ['p-ref','p-nom','p-barcode','p-fournisseur','p-categorie','p-emplacement','p-unite','p-expiration'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('p-stock').value = '0';
     document.getElementById('p-prixachat').value = '0';
     document.getElementById('p-prixvente').value = '0';
@@ -96,6 +98,8 @@
     const prixAchat = Number(document.getElementById('p-prixachat').value) || 0;
     const prixVente = Number(document.getElementById('p-prixvente').value) || 0;
     const seuil = Number(document.getElementById('p-seuil').value) || 0;
+    // Date d'expiration : envoyée seulement quand la fonction est ouverte (sinon la colonne n'existe peut-être pas encore dans la base)
+    const expVal = expOn() ? (document.getElementById('p-expiration').value || '') : '';
 
     if (!ref) { toast('La référence est obligatoire.'); return; }
     if (!nom) { toast('Le nom est obligatoire.'); return; }
@@ -106,7 +110,7 @@
         // Mode édition : remplace tous les champs, y compris le stock en valeur exacte.
         // Le stock n'est jamais écrasé : on applique seulement la différence avec ce qui était affiché,
         // pour ne pas effacer une vente faite pendant que le formulaire était ouvert.
-        await state.db.doc('produits/' + editingId).update({ ref, nom, codeBarre, fournisseur, categorie, emplacement, unite, prixAchat, prixVente, seuil });
+        await state.db.doc('produits/' + editingId).update({ ref, nom, codeBarre, fournisseur, categorie, emplacement, unite, prixAchat, prixVente, seuil, ...(expOn() ? { dateExpiration: expVal || null } : {}) });
         const dStock = stockInput - editingStock;
         if (dStock !== 0) {
           const ed = state.products.find(x => x.id === editingId) || {};
@@ -131,6 +135,12 @@
         if (fournisseur && fournisseur !== existing.fournisseur) updates.fournisseur = fournisseur;
         if (categorie && categorie !== existing.categorie) updates.categorie = categorie;
         if (emplacement && emplacement !== existing.emplacement) updates.emplacement = emplacement;
+        // Réappro avec une date : on garde la date la plus proche tant qu'il reste de l'ancien stock (ce sont ces articles qui expirent en premier)
+        if (expVal && expVal !== expDate(existing)) {
+          const old = expDate(existing);
+          if (!old || !(Number(existing.stock) > 0) || expVal < old) updates.dateExpiration = expVal;
+          else toast(`Date d'expiration gardée au ${expFmt(existing)} : l'ancien stock expire avant le nouveau.`);
+        }
         if (Object.keys(updates).length) await state.db.doc('produits/' + existing.id).update(updates);
         // Réappro : ajout atomique côté base (une vente en même temps n'est jamais effacée)
         let newStock = Number(existing.stock) || 0;
@@ -142,7 +152,7 @@
       } else {
         if (state.products.length >= 3000) toast("Catalogue proche de 3000 références — pense à archiver les articles inactifs.");
         const id = 'p-' + ref.toLowerCase().replace(/[^a-z0-9_.-]/g, '-').slice(0, 60) + '-' + Date.now().toString(36);
-        await state.db.doc('produits/' + id).set({ ref, nom, codeBarre, fournisseur, categorie, emplacement, stock: stockInput, unite, prixAchat, prixVente, seuil, createdAt: Date.now() });
+        await state.db.doc('produits/' + id).set({ ref, nom, codeBarre, fournisseur, categorie, emplacement, stock: stockInput, unite, prixAchat, prixVente, seuil, ...(expVal ? { dateExpiration: expVal } : {}), createdAt: Date.now() });
         toast('Produit ajouté au catalogue.');
       }
       resetProductForm();

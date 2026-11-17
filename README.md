@@ -39,6 +39,7 @@ supabase/functions/ask-ai/    fonction serveur de l'IA (Bel, photo, voix) — d�
 supabase/abonnements.sql      tables et fonctions des abonnements (à lancer une fois dans Supabase → SQL Editor)
 supabase/numeros_factures.sql numéros de facture/devis/bons sans doublon, attribués par la base (à lancer une fois)
 supabase/couts_figes.sql      prix d'achat figé au moment de chaque vente, pour un bénéfice exact (à lancer une fois)
+supabase/date_expiration.sql  colonne « date d'expiration » des produits (à lancer une fois avant d'ouvrir la fonction)
 sw.js, manifest.json          fonctionnement hors connexion et installation sur le téléphone
 ```
 

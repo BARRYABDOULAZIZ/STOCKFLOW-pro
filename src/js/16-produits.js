@@ -14,9 +14,11 @@
     // Pastilles de catégories (les plus remplies d'abord) + "Stock bas"
     const catCount = {}; state.products.forEach(p => { const c = (p.categorie || '').trim(); if (c) catCount[c] = (catCount[c] || 0) + 1; });
     const lowCount = state.products.filter(p => Number(p.stock) <= Number(p.seuil)).length;
+    const expCount = expOn() ? state.products.filter(p => expState(p)).length : 0;
     const topCats = Object.entries(catCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
-    if (stockCat && stockCat !== '__low' && !catCount[stockCat]) stockCat = '';
-    document.getElementById('catChips').innerHTML = [['', 'Tous', state.products.length]].concat(lowCount ? [['__low', '⚠ Stock bas', lowCount]] : []).concat(topCats.map(([c, n]) => [c, c, n]))
+    if (stockCat === '__exp' && !expCount) stockCat = '';
+    if (stockCat && stockCat !== '__low' && stockCat !== '__exp' && !catCount[stockCat]) stockCat = '';
+    document.getElementById('catChips').innerHTML = [['', 'Tous', state.products.length]].concat(lowCount ? [['__low', '⚠ Stock bas', lowCount]] : []).concat(expCount ? [['__exp', '⏳ Péremption', expCount]] : []).concat(topCats.map(([c, n]) => [c, c, n]))
       .map(([k, l, n]) => `<button type="button" class="cat-chip ${stockCat === k ? 'on' : ''}" data-cat="${escapeHtml(k)}">${escapeHtml(l)} <em>${n}</em></button>`).join('');
     document.getElementById('stockValue').textContent = stockAmt(state.products.reduce((t, p) => t + (Number(p.prixAchat) || 0) * (Number(p.stock) || 0), 0)) + ' ' + curSym();
     document.querySelectorAll('.view-toggle button').forEach(b => b.classList.toggle('on', b.dataset.view === stockView));
@@ -27,10 +29,11 @@
 
     const filtered = state.products.filter(p => {
       if (stockCat === '__low' && !(Number(p.stock) <= Number(p.seuil))) return false;
-      if (stockCat && stockCat !== '__low' && (p.categorie || '').trim() !== stockCat) return false;
+      if (stockCat === '__exp' && !expState(p)) return false;
+      if (stockCat && stockCat !== '__low' && stockCat !== '__exp' && (p.categorie || '').trim() !== stockCat) return false;
       if (!stockFilter) return true;
       return (p.ref || '').toLowerCase().includes(stockFilter) || (p.nom || '').toLowerCase().includes(stockFilter) || (p.codeBarre || '').toLowerCase().includes(stockFilter) || (p.emplacement || '').toLowerCase().includes(stockFilter);
-    }).sort((a, b) => (a.ref || '').localeCompare(b.ref || ''));
+    }).sort((a, b) => stockCat === '__exp' ? (expDays(a) - expDays(b)) : (a.ref || '').localeCompare(b.ref || ''));
 
     document.getElementById('catalogCount').textContent = state.products.length ? `(${filtered.length} affiché${filtered.length > 1 ? 's' : ''} sur ${state.products.length})` : '';
 
@@ -46,7 +49,7 @@
           const zero = Number(p.stock) <= 0, low = !zero && Number(p.stock) <= Number(p.seuil);
           const unit = escapeHtml(p.unite || 'unité');
           return `<div class="sc ${zero ? 'zero' : low ? 'low' : ''}">
-            <div class="sc-main"><div class="sc-name">${escapeHtml(p.nom)}</div><div class="sc-sub">${escapeHtml(p.ref || '')}${p.categorie ? ' · ' + escapeHtml(p.categorie) : ''}${p.emplacement ? ' · 📍' + escapeHtml(p.emplacement) : ''}</div></div>
+            <div class="sc-main"><div class="sc-name">${escapeHtml(p.nom)}${expBadge(p)}</div><div class="sc-sub">${escapeHtml(p.ref || '')}${p.categorie ? ' · ' + escapeHtml(p.categorie) : ''}${p.emplacement ? ' · 📍' + escapeHtml(p.emplacement) : ''}${expOn() && expDate(p) ? ' · 📅 ' + expFmt(p) : ''}</div></div>
             <div class="sc-stock"><b>${zero ? 'Rupture' : escapeHtml(String(p.stock))}</b><small>${zero ? 'à commander' : unit + (low ? ' · bas' : '')}</small></div>
             <div class="sc-prices"><span class="v">Vente ${stockAmt(p.prixVente)}</span><span class="a cost-col">Achat ${stockAmt(p.prixAchat)}</span></div>
             <div class="sc-act"><button class="icon-btn" data-edit="${p.id}" title="Modifier">✎</button><button class="icon-btn" data-del="${p.id}" title="Supprimer">✕</button></div>
@@ -59,7 +62,7 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${escapeHtml(p.ref)}</td>
-          <td>${escapeHtml(p.nom)}</td>
+          <td>${escapeHtml(p.nom)}${expBadge(p)}${expOn() && expDate(p) ? `<div class="muted" style="font-size:11px;">📅 ${expFmt(p)}</div>` : ''}</td>
           <td class="muted">${escapeHtml(p.codeBarre || '—')}</td>
           <td class="muted">${escapeHtml(p.fournisseur || '—')}</td>
           <td class="muted">${escapeHtml(p.categorie || '—')}</td>

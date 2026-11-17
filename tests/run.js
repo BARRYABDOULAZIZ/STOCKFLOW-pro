@@ -536,6 +536,89 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     await p.close2();
   });
 
+  await test('Date d\'expiration : cachée hors compte de test, enregistrée, pastilles, filtre, conseil et alerte caisse', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(async () => { document.getElementById('loginOverlay').style.display = 'none';
+      document.querySelector('[data-tab="produits"]').click();
+      const writes = [];
+      state.db = { doc: (path) => ({ set: async (v) => writes.push(['set', path, v]), update: async (v) => writes.push(['update', path, v]), delete: async () => {} }),
+        collection: (c) => ({ doc: (id) => ({ set: async (v) => writes.push(['set', c + '/' + id, v]) }) }),
+        queueStock: async (id, d) => { const pr = state.products.find(x => x.id === id); const cur = Number(pr && pr.stock) || 0; if (pr) pr.stock = cur + d; return cur + d; } };
+      window.logAction = () => {};
+      const plus = (k) => { const x = new Date(Date.now() + k * 864e5); return x.toISOString().slice(0, 10); };
+      const wait = () => new Promise(r => setTimeout(r, 150));
+      const val = (id, v) => { document.getElementById(id).value = v; };
+      const hasExp = (w) => !!(w && w[2] && 'dateExpiration' in w[2]);
+      const res = {};
+      // 1) Compte normal : champ caché, rien n'est envoyé (la colonne n'existe peut-être pas encore)
+      aiAskOk = false; expRefresh();
+      res.cache = document.getElementById('p-exp-box').style.display === 'none';
+      state.products = [];
+      resetProductForm(); val('p-ref', 'LAIT1'); val('p-nom', 'Lait'); val('p-stock', '5'); val('p-expiration', plus(10));
+      document.getElementById('btnAddProduct').click(); await wait();
+      res.horsTest = writes.some(hasExp);
+      // 2) Compte de test : champ visible, date enregistrée
+      aiAskOk = true; expRefresh(); writes.length = 0;
+      res.visible = document.getElementById('p-exp-box').style.display !== 'none';
+      resetProductForm(); val('p-ref', 'LAIT2'); val('p-nom', 'Lait 2'); val('p-stock', '5'); val('p-expiration', plus(10));
+      document.getElementById('btnAddProduct').click(); await wait();
+      res.ajout = writes.filter(hasExp).map(w => w[2].dateExpiration);
+      res.colonne = toDbRow('produits', { dateExpiration: '2027-01-31' });
+      // 3) Réappro : on garde la date la plus proche tant qu'il reste de l'ancien stock
+      state.products = [{ id: 'p-yaourt', ref: 'YAO', nom: 'Yaourt', stock: 4, unite: 'pot', prixAchat: 200, prixVente: 300, seuil: 1, dateExpiration: plus(5) }];
+      writes.length = 0;
+      resetProductForm(); const ref = document.getElementById('p-ref'); ref.value = 'YAO'; ref.dispatchEvent(new Event('input'));
+      res.autoRempli = document.getElementById('p-expiration').value === plus(5);
+      val('p-stock', '10'); val('p-expiration', plus(40));
+      document.getElementById('btnAddProduct').click(); await wait();
+      res.reapproPlusLoin = writes.some(hasExp);
+      writes.length = 0;
+      resetProductForm(); ref.value = 'YAO'; ref.dispatchEvent(new Event('input')); val('p-stock', '2'); val('p-expiration', plus(2));
+      document.getElementById('btnAddProduct').click(); await wait();
+      res.reapproPlusProche = writes.filter(hasExp).map(w => w[2].dateExpiration);
+      // 4) Modification de la fiche : on peut effacer la date
+      writes.length = 0;
+      startEditProduct('p-yaourt'); val('p-expiration', '');
+      document.getElementById('btnAddProduct').click(); await wait();
+      res.efface = writes.filter(hasExp).map(w => w[2].dateExpiration);
+      // 5) Pastilles, filtre, conseil, alerte à la caisse
+      state.products = [
+        { id: 'a', ref: 'A', nom: 'Sardines', stock: 3, seuil: 0, dateExpiration: plus(-2), prixVente: 500 },
+        { id: 'b', ref: 'B', nom: 'Biscuits', stock: 8, seuil: 0, dateExpiration: plus(12), prixVente: 200 },
+        { id: 'c', ref: 'C', nom: 'Savon', stock: 8, seuil: 0, dateExpiration: plus(300), prixVente: 300 },
+        { id: 'd', ref: 'D', nom: 'Lait fini', stock: 0, seuil: 0, dateExpiration: plus(-9), prixVente: 300 },
+        { id: 'e', ref: 'E', nom: 'Sucre', stock: 5, seuil: 0, prixVente: 700 } ];
+      res.etats = state.products.map(x => expState(x));
+      stockCat = ''; renderStock();
+      const chip = [...document.querySelectorAll('#catChips [data-cat="__exp"]')].map(b => b.textContent.trim());
+      res.chip = chip;
+      stockCat = '__exp'; renderStock();
+      res.filtre = [...document.querySelectorAll('#stockCards .sc-name')].map(n => n.textContent);
+      stockCat = '';
+      renderInsights(); res.conseil = /périmé/.test(document.getElementById('aiInsights').innerHTML) && /expire/.test(document.getElementById('aiInsights').innerHTML);
+      res.caisse = saleGuardIssues([{ ref: 'A', nom: 'Sardines', qte: 1, prix: 500, matched: true }]).map(i => i.k);
+      // 6) Compte normal : aucune pastille ni alerte
+      aiAskOk = false; expRefresh();
+      res.horsTestEtats = state.products.map(x => expState(x));
+      res.horsTestCaisse = saleGuardIssues([{ ref: 'A', nom: 'Sardines', qte: 1, prix: 500, matched: true }]).map(i => i.k);
+      return res; })()`);
+    eq([r.cache, r.horsTest], [true, false], 'hors compte de test : champ caché et date jamais envoyée');
+    eq(r.visible, true, 'compte de test : champ visible');
+    eq(r.ajout.length, 1, 'ajout : date enregistrée');
+    eq(r.colonne, { date_expiration: '2027-01-31' }, 'nom de la colonne dans la base');
+    eq([r.autoRempli, r.reapproPlusLoin], [true, false], 'réappro avec une date plus lointaine : on garde la plus proche');
+    eq(r.reapproPlusProche.length, 1, 'réappro avec une date plus proche : mise à jour');
+    eq(r.efface, [null], 'modification : date effacée');
+    eq(r.etats, ['perime', 'bientot', null, null, null], 'états (périmé, bientôt, loin, rupture, sans date)');
+    expect(r.chip.length === 1 && /Péremption\s*2/.test(r.chip[0]), 'pastille de filtre : ' + JSON.stringify(r.chip));
+    eq(r.filtre.map(t => t.replace(/[⛔⏳].*/, '').trim()), ['Sardines', 'Biscuits'], 'filtre Péremption : le plus urgent d\'abord');
+    eq(r.conseil, true, 'conseil sur l\'Accueil');
+    expect(r.caisse.includes('perime'), 'alerte à la caisse : ' + JSON.stringify(r.caisse));
+    eq([r.horsTestEtats.every(x => x === null), r.horsTestCaisse.includes('perime')], [true, false], 'compte normal : rien ne change');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
   await test('Paiement client : impossible de payer plus que le reste dû', async () => {
     const p = await open(browser);
     const r = await p.app(`(async () => { document.getElementById('loginOverlay').style.display = 'none';

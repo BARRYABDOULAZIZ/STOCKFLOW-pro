@@ -82,6 +82,7 @@
       const prix = Number(l.prix) || 0, q = Number(l.qte) || 0;
       const p = l.matched ? (state.products || []).find(x => x.ref === l.ref) : null;
       const pa = p ? Number(p.prixAchat) || 0 : 0, pv = p ? Number(p.prixVente) || 0 : 0;
+      if (p && expState(p) === 'perime') out.push({ k: 'perime', t: `${l.nom} : ${tr('produit périmé depuis le')} ${expFmt(p)}` });
       if (prix <= 0) { out.push({ k: 'zero', t: `${l.nom} : ${tr('prix à 0 (article donné gratuitement ?)')}` }); return; }
       if (pa > 0 && prix < pa) { out.push({ k: 'perte', t: `${l.nom} : ${tr('vendu')} ${euros(prix)}, ${tr('acheté')} ${euros(pa)} → ${tr('perte de')} ${euros((pa - prix) * q)}` }); return; }
       if (pv > 0 && prix >= pv * 3) out.push({ k: 'cher', t: `${l.nom} : ${euros(prix)} ${tr('au lieu de')} ${euros(pv)} ${tr('d\'habitude (un zéro en trop ?)')}` });
@@ -96,7 +97,7 @@
     const sig = JSON.stringify(issues);
     if (saleGuardAck && saleGuardAck !== sig) saleGuardAck = '';
     box.style.display = '';
-    box.innerHTML = `<b>🛑 ${escapeHtml(tr('Vérifie avant de valider'))}</b>` + issues.map(i => `<div class="sg-line">${i.k === 'perte' ? '💸' : i.k === 'zero' ? '🎁' : '🔢'} ${escapeHtml(i.t)}</div>`).join('')
+    box.innerHTML = `<b>🛑 ${escapeHtml(tr('Vérifie avant de valider'))}</b>` + issues.map(i => `<div class="sg-line">${i.k === 'perte' ? '💸' : i.k === 'zero' ? '🎁' : i.k === 'perime' ? '⛔' : '🔢'} ${escapeHtml(i.t)}</div>`).join('')
       + (box.dataset.ask === sig ? `<div class="sg-actions"><button type="button" class="primary sg-yes" id="sgYes">${escapeHtml(tr('Oui, je confirme cette vente'))}</button><button type="button" class="ghost" id="sgNo">${escapeHtml(tr('Corriger'))}</button></div>` : '');
     const yes = document.getElementById('sgYes');
     if (yes) yes.addEventListener('click', () => { saleGuardAck = sig; delete box.dataset.ask; saleGuardRender(); document.getElementById('btnFinalize').click(); });

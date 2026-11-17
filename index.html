@@ -949,6 +949,7 @@
         <div class="cost-col"><label>Prix d'achat unitaire (<span class="cur-sym">FCFA</span>)</label><input id="p-prixachat" type="number" min="0" step="1" value="0"></div>
         <div><label>Prix de vente unitaire (<span class="cur-sym">FCFA</span>)</label><input id="p-prixvente" type="number" min="0" step="1" value="0"></div>
         <div><label>Seuil d'alerte (stock mini)</label><input id="p-seuil" type="number" min="0" step="any" value="5"></div>
+        <div id="p-exp-box" style="display:none;"><label>Date d'expiration <span class="muted" style="font-weight:500;">(facultatif)</span></label><input id="p-expiration" type="date"></div>
       </div>
       <p class="hint-text">Si la référence existe déjà, la quantité saisie s'ajoutera au stock actuel (réapprovisionnement).</p>
       <p class="hint-text" id="restockHint" style="display:none; color: var(--gold);"></p>
@@ -3344,6 +3345,12 @@
     }
     const sousSeuil = prods.filter(p => Number(p.seuil) > 0 && Number(p.stock) > 0 && Number(p.stock) <= Number(p.seuil));
     if (sousSeuil.length) add({ cat: 'stock', sev: 'warn', ic: '📦', tab: 'produits', t: `${sousSeuil.length} produit${sousSeuil.length > 1 ? 's' : ''} sous le seuil d'alerte`, d: `Par exemple : ${sousSeuil.slice(0, 3).map(p => nm(p)).join(', ')}.` });
+    // ---- Péremption ----
+    if (expOn()) {
+      const per = prods.filter(p => expState(p) === 'perime'), bt = prods.filter(p => expState(p) === 'bientot').sort((a, b) => expDays(a) - expDays(b));
+      if (per.length) add({ cat: 'stock', sev: 'danger', ic: '⛔', tab: 'produits', t: `${per.length} produit${per.length > 1 ? 's' : ''} périmé${per.length > 1 ? 's' : ''} encore en stock`, d: `À retirer de la vente : ${per.slice(0, 3).map(p => nm(p) + ' (' + expFmt(p) + ')').join(', ')}.` });
+      if (bt.length) add({ cat: 'stock', sev: 'warn', ic: '⏳', tab: 'produits', t: `${bt.length} produit${bt.length > 1 ? 's' : ''} expire${bt.length > 1 ? 'nt' : ''} dans moins de ${EXP_JOURS} jours`, d: `Vends-les en premier ou fais une petite promo : ${bt.slice(0, 3).map(p => nm(p) + ' (' + expFmt(p) + ')').join(', ')}.` });
+    }
 
     // ---- Argent : impayés par client + relance WhatsApp ----
     const reste = invAll.map(i => ({ i, r: Math.max(0, (Number(i.total) || 0) - (Number(i.montantPaye) || 0)) })).filter(o => o.r > 0);
@@ -4102,14 +4109,15 @@
     const box = document.getElementById('aiAsk'); if (!box) return;
     const hbtn = document.getElementById('belHeadBtn');
     smartInit();
-    if (!isOwnerOrAdmin() || !supabaseClient) { box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; const c0 = document.getElementById('photoFillCard'); if (c0) c0.style.display = 'none'; const v0 = document.getElementById('voiceSale'); if (v0) v0.style.display = 'none'; aiAskOk = false; const bl0 = document.getElementById('bossListen'); if (bl0) bl0.style.display = 'none'; const bm0 = document.getElementById('belMorning'); if (bm0) bm0.style.display = 'none'; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} belClosePage(); return; }
+    if (!isOwnerOrAdmin() || !supabaseClient) { box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; const c0 = document.getElementById('photoFillCard'); if (c0) c0.style.display = 'none'; const v0 = document.getElementById('voiceSale'); if (v0) v0.style.display = 'none'; aiAskOk = false; const bl0 = document.getElementById('bossListen'); if (bl0) bl0.style.display = 'none'; const bm0 = document.getElementById('belMorning'); if (bm0) bm0.style.display = 'none'; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} try { expRefresh(); } catch (e) {} belClosePage(); return; }
     const pfc = document.getElementById('photoFillCard');
-    if (aiAskFor !== CURRENT_USER_ID) { aiAskFor = CURRENT_USER_ID; aiAskOk = false; box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; if (pfc) pfc.style.display = 'none'; const vs0 = document.getElementById('voiceSale'); if (vs0) vs0.style.display = 'none'; const bl1 = document.getElementById('bossListen'); if (bl1) bl1.style.display = 'none'; const bm1 = document.getElementById('belMorning'); if (bm1) bm1.style.display = 'none'; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} belClosePage(); }
+    if (aiAskFor !== CURRENT_USER_ID) { aiAskFor = CURRENT_USER_ID; aiAskOk = false; box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; if (pfc) pfc.style.display = 'none'; const vs0 = document.getElementById('voiceSale'); if (vs0) vs0.style.display = 'none'; const bl1 = document.getElementById('bossListen'); if (bl1) bl1.style.display = 'none'; const bm1 = document.getElementById('belMorning'); if (bm1) bm1.style.display = 'none'; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} try { expRefresh(); } catch (e) {} belClosePage(); }
     if (aiAskOk || navigator.onLine === false) return;   // déjà vérifié pour ce compte : pas de nouvelle vérification (évite que le cadre clignote)
     try {
       const { data, error } = await supabaseClient.functions.invoke('ask-ai', { body: { ping: true } });
       if (error || !data || !data.actif) return;
       aiAskOk = true;
+      try { expRefresh(); } catch (e) { console.error(e); }
       try { renderLangPickers(); } catch (e) {}
       box.style.display = '';
       if (pfc) pfc.style.display = '';
@@ -4917,9 +4925,11 @@
     // Pastilles de catégories (les plus remplies d'abord) + "Stock bas"
     const catCount = {}; state.products.forEach(p => { const c = (p.categorie || '').trim(); if (c) catCount[c] = (catCount[c] || 0) + 1; });
     const lowCount = state.products.filter(p => Number(p.stock) <= Number(p.seuil)).length;
+    const expCount = expOn() ? state.products.filter(p => expState(p)).length : 0;
     const topCats = Object.entries(catCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
-    if (stockCat && stockCat !== '__low' && !catCount[stockCat]) stockCat = '';
-    document.getElementById('catChips').innerHTML = [['', 'Tous', state.products.length]].concat(lowCount ? [['__low', '⚠ Stock bas', lowCount]] : []).concat(topCats.map(([c, n]) => [c, c, n]))
+    if (stockCat === '__exp' && !expCount) stockCat = '';
+    if (stockCat && stockCat !== '__low' && stockCat !== '__exp' && !catCount[stockCat]) stockCat = '';
+    document.getElementById('catChips').innerHTML = [['', 'Tous', state.products.length]].concat(lowCount ? [['__low', '⚠ Stock bas', lowCount]] : []).concat(expCount ? [['__exp', '⏳ Péremption', expCount]] : []).concat(topCats.map(([c, n]) => [c, c, n]))
       .map(([k, l, n]) => `<button type="button" class="cat-chip ${stockCat === k ? 'on' : ''}" data-cat="${escapeHtml(k)}">${escapeHtml(l)} <em>${n}</em></button>`).join('');
     document.getElementById('stockValue').textContent = stockAmt(state.products.reduce((t, p) => t + (Number(p.prixAchat) || 0) * (Number(p.stock) || 0), 0)) + ' ' + curSym();
     document.querySelectorAll('.view-toggle button').forEach(b => b.classList.toggle('on', b.dataset.view === stockView));
@@ -4930,10 +4940,11 @@
 
     const filtered = state.products.filter(p => {
       if (stockCat === '__low' && !(Number(p.stock) <= Number(p.seuil))) return false;
-      if (stockCat && stockCat !== '__low' && (p.categorie || '').trim() !== stockCat) return false;
+      if (stockCat === '__exp' && !expState(p)) return false;
+      if (stockCat && stockCat !== '__low' && stockCat !== '__exp' && (p.categorie || '').trim() !== stockCat) return false;
       if (!stockFilter) return true;
       return (p.ref || '').toLowerCase().includes(stockFilter) || (p.nom || '').toLowerCase().includes(stockFilter) || (p.codeBarre || '').toLowerCase().includes(stockFilter) || (p.emplacement || '').toLowerCase().includes(stockFilter);
-    }).sort((a, b) => (a.ref || '').localeCompare(b.ref || ''));
+    }).sort((a, b) => stockCat === '__exp' ? (expDays(a) - expDays(b)) : (a.ref || '').localeCompare(b.ref || ''));
 
     document.getElementById('catalogCount').textContent = state.products.length ? `(${filtered.length} affiché${filtered.length > 1 ? 's' : ''} sur ${state.products.length})` : '';
 
@@ -4949,7 +4960,7 @@
           const zero = Number(p.stock) <= 0, low = !zero && Number(p.stock) <= Number(p.seuil);
           const unit = escapeHtml(p.unite || 'unité');
           return `<div class="sc ${zero ? 'zero' : low ? 'low' : ''}">
-            <div class="sc-main"><div class="sc-name">${escapeHtml(p.nom)}</div><div class="sc-sub">${escapeHtml(p.ref || '')}${p.categorie ? ' · ' + escapeHtml(p.categorie) : ''}${p.emplacement ? ' · 📍' + escapeHtml(p.emplacement) : ''}</div></div>
+            <div class="sc-main"><div class="sc-name">${escapeHtml(p.nom)}${expBadge(p)}</div><div class="sc-sub">${escapeHtml(p.ref || '')}${p.categorie ? ' · ' + escapeHtml(p.categorie) : ''}${p.emplacement ? ' · 📍' + escapeHtml(p.emplacement) : ''}${expOn() && expDate(p) ? ' · 📅 ' + expFmt(p) : ''}</div></div>
             <div class="sc-stock"><b>${zero ? 'Rupture' : escapeHtml(String(p.stock))}</b><small>${zero ? 'à commander' : unit + (low ? ' · bas' : '')}</small></div>
             <div class="sc-prices"><span class="v">Vente ${stockAmt(p.prixVente)}</span><span class="a cost-col">Achat ${stockAmt(p.prixAchat)}</span></div>
             <div class="sc-act"><button class="icon-btn" data-edit="${p.id}" title="Modifier">✎</button><button class="icon-btn" data-del="${p.id}" title="Supprimer">✕</button></div>
@@ -4962,7 +4973,7 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${escapeHtml(p.ref)}</td>
-          <td>${escapeHtml(p.nom)}</td>
+          <td>${escapeHtml(p.nom)}${expBadge(p)}${expOn() && expDate(p) ? `<div class="muted" style="font-size:11px;">📅 ${expFmt(p)}</div>` : ''}</td>
           <td class="muted">${escapeHtml(p.codeBarre || '—')}</td>
           <td class="muted">${escapeHtml(p.fournisseur || '—')}</td>
           <td class="muted">${escapeHtml(p.categorie || '—')}</td>
@@ -5018,6 +5029,44 @@
     if (current && state.products.some(p => p.id === current)) sel.value = current;
   }
 
+  // ================= Date d'expiration (péremption) des produits =================
+  // Une date par produit : celle du lot qui expire le plus tôt. Rien n'est obligatoire : sans date, rien ne change.
+  // Ce que ça ajoute : le champ « Date d'expiration » dans la fiche produit, une pastille ⛔ / ⏳ sur le produit,
+  // le filtre « ⏳ Péremption » dans Produits, un conseil sur l'Accueil, et une alerte à la caisse si on vend un produit périmé.
+  // AVANT de l'ouvrir : lancer une fois supabase/date_expiration.sql dans Supabase → SQL Editor (ajoute la colonne).
+  // true = pour tous les commerçants ; false = seulement sur le compte de test (aiAskOk).
+  const EXP_POUR_TOUS = false;
+  const EXP_JOURS = 30;   // « expire bientôt » = dans 30 jours ou moins
+
+  function expOn() { return EXP_POUR_TOUS || aiAskOk; }
+  function expDate(p) { const d = p && p.dateExpiration ? String(p.dateExpiration).slice(0, 10) : ''; return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : ''; }
+  // Nombre de jours avant la date (0 = aujourd'hui, négatif = déjà périmé) ; null si pas de date
+  function expDays(p) {
+    const d = expDate(p); if (!d) return null;
+    return Math.round((new Date(d + 'T12:00:00').getTime() - new Date(todayStr() + 'T12:00:00').getTime()) / 86400000);
+  }
+  // 'perime' | 'bientot' | null — seulement pour les produits encore en stock
+  function expState(p) {
+    if (!expOn() || !(Number(p && p.stock) > 0)) return null;
+    const n = expDays(p); if (n === null) return null;
+    if (n < 0) return 'perime';
+    if (n <= EXP_JOURS) return 'bientot';
+    return null;
+  }
+  function expFmt(p) { const d = expDate(p); return d ? d.slice(8, 10) + '/' + d.slice(5, 7) + '/' + d.slice(0, 4) : ''; }
+  function expBadge(p) {
+    const s = expState(p); if (!s) return '';
+    const n = expDays(p);
+    if (s === 'perime') return `<span class="badge exp-out" title="Expiré le ${expFmt(p)}">⛔ Périmé</span>`;
+    return `<span class="badge exp-soon" title="Expire le ${expFmt(p)}">⏳ ${n === 0 ? "expire aujourd'hui" : 'expire dans ' + n + ' j'}</span>`;
+  }
+  // Affiche ou cache le champ du formulaire, et redessine ce qui dépend de la péremption
+  function expRefresh() {
+    const box = document.getElementById('p-exp-box'); if (box) box.style.display = expOn() ? '' : 'none';
+    if (!expOn() && stockCat === '__exp') stockCat = '';
+    try { renderStock(); } catch (e) { console.error(e); }
+    try { renderInsights(); } catch (e) { console.error(e); }
+  }
   // ================= Inventaire intelligent =================
   let invFilter = 'tous';
   let invCategorie = '';
@@ -7258,6 +7307,7 @@
       const prix = Number(l.prix) || 0, q = Number(l.qte) || 0;
       const p = l.matched ? (state.products || []).find(x => x.ref === l.ref) : null;
       const pa = p ? Number(p.prixAchat) || 0 : 0, pv = p ? Number(p.prixVente) || 0 : 0;
+      if (p && expState(p) === 'perime') out.push({ k: 'perime', t: `${l.nom} : ${tr('produit périmé depuis le')} ${expFmt(p)}` });
       if (prix <= 0) { out.push({ k: 'zero', t: `${l.nom} : ${tr('prix à 0 (article donné gratuitement ?)')}` }); return; }
       if (pa > 0 && prix < pa) { out.push({ k: 'perte', t: `${l.nom} : ${tr('vendu')} ${euros(prix)}, ${tr('acheté')} ${euros(pa)} → ${tr('perte de')} ${euros((pa - prix) * q)}` }); return; }
       if (pv > 0 && prix >= pv * 3) out.push({ k: 'cher', t: `${l.nom} : ${euros(prix)} ${tr('au lieu de')} ${euros(pv)} ${tr('d\'habitude (un zéro en trop ?)')}` });
@@ -7272,7 +7322,7 @@
     const sig = JSON.stringify(issues);
     if (saleGuardAck && saleGuardAck !== sig) saleGuardAck = '';
     box.style.display = '';
-    box.innerHTML = `<b>🛑 ${escapeHtml(tr('Vérifie avant de valider'))}</b>` + issues.map(i => `<div class="sg-line">${i.k === 'perte' ? '💸' : i.k === 'zero' ? '🎁' : '🔢'} ${escapeHtml(i.t)}</div>`).join('')
+    box.innerHTML = `<b>🛑 ${escapeHtml(tr('Vérifie avant de valider'))}</b>` + issues.map(i => `<div class="sg-line">${i.k === 'perte' ? '💸' : i.k === 'zero' ? '🎁' : i.k === 'perime' ? '⛔' : '🔢'} ${escapeHtml(i.t)}</div>`).join('')
       + (box.dataset.ask === sig ? `<div class="sg-actions"><button type="button" class="primary sg-yes" id="sgYes">${escapeHtml(tr('Oui, je confirme cette vente'))}</button><button type="button" class="ghost" id="sgNo">${escapeHtml(tr('Corriger'))}</button></div>` : '');
     const yes = document.getElementById('sgYes');
     if (yes) yes.addEventListener('click', () => { saleGuardAck = sig; delete box.dataset.ask; saleGuardRender(); document.getElementById('btnFinalize').click(); });
@@ -7644,6 +7694,7 @@
     ['p-nom', p => p.nom, ''], ['p-barcode', p => p.codeBarre, ''], ['p-fournisseur', p => p.fournisseur, ''],
     ['p-categorie', p => p.categorie, ''], ['p-emplacement', p => p.emplacement, ''], ['p-unite', p => p.unite, ''],
     ['p-prixachat', p => p.prixAchat, '0'], ['p-prixvente', p => p.prixVente, '0'], ['p-seuil', p => p.seuil, '5'],
+    ['p-expiration', p => expDate(p), ''],
   ];
   document.getElementById('p-ref').addEventListener('input', e => {
     if (editingId) return; // en mode édition, on ne bascule pas en mode réappro
@@ -7691,6 +7742,7 @@
     document.getElementById('p-prixachat').value = p.prixAchat ?? 0;
     document.getElementById('p-prixvente').value = p.prixVente ?? 0;
     document.getElementById('p-seuil').value = p.seuil ?? 0;
+    document.getElementById('p-expiration').value = expDate(p);
 
     document.getElementById('lbl-stock').textContent = 'Quantité en stock (valeur exacte)';
     document.getElementById('restockHint').style.display = 'block';
@@ -7706,7 +7758,7 @@
   function resetProductForm() {
     editingId = null;
     autofilledRef = null;
-    ['p-ref','p-nom','p-barcode','p-fournisseur','p-categorie','p-emplacement','p-unite'].forEach(id => document.getElementById(id).value = '');
+    ['p-ref','p-nom','p-barcode','p-fournisseur','p-categorie','p-emplacement','p-unite','p-expiration'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('p-stock').value = '0';
     document.getElementById('p-prixachat').value = '0';
     document.getElementById('p-prixvente').value = '0';
@@ -7731,6 +7783,8 @@
     const prixAchat = Number(document.getElementById('p-prixachat').value) || 0;
     const prixVente = Number(document.getElementById('p-prixvente').value) || 0;
     const seuil = Number(document.getElementById('p-seuil').value) || 0;
+    // Date d'expiration : envoyée seulement quand la fonction est ouverte (sinon la colonne n'existe peut-être pas encore dans la base)
+    const expVal = expOn() ? (document.getElementById('p-expiration').value || '') : '';
 
     if (!ref) { toast('La référence est obligatoire.'); return; }
     if (!nom) { toast('Le nom est obligatoire.'); return; }
@@ -7741,7 +7795,7 @@
         // Mode édition : remplace tous les champs, y compris le stock en valeur exacte.
         // Le stock n'est jamais écrasé : on applique seulement la différence avec ce qui était affiché,
         // pour ne pas effacer une vente faite pendant que le formulaire était ouvert.
-        await state.db.doc('produits/' + editingId).update({ ref, nom, codeBarre, fournisseur, categorie, emplacement, unite, prixAchat, prixVente, seuil });
+        await state.db.doc('produits/' + editingId).update({ ref, nom, codeBarre, fournisseur, categorie, emplacement, unite, prixAchat, prixVente, seuil, ...(expOn() ? { dateExpiration: expVal || null } : {}) });
         const dStock = stockInput - editingStock;
         if (dStock !== 0) {
           const ed = state.products.find(x => x.id === editingId) || {};
@@ -7766,6 +7820,12 @@
         if (fournisseur && fournisseur !== existing.fournisseur) updates.fournisseur = fournisseur;
         if (categorie && categorie !== existing.categorie) updates.categorie = categorie;
         if (emplacement && emplacement !== existing.emplacement) updates.emplacement = emplacement;
+        // Réappro avec une date : on garde la date la plus proche tant qu'il reste de l'ancien stock (ce sont ces articles qui expirent en premier)
+        if (expVal && expVal !== expDate(existing)) {
+          const old = expDate(existing);
+          if (!old || !(Number(existing.stock) > 0) || expVal < old) updates.dateExpiration = expVal;
+          else toast(`Date d'expiration gardée au ${expFmt(existing)} : l'ancien stock expire avant le nouveau.`);
+        }
         if (Object.keys(updates).length) await state.db.doc('produits/' + existing.id).update(updates);
         // Réappro : ajout atomique côté base (une vente en même temps n'est jamais effacée)
         let newStock = Number(existing.stock) || 0;
@@ -7777,7 +7837,7 @@
       } else {
         if (state.products.length >= 3000) toast("Catalogue proche de 3000 références — pense à archiver les articles inactifs.");
         const id = 'p-' + ref.toLowerCase().replace(/[^a-z0-9_.-]/g, '-').slice(0, 60) + '-' + Date.now().toString(36);
-        await state.db.doc('produits/' + id).set({ ref, nom, codeBarre, fournisseur, categorie, emplacement, stock: stockInput, unite, prixAchat, prixVente, seuil, createdAt: Date.now() });
+        await state.db.doc('produits/' + id).set({ ref, nom, codeBarre, fournisseur, categorie, emplacement, stock: stockInput, unite, prixAchat, prixVente, seuil, ...(expVal ? { dateExpiration: expVal } : {}), createdAt: Date.now() });
         toast('Produit ajouté au catalogue.');
       }
       resetProductForm();
@@ -9192,7 +9252,7 @@
   // Les tables Postgres utilisent des noms en snake_case ; l'app utilise du camelCase.
   // Ces tables font la conversion dans les deux sens.
   const FIELD_MAPS = {
-    produits: { codeBarre: 'code_barre', prixAchat: 'prix_achat', prixVente: 'prix_vente', createdAt: 'created_at' },
+    produits: { codeBarre: 'code_barre', prixAchat: 'prix_achat', prixVente: 'prix_vente', createdAt: 'created_at', dateExpiration: 'date_expiration' },
     factures: { createdAt: 'created_at', clientId: 'client_id', montantPaye: 'montant_paye', sousTotal: 'sous_total', tvaTaux: 'tva_taux', tvaMode: 'tva_mode', tvaMontant: 'tva_montant' },
     documents: { createdAt: 'created_at', clientId: 'client_id', factureId: 'facture_id', sourceId: 'source_id', sousTotal: 'sous_total', tvaTaux: 'tva_taux', tvaMode: 'tva_mode', tvaMontant: 'tva_montant' },
     mouvements: { productId: 'product_id', ancienStock: 'ancien_stock', nouveauStock: 'nouveau_stock', createdAt: 'created_at' },
@@ -9873,6 +9933,9 @@
 .toast.warn { background:#dc2626 !important; color:#fff !important; font-weight:800 !important; font-size:16.5px !important; border:2px solid #fff; box-shadow:0 0 0 4px rgba(220,38,38,.35), 0 16px 44px rgba(220,38,38,.55) !important; }
 #finalizeHint.fh-warn { display:block; padding:12px 14px; border-radius:12px; background:rgba(220,38,38,.14); border:2px solid #dc2626; color:var(--danger) !important; font-weight:800; font-size:15.5px; opacity:1; animation:fhPulse 1.6s ease-in-out infinite; }
 @keyframes fhPulse { 0%,100% { box-shadow:0 0 0 0 rgba(220,38,38,.45); } 50% { box-shadow:0 0 0 7px rgba(220,38,38,0); } }
+  /* Date d'expiration : pastilles sur les produits */
+  .badge.exp-out { background:#ffe1e1; color:#c0262d; }
+  .badge.exp-soon { background:#fff1cf; color:#a35b00; }
 </style>
 <style id="smart-ui-css">
 /* Conseils intelligents */

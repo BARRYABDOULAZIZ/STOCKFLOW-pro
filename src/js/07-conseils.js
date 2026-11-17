@@ -86,6 +86,12 @@
     }
     const sousSeuil = prods.filter(p => Number(p.seuil) > 0 && Number(p.stock) > 0 && Number(p.stock) <= Number(p.seuil));
     if (sousSeuil.length) add({ cat: 'stock', sev: 'warn', ic: '📦', tab: 'produits', t: `${sousSeuil.length} produit${sousSeuil.length > 1 ? 's' : ''} sous le seuil d'alerte`, d: `Par exemple : ${sousSeuil.slice(0, 3).map(p => nm(p)).join(', ')}.` });
+    // ---- Péremption ----
+    if (expOn()) {
+      const per = prods.filter(p => expState(p) === 'perime'), bt = prods.filter(p => expState(p) === 'bientot').sort((a, b) => expDays(a) - expDays(b));
+      if (per.length) add({ cat: 'stock', sev: 'danger', ic: '⛔', tab: 'produits', t: `${per.length} produit${per.length > 1 ? 's' : ''} périmé${per.length > 1 ? 's' : ''} encore en stock`, d: `À retirer de la vente : ${per.slice(0, 3).map(p => nm(p) + ' (' + expFmt(p) + ')').join(', ')}.` });
+      if (bt.length) add({ cat: 'stock', sev: 'warn', ic: '⏳', tab: 'produits', t: `${bt.length} produit${bt.length > 1 ? 's' : ''} expire${bt.length > 1 ? 'nt' : ''} dans moins de ${EXP_JOURS} jours`, d: `Vends-les en premier ou fais une petite promo : ${bt.slice(0, 3).map(p => nm(p) + ' (' + expFmt(p) + ')').join(', ')}.` });
+    }
 
     // ---- Argent : impayés par client + relance WhatsApp ----
     const reste = invAll.map(i => ({ i, r: Math.max(0, (Number(i.total) || 0) - (Number(i.montantPaye) || 0)) })).filter(o => o.r > 0);

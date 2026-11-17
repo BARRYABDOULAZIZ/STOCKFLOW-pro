@@ -82,7 +82,7 @@
   // Les tables Postgres utilisent des noms en snake_case ; l'app utilise du camelCase.
   // Ces tables font la conversion dans les deux sens.
   const FIELD_MAPS = {
-    produits: { codeBarre: 'code_barre', prixAchat: 'prix_achat', prixVente: 'prix_vente', createdAt: 'created_at' },
+    produits: { codeBarre: 'code_barre', prixAchat: 'prix_achat', prixVente: 'prix_vente', createdAt: 'created_at', dateExpiration: 'date_expiration' },
     factures: { createdAt: 'created_at', clientId: 'client_id', montantPaye: 'montant_paye', sousTotal: 'sous_total', tvaTaux: 'tva_taux', tvaMode: 'tva_mode', tvaMontant: 'tva_montant' },
     documents: { createdAt: 'created_at', clientId: 'client_id', factureId: 'facture_id', sourceId: 'source_id', sousTotal: 'sous_total', tvaTaux: 'tva_taux', tvaMode: 'tva_mode', tvaMontant: 'tva_montant' },
     mouvements: { productId: 'product_id', ancienStock: 'ancien_stock', nouveauStock: 'nouveau_stock', createdAt: 'created_at' },
