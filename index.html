@@ -3824,13 +3824,43 @@
     if (!(await captchaLoad()) || !window.turnstile) return undefined;
     await captchaPrepare();
     if (capTok) return capTok;
-    return await new Promise((resolve) => { capWait.push(resolve); setTimeout(() => resolve(capTok || undefined), 12000); });
+    // Réseau lent : on attend jusqu'à 30 s. Si Cloudflare demande de cocher la case, on le dit clairement.
+    const hint = setTimeout(() => { if (!capTok) captchaHint(true); }, 4000);
+    const tok = await new Promise((resolve) => { capWait.push(resolve); setTimeout(() => resolve(capTok || undefined), 30000); });
+    clearTimeout(hint); captchaHint(false);
+    return tok;
+  }
+  function captchaHint(on) {
+    let el = document.getElementById('captchaHint');
+    if (!on) { if (el) el.remove(); return; }
+    const box = document.getElementById('captchaBox'); if (!box || el) return;
+    el = document.createElement('div'); el.id = 'captchaHint';
+    el.style.cssText = 'text-align:center; font-size:13px; color:#a35b00; margin-top:6px;';
+    el.textContent = '⏳ Vérification anti-robot en cours… Si une case apparaît au-dessus, coche-la.';
+    box.insertAdjacentElement('afterend', el);
+  }
+  // Un seul envoi à la fois : sur un réseau lent, les clics répétés envoyaient plusieurs demandes avec le même jeton (refusées)
+  let authBusy = false;
+  async function authRun(btnId, fn) {
+    if (authBusy) return;
+    const btn = document.getElementById(btnId); const label = btn ? btn.textContent : '';
+    authBusy = true; if (btn) { btn.disabled = true; btn.textContent = '⏳ Patiente…'; }
+    try { await fn(); } catch (e) { console.error(e); showAuthError('Erreur : ' + (e.message || e)); }
+    finally { authBusy = false; if (btn) { btn.disabled = false; btn.textContent = label; } }
+  }
+  // Envoie une demande protégée ; si Supabase refuse le jeton (expiré, déjà utilisé, absent), on en redemande un neuf et on réessaie une fois
+  async function withCaptcha(call) {
+    let res = await call(await captchaToken()); captchaUsed();
+    if (res && res.error && captchaMsg(res.error)) { res = await call(await captchaToken()); captchaUsed(); }
+    return res;
   }
   // Un jeton ne sert qu'une fois : on en redemande un nouveau après chaque essai
   function captchaUsed() { capTok = null; try { if (capWid !== null && window.turnstile) window.turnstile.reset(capWid); } catch (e) {} }
-  function captchaMsg(error) { return error && /captcha/i.test(error.message || '') ? 'Vérification anti-robot impossible. Vérifie ta connexion internet, puis réessaie.' : null; }
+  function captchaMsg(error) { return error && (/captcha/i.test(error.message || '') || error.code === 'captcha_failed') ? 'Vérification anti-robot impossible. Vérifie ta connexion internet (ou coche la case si elle apparaît), puis réessaie.' : null; }
   // Prépare la vérification dès que l'écran de connexion est utilisé (pas pour les utilisateurs déjà connectés)
   ['loginOverlay'].forEach(id => { const el = document.getElementById(id); if (el) ['focusin', 'pointerdown'].forEach(ev => el.addEventListener(ev, () => { captchaPrepare(); }, { once: true })); });
+  // Et dès que l'écran de connexion est affiché (le chargement de Cloudflare peut être lent sur les réseaux mobiles)
+  setTimeout(() => { const lo = document.getElementById('loginOverlay'); if (lo && getComputedStyle(lo).display !== 'none' && navigator.onLine !== false) captchaPrepare(); }, 1500);
 
   // ---- Onglets Connexion / Créer / Rejoindre ----
   const authTabs = { login: 'authPaneLogin', signup: 'authPaneSignup', join: 'authPaneJoin' };
@@ -3870,9 +3900,7 @@
     const btn = document.getElementById('btnForgotSend');
     btn.disabled = true;
     try {
-      const captchaTok = await captchaToken();
-      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname, captchaToken: captchaTok });
-      captchaUsed();
+      const { error } = await withCaptcha((t) => supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname, captchaToken: t }));
       if (error) {
         if (captchaMsg(error)) { showAuthError(captchaMsg(error)); return; }
         if (error.status === 429 || /rate limit/i.test(error.message || '')) showAuthError('Trop de demandes. Réessaie dans quelques minutes.');
@@ -3922,19 +3950,18 @@
     el.style.display = 'block';
   }
 
-  document.getElementById('btnLogin').addEventListener('click', async () => {
+  document.getElementById('btnLogin').addEventListener('click', () => authRun('btnLogin', async () => {
     if (!supabaseClient) { showAuthError('Connexion indisponible.'); return; }
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
     if (!email || !password) { showAuthError('Entre ton email et ton mot de passe.'); return; }
-    const captchaTok = await captchaToken();
-    const { error } = await supabaseClient.auth.signInWithPassword({ email, password, options: { captchaToken: captchaTok } });
-    captchaUsed();
+    clearAuthError();
+    const { error } = await withCaptcha((t) => supabaseClient.auth.signInWithPassword({ email, password, options: { captchaToken: t } }));
     if (error && captchaMsg(error)) { showAuthError(captchaMsg(error)); return; }
     if (error) { showAuthError(error.message === 'Invalid login credentials' ? 'Email ou mot de passe incorrect.' : error.message); return; }
-  });
+  }));
 
-  document.getElementById('btnSignup').addEventListener('click', async () => {
+  document.getElementById('btnSignup').addEventListener('click', () => authRun('btnSignup', async () => {
     if (!supabaseClient) { showAuthError('Connexion indisponible.'); return; }
     const commerceNom = document.getElementById('signup-commerce').value.trim();
     const nom = document.getElementById('signup-nom').value.trim();
@@ -3949,18 +3976,16 @@
     state.signupInProgress = true;
     // « Comment as-tu connu BoromBoutik ? » est gardé avec le compte (sf_source), pour savoir ce qui amène des clients.
     // Les infos du commerce sont gardées avec le compte : si l'e-mail doit d'abord être confirmé, le commerce est créé à la première connexion.
-    const captchaTok = await captchaToken();
-    const { data, error } = await supabaseClient.auth.signUp({ email, password, options: { emailRedirectTo: location.origin, captchaToken: captchaTok, data: { sf_action: 'create', sf_commerce: commerceNom, sf_nom: nom, sf_tel: tel, sf_source: source } } });
-    captchaUsed();
+    const { data, error } = await withCaptcha((t) => supabaseClient.auth.signUp({ email, password, options: { emailRedirectTo: location.origin, captchaToken: t, data: { sf_action: 'create', sf_commerce: commerceNom, sf_nom: nom, sf_tel: tel, sf_source: source } } }));
     if (error) { state.signupInProgress = false; showAuthError(captchaMsg(error) || error.message); return; }
     if (!data.session) { state.signupInProgress = false; showConfirmEmailInfo(email); return; }
     const { error: rpcErr } = await supabaseClient.rpc('create_commerce_and_owner', { p_commerce_nom: commerceNom, p_user_nom: nom });
     if (rpcErr) { await abortSignup("Compte créé mais erreur lors de la création du commerce : " + rpcErr.message); return; }
     await saveSignupTel(data.session.user, tel);
     await finishSignup(data.session.user);
-  });
+  }));
 
-  document.getElementById('btnJoin').addEventListener('click', async () => {
+  document.getElementById('btnJoin').addEventListener('click', () => authRun('btnJoin', async () => {
     if (!supabaseClient) { showAuthError('Connexion indisponible.'); return; }
     const code = document.getElementById('join-code').value.trim().toLowerCase();
     const nom = document.getElementById('join-nom').value.trim();
@@ -3970,15 +3995,13 @@
     if (!code || !nom || !email || !password) { showAuthError('Remplis tous les champs.'); return; }
     if (password.length < 8) { showAuthError('Le mot de passe doit faire au moins 8 caractères.'); return; }
     state.signupInProgress = true;
-    const captchaTok = await captchaToken();
-    const { data, error } = await supabaseClient.auth.signUp({ email, password, options: { emailRedirectTo: location.origin, captchaToken: captchaTok, data: { sf_action: 'join', sf_code: code, sf_nom: nom } } });
-    captchaUsed();
+    const { data, error } = await withCaptcha((t) => supabaseClient.auth.signUp({ email, password, options: { emailRedirectTo: location.origin, captchaToken: t, data: { sf_action: 'join', sf_code: code, sf_nom: nom } } }));
     if (error) { state.signupInProgress = false; showAuthError(captchaMsg(error) || error.message); return; }
     if (!data.session) { state.signupInProgress = false; showConfirmEmailInfo(email); return; }
     const { error: rpcErr } = await supabaseClient.rpc('join_commerce', { p_invite_code: code, p_user_nom: nom, p_role: role });
     if (rpcErr) { await abortSignup(rpcErr.message.includes('invalide') ? 'Code invitation invalide.' : rpcErr.message); return; }
     await finishSignup(data.session.user);
-  });
+  }));
 
   document.getElementById('userBadge').addEventListener('click', async () => {
     if (!confirm('Se déconnecter ?')) return;
