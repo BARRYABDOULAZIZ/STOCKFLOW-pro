@@ -5035,7 +5035,7 @@
   // le filtre « ⏳ Péremption » dans Produits, un conseil sur l'Accueil, et une alerte à la caisse si on vend un produit périmé.
   // AVANT de l'ouvrir : lancer une fois supabase/date_expiration.sql dans Supabase → SQL Editor (ajoute la colonne).
   // true = pour tous les commerçants ; false = seulement sur le compte de test (aiAskOk).
-  const EXP_POUR_TOUS = false;
+  const EXP_POUR_TOUS = true;
   const EXP_JOURS = 30;   // « expire bientôt » = dans 30 jours ou moins
 
   function expOn() { return EXP_POUR_TOUS || aiAskOk; }

@@ -551,7 +551,7 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
       const hasExp = (w) => !!(w && w[2] && 'dateExpiration' in w[2]);
       const res = {};
       // 1) Compte normal : champ caché, rien n'est envoyé (la colonne n'existe peut-être pas encore)
-      aiAskOk = false; expRefresh();
+      aiAskOk = false; expRefresh(); res.flag = EXP_POUR_TOUS;
       res.cache = document.getElementById('p-exp-box').style.display === 'none';
       state.products = [];
       resetProductForm(); val('p-ref', 'LAIT1'); val('p-nom', 'Lait'); val('p-stock', '5'); val('p-expiration', plus(10));
@@ -597,12 +597,11 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
       stockCat = '';
       renderInsights(); res.conseil = /périmé/.test(document.getElementById('aiInsights').innerHTML) && /expire/.test(document.getElementById('aiInsights').innerHTML);
       res.caisse = saleGuardIssues([{ ref: 'A', nom: 'Sardines', qte: 1, prix: 500, matched: true }]).map(i => i.k);
-      // 6) Compte normal : aucune pastille ni alerte
+      // 6) Ouvert à tous : un compte normal voit aussi les pastilles
       aiAskOk = false; expRefresh();
-      res.horsTestEtats = state.products.map(x => expState(x));
-      res.horsTestCaisse = saleGuardIssues([{ ref: 'A', nom: 'Sardines', qte: 1, prix: 500, matched: true }]).map(i => i.k);
+      res.pourTous = EXP_POUR_TOUS && state.products.map(x => expState(x))[0] === 'perime';
       return res; })()`);
-    eq([r.cache, r.horsTest], [true, false], 'hors compte de test : champ caché et date jamais envoyée');
+    eq([r.cache, r.horsTest], [!r.flag, r.flag], 'hors compte de test : champ caché et date jamais envoyée (si pas ouvert à tous)');
     eq(r.visible, true, 'compte de test : champ visible');
     eq(r.ajout.length, 1, 'ajout : date enregistrée');
     eq(r.colonne, { date_expiration: '2027-01-31' }, 'nom de la colonne dans la base');
@@ -614,7 +613,7 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     eq(r.filtre.map(t => t.replace(/[⛔⏳].*/, '').trim()), ['Sardines', 'Biscuits'], 'filtre Péremption : le plus urgent d\'abord');
     eq(r.conseil, true, 'conseil sur l\'Accueil');
     expect(r.caisse.includes('perime'), 'alerte à la caisse : ' + JSON.stringify(r.caisse));
-    eq([r.horsTestEtats.every(x => x === null), r.horsTestCaisse.includes('perime')], [true, false], 'compte normal : rien ne change');
+    eq(r.pourTous, true, 'ouvert à tous les commerçants (EXP_POUR_TOUS)');
     eq(p.errors, [], 'erreurs');
     await p.close2();
   });
