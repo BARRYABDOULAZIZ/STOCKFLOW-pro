@@ -168,25 +168,26 @@ Réponds UNIQUEMENT en JSON : {"fournisseur":string|null,"date":string|null,"lig
       const parts = [{ text: consigne }, ...imgs.map((i: any) => ({ inlineData: { mimeType: i.mime, data: i.data } }))];
       // Lecture d'une facture = recopier des lignes : un modèle rapide et peu de réflexion suffisent.
       // Réglables sans toucher au code, dans Supabase → Edge Functions → Secrets :
-      //   GEMINI_VISION_MODEL    (défaut : gemini-3.5-flash-lite, le plus rapide)
+      //   GEMINI_VISION_MODEL    (défaut : gemini-3.6-flash)
       //   GEMINI_VISION_THINKING (défaut : minimal ; autres valeurs : low, medium, high, ou aucun)
-      const vModels = [...new Set([Deno.env.get("GEMINI_VISION_MODEL") || "gemini-3.5-flash-lite", Deno.env.get("GEMINI_MODEL") || "gemini-3.8-flash", "gemini-3.6-flash"])];
+      // Ordre : 3.6-flash (lit bien et répond), puis flash-lite (rapide mais souvent saturé), puis le modèle principal.
+      const vModels = [...new Set([Deno.env.get("GEMINI_VISION_MODEL") || "gemini-3.6-flash", "gemini-3.5-flash-lite", Deno.env.get("GEMINI_MODEL") || "gemini-3.8-flash"])];
       const vThink = (Deno.env.get("GEMINI_VISION_THINKING") || "minimal").trim().toLowerCase();
       const vStart = Date.now();
       let out: any = null, lastV = 0, usedV = "";
       outerV: for (const model of vModels) {
         let rapide = vThink !== "aucun";
         for (let attempt = 0; attempt < 3; attempt++) {
-          // Pas plus d'une minute au total ; chaque essai est coupé au bout de 25 s (on passe alors au modèle suivant)
-          if (Date.now() - vStart > 60000) break outerV;
-          const ctl = new AbortController(); const tmo = setTimeout(() => ctl.abort(), 25000);
+          // Pas plus de 80 s au total ; chaque essai est coupé au bout de 40 s (on passe alors au modèle suivant)
+          if (Date.now() - vStart > 80000) break outerV;
+          const ctl = new AbortController(); const tmo = setTimeout(() => ctl.abort(), 40000);
           let r: Response;
           try {
             r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
               method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": k }, signal: ctl.signal,
               body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: { temperature: 0.1, maxOutputTokens: 8192, responseMimeType: "application/json", ...(rapide ? { thinkingConfig: { thinkingLevel: vThink } } : {}) } }),
             });
-          } catch (_) { clearTimeout(tmo); console.error("Vision", model, "trop lent (25 s)"); lastV = 504; continue outerV; }
+          } catch (_) { clearTimeout(tmo); console.error("Vision", model, "trop lent (40 s)"); lastV = 504; continue outerV; }
           clearTimeout(tmo);
           // Réglage « réflexion légère » refusé par ce modèle : on réessaie sans
           if (r.status === 400 && rapide) { rapide = false; attempt--; continue; }
@@ -199,6 +200,10 @@ Réponds UNIQUEMENT en JSON : {"fournisseur":string|null,"date":string|null,"lig
             continue outerV;
           }
           console.error("Vision", model, r.status, JSON.stringify(rb).slice(0, 300));
+          // Quota du jour épuisé pour ce modèle : inutile de réessayer, on passe tout de suite au suivant
+          if (r.status === 429 && /quota/i.test(JSON.stringify(rb))) continue outerV;
+          // Modèle saturé (503) : un seul nouvel essai rapide, puis le suivant
+          if (r.status === 503 && attempt >= 1) continue outerV;
           if ([429, 500, 503].includes(r.status) && attempt < 2) { await new Promise((res) => setTimeout(res, 1500 * (attempt + 1))); continue; }
           continue outerV;
         }
@@ -300,6 +305,7 @@ Réponds UNIQUEMENT en JSON : {"fournisseur":string|null,"date":string|null,"lig
         const rb = await r.json().catch(() => ({}));
         if (r.ok) { j = rb; usedModel = model; break outer; }
         console.error("Gemini", model, thinking ? "thinking" : "", r.status, JSON.stringify(rb).slice(0, 300));
+        if (r.status === 429 && /quota/i.test(JSON.stringify(rb))) continue outer;   // quota du jour épuisé : modèle suivant
         // Réglage de réflexion refusé par ce modèle : on réessaie sans
         if (r.status === 400 && thinking) { thinking = false; continue; }
         // Surcharge / trop de demandes : on patiente puis on réessaie, sinon modèle suivant
