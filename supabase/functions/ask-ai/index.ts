@@ -90,16 +90,22 @@ Deno.serve(async (req) => {
     if (!user) return json({ error: "Non connecté" }, 401);
 
     const allowed = (Deno.env.get("AI_TEST_EMAILS") ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
-    if (!user.email || !allowed.includes(user.email.toLowerCase())) {
-      return json({ error: "L'IA n'est pas encore activée pour ce compte", actif: false }, 403);
-    }
+    const isTest = !!user.email && allowed.includes(user.email.toLowerCase());
+    // Photo de facture ouverte à TOUS les propriétaires/admins (limite par jour). Mettre AI_PHOTO_FOR_ALL = 0 pour refermer.
+    const photoAll = (Deno.env.get("AI_PHOTO_FOR_ALL") ?? "1") !== "0";
     const { data: prof } = await sb.from("profiles").select("role").eq("id", user.id).single();
     if (!prof || !["proprietaire", "admin"].includes(prof.role)) {
       return json({ error: "Réservé au propriétaire ou à l'admin", actif: false }, 403);
     }
 
     const body = await req.json().catch(() => ({}));
-    if (body.ping) return json({ actif: true, vision: true, vente: true });
+    if (!isTest) {
+      if (body.ping) return json({ actif: false, photo: photoAll });
+      if (!(photoAll && body.vision === "facture")) {
+        return json({ error: "L'IA n'est pas encore activée pour ce compte", actif: false }, 403);
+      }
+    }
+    if (body.ping) return json({ actif: true, vision: true, vente: true, photo: true });
 
     // ----- Vente à la voix : « 2 sacs de riz à Moussa, à crédit » → lignes de facture (le commerçant valide ensuite) -----
     if (typeof body.vente === "string") {

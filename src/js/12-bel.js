@@ -1,7 +1,7 @@
   // ================= IA (TEST) : « Pose une question à ta boutique » =================
   // Visible seulement si le serveur dit que ce compte est autorisé (comptes de test, propriétaire/admin).
   // L'IA lit un RÉSUMÉ des chiffres préparé ici ; elle ne modifie jamais rien.
-  let aiAskReady = false, aiAskOk = false, aiAskFor = null;
+  let aiAskReady = false, aiAskOk = false, aiAskFor = null, aiPhotoOk = false;
   // Fonctions « intelligentes » calculées sur l'appareil (À commander, anti-erreur caisse, 3 actions du jour,
   // point du patron) : gratuites, aucune donnée envoyée, ouvertes à tous les patrons (propriétaire / admin).
   // L'IA (Bel, stock par photo, voix) reste réservée aux comptes de test (aiAskOk, vérifié par le serveur).
@@ -37,13 +37,15 @@
     const box = document.getElementById('aiAsk'); if (!box) return;
     const hbtn = document.getElementById('belHeadBtn');
     smartInit();
-    if (!isOwnerOrAdmin() || !supabaseClient) { box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; const c0 = document.getElementById('photoFillCard'); if (c0) c0.style.display = 'none'; const v0 = document.getElementById('voiceSale'); if (v0) v0.style.display = 'none'; aiAskOk = false; const bl0 = document.getElementById('bossListen'); if (bl0) bl0.style.display = 'none'; const bm0 = document.getElementById('belMorning'); if (bm0) bm0.style.display = 'none'; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} try { expRefresh(); } catch (e) {} belClosePage(); return; }
+    if (!isOwnerOrAdmin() || !supabaseClient) { box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; const c0 = document.getElementById('photoFillCard'); if (c0) c0.style.display = 'none'; const v0 = document.getElementById('voiceSale'); if (v0) v0.style.display = 'none'; aiAskOk = false; aiPhotoOk = false; const bl0 = document.getElementById('bossListen'); if (bl0) bl0.style.display = 'none'; const bm0 = document.getElementById('belMorning'); if (bm0) bm0.style.display = 'none'; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} try { expRefresh(); } catch (e) {} belClosePage(); return; }
     const pfc = document.getElementById('photoFillCard');
-    if (aiAskFor !== CURRENT_USER_ID) { aiAskFor = CURRENT_USER_ID; aiAskOk = false; box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; if (pfc) pfc.style.display = 'none'; const vs0 = document.getElementById('voiceSale'); if (vs0) vs0.style.display = 'none'; const bl1 = document.getElementById('bossListen'); if (bl1) bl1.style.display = 'none'; const bm1 = document.getElementById('belMorning'); if (bm1) bm1.style.display = 'none'; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} try { expRefresh(); } catch (e) {} belClosePage(); }
-    if (aiAskOk || navigator.onLine === false) return;   // déjà vérifié pour ce compte : pas de nouvelle vérification (évite que le cadre clignote)
+    if (aiAskFor !== CURRENT_USER_ID) { aiAskFor = CURRENT_USER_ID; aiAskOk = false; aiPhotoOk = false; box.style.display = 'none'; if (hbtn) hbtn.style.display = 'none'; if (pfc) pfc.style.display = 'none'; const vs0 = document.getElementById('voiceSale'); if (vs0) vs0.style.display = 'none'; const bl1 = document.getElementById('bossListen'); if (bl1) bl1.style.display = 'none'; const bm1 = document.getElementById('belMorning'); if (bm1) bm1.style.display = 'none'; try { smartActionsRender(); smartOrderRender(); saleGuardRender(); } catch (e) {} try { expRefresh(); } catch (e) {} belClosePage(); }
+    if (aiAskOk || aiPhotoOk || navigator.onLine === false) return;   // déjà vérifié pour ce compte : pas de nouvelle vérification (évite que le cadre clignote)
     try {
       const { data, error } = await supabaseClient.functions.invoke('ask-ai', { body: { ping: true } });
-      if (error || !data || !data.actif) return;
+      if (error || !data) return;
+      // Compte normal : seule la photo de facture est ouverte (pour tous)
+      if (!data.actif) { if (data.photo && pfc) { aiPhotoOk = true; pfc.style.display = ''; } return; }
       aiAskOk = true;
       try { expRefresh(); } catch (e) { console.error(e); }
       try { renderLangPickers(); } catch (e) {}
