@@ -61,12 +61,23 @@
     if (!needOnline('la saisie par photo')) return;
     pfBusy = true; pfRows = []; pfRender();
     document.querySelectorAll('.pf-big').forEach(b => b.disabled = true);
-    pfStatus('<span class="bel-dots" style="display:inline-block;"></span> 🧠 ' + escapeHtml(tr(pfMode === 'facture' ? 'Bel lit la facture…' : 'Bel regarde ton étagère…')));
+    // Chargement : on montre l'étape en cours et les secondes qui passent, pour que le commerçant sache que ça avance
+    const t0 = Date.now(); let step = '';
+    const sec = () => Math.round((Date.now() - t0) / 1000);
+    const showStep = () => {
+      const s = sec();
+      const extra = s >= 45 ? tr('Réseau lent : encore un peu de patience, ne ferme pas l\'appli.') : s >= 20 ? tr('Une longue facture peut prendre jusqu\'à 40 secondes.') : '';
+      pfStatus('<span class="bel-dots" style="display:inline-block;"></span> ' + escapeHtml(step) + ' <b>' + s + ' s</b>' + (extra ? '<br><span class="muted">' + escapeHtml(extra) + '</span>' : ''));
+    };
+    step = '📷 ' + tr('Préparation de la photo…'); showStep();
+    const tick = setInterval(showStep, 1000);
     try {
       const images = [];
       for (const f of [...files].slice(0, 3)) images.push(await pfResize(f));
       const catalogue = (state.products || []).slice(0, 400).map(p => p.nom).join(' ; ');
+      step = '📤🧠 ' + tr(pfMode === 'facture' ? 'Envoi de la photo et lecture de la facture…' : 'Bel regarde ton étagère…'); showStep();
       const { data, error } = await supabaseClient.functions.invoke('ask-ai', { body: { vision: pfMode, images, catalogue, devise: curSym(), lang: UI_LANG } });
+      clearInterval(tick);
       if (error || !data || !data.resultat) {
         let msg = error && error.name === 'FunctionsFetchError' ? 'La photo n\'a pas pu être envoyée (réseau faible ou photo trop lourde). Réessaie avec une seule photo.' : 'La lecture de la photo n\'est pas encore activée.';
         try { const j = error && error.context && typeof error.context.json === 'function' && await error.context.json(); if (j && j.error && !/Question vide/.test(j.error)) msg = j.error; } catch (e) {}
@@ -88,11 +99,13 @@
           return { on: !matchId && (Number(p.confiance) || 0) >= 0.4, nom: String(p.nom || '').trim(), quantite: Math.max(0, Math.round(Number(p.quantite) || 0)), unite: String(p.unite || 'pièce'), categorie: String(p.categorie || ''), prixAchat: null, prixVente: p.prix_vente != null ? Math.round(Number(p.prix_vente)) : null, matchId, doute: (Number(p.confiance) || 0) < 0.6 };
         }).filter(r => r.nom);
       }
-      pfStatus(pfRows.length ? '✅ ' + escapeHtml(tr('Vérifie la liste, corrige si besoin, puis enregistre.')) + ' (' + pfRows.length + ')' : '😕 ' + escapeHtml(tr('Aucun produit trouvé. Reprends la photo de plus près, avec plus de lumière.')));
+      pfStatus(pfRows.length ? '✅ ' + escapeHtml(tr('Vérifie la liste, corrige si besoin, puis enregistre.')) + ' (' + pfRows.length + ') · <span class="muted">' + escapeHtml(tr('lue en')) + ' ' + sec() + ' s</span>' : '😕 ' + escapeHtml(tr('Aucun produit trouvé. Reprends la photo de plus près, avec plus de lumière.')));
       pfRender();
     } catch (e) {
-      pfStatus('😕 ' + escapeHtml(isNetErr(e) ? tr('Pas de connexion internet.') : (e.message || 'Erreur')));
+      clearInterval(tick);
+      pfStatus('😕 ' + escapeHtml(isNetErr(e) ? tr('Pas de connexion internet.') : (e.message || 'Erreur')) + ' <span class="muted">(' + sec() + ' s)</span>');
     } finally {
+      clearInterval(tick);
       pfBusy = false; document.querySelectorAll('.pf-big').forEach(b => b.disabled = false);
       document.getElementById('pfFile').value = '';
     }

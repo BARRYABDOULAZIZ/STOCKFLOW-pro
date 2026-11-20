@@ -168,12 +168,16 @@ Réponds UNIQUEMENT en JSON : {"fournisseur":string|null,"date":string|null,"lig
       const parts = [{ text: consigne }, ...imgs.map((i: any) => ({ inlineData: { mimeType: i.mime, data: i.data } }))];
       const vModels = [...new Set([Deno.env.get("GEMINI_MODEL") || "gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"])];
       let out: any = null, lastV = 0;
+      // Lecture d'une facture = recopier des lignes : peu de réflexion suffit, et c'est bien plus rapide
       outerV: for (const model of vModels) {
+        let rapide = true;
         for (let attempt = 0; attempt < 3; attempt++) {
           const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
             method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": k },
-            body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: { temperature: 0.1, maxOutputTokens: 8192, responseMimeType: "application/json" } }),
+            body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: { temperature: 0.1, maxOutputTokens: 8192, responseMimeType: "application/json", ...(rapide ? { thinkingConfig: { thinkingLevel: "low" } } : {}) } }),
           });
+          // Réglage « réflexion légère » refusé par ce modèle : on réessaie sans
+          if (r.status === 400 && rapide) { rapide = false; attempt--; continue; }
           lastV = r.status;
           const rb = await r.json().catch(() => ({}));
           if (r.ok) {

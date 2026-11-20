@@ -1,6 +1,11 @@
   [
     // Connexion / inscription
     ["Chargement…", "Loading…", "جارٍ التحميل…"],
+    ["Préparation de la photo…", "Preparing the photo…", "تحضير الصورة…"],
+    ["Envoi de la photo et lecture de la facture…", "Sending the photo and reading the invoice…", "إرسال الصورة وقراءة الفاتورة…"],
+    ["Une longue facture peut prendre jusqu'à 40 secondes.", "A long invoice can take up to 40 seconds.", "قد تستغرق الفاتورة الطويلة حتى 40 ثانية."],
+    ["Réseau lent : encore un peu de patience, ne ferme pas l'appli.", "Slow network: a little more patience, don't close the app.", "الشبكة بطيئة: قليل من الصبر، لا تغلق التطبيق."],
+    ["lue en", "read in", "قُرئت في"],
     ["Nouvelle version prête : touche pour mettre à jour", "New version ready: tap to update", "إصدار جديد جاهز: اضغط للتحديث"],
     ["synchronisé", "synced", "متزامن"],
     ["connexion…", "connecting…", "جارٍ الاتصال…"],
