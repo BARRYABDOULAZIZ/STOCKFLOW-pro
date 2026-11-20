@@ -1,6 +1,6 @@
 /* BoromBoutik — service worker : garde l'application sur l'appareil pour qu'elle s'ouvre sans internet.
    Les données (Supabase) ne sont JAMAIS mises en cache ici : elles sont gardées par l'application elle-même (IndexedDB). */
-const VERSION = 'sf-v4';
+const VERSION = 'sf-v5';
 const SHELL = ['./', './index.html', './manifest.json', './boromboutik-logo-192.png', './boromboutik-logo-512.png', './boromboutik-logo.svg'];
 // Bibliothèques nécessaires pour démarrer l'app : gardées dès la toute première visite
 // Versions figées : l'appli vérifie leur empreinte (SRI), donc elles sont gardées en mode « cors » (jamais « opaque »)
@@ -20,18 +20,35 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   if (url.hostname.endsWith('supabase.co')) return;           // données : jamais ici
 
-  // Page principale : on essaie le réseau (version la plus récente), sinon la copie gardée
+  // Page principale : la copie gardée s'ouvre TOUT DE SUITE (même sur un réseau lent),
+  // et la nouvelle version est téléchargée en arrière-plan. Si elle a changé, l'app propose « Mettre à jour ».
+  // Toute première visite (rien de gardé) : on attend le réseau.
   if (req.mode === 'navigate' || (url.origin === location.origin && (url.pathname.endsWith('/') || url.pathname.endsWith('index.html')))) {
     e.respondWith((async () => {
       const c = await caches.open(VERSION);
-      try {
-        const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 6000);
-        const r = await fetch(req, { signal: ctl.signal }); clearTimeout(t);
-        if (r && r.ok) c.put('./index.html', r.clone());
-        return r;
-      } catch (err) {
-        return (await c.match('./index.html')) || (await c.match('./')) || new Response('Hors connexion', { status: 503 });
-      }
+      const kept = (await c.match('./index.html')) || (await c.match('./'));
+      const keptCopy = kept ? kept.clone() : null;   // copie lue plus tard (l'original part vers la page)
+      const fresh = (async () => {
+        try {
+          const r = await fetch(new Request(url.origin + url.pathname, { cache: 'no-store', credentials: 'same-origin' }));
+          if (r && r.ok) {
+            const oldTxt = keptCopy ? await keptCopy.text() : null;
+            const newTxt = await r.clone().text();
+            await c.put('./index.html', r.clone());
+            if (oldTxt !== null && oldTxt !== newTxt) {
+              // Repère « nouvelle version gardée » : l'app le lit au démarrage et propose « Mettre à jour »
+              await c.put('./__bb-maj', new Response('1'));
+              const cl = await self.clients.matchAll({ type: 'window' });
+              cl.forEach(w => w.postMessage({ type: 'bb-maj' }));
+            } else if (oldTxt !== null) {
+              await c.delete('./__bb-maj');
+            }
+          }
+          return r;
+        } catch (err) { return null; }
+      })();
+      if (kept) { e.waitUntil(fresh); return kept; }
+      return (await fresh) || new Response('Hors connexion', { status: 503 });
     })());
     return;
   }

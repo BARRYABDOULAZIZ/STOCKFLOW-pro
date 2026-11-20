@@ -2015,6 +2015,7 @@
   [
     // Connexion / inscription
     ["Chargement…", "Loading…", "جارٍ التحميل…"],
+    ["Nouvelle version prête : touche pour mettre à jour", "New version ready: tap to update", "إصدار جديد جاهز: اضغط للتحديث"],
     ["synchronisé", "synced", "متزامن"],
     ["connexion…", "connecting…", "جارٍ الاتصال…"],
     ["connexion perdue", "connection lost", "انقطع الاتصال"],
@@ -9952,6 +9953,18 @@
   // ================= Installation + fonctionnement hors connexion =================
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(e => console.warn('sw', e)); });
+    // L'app s'ouvre depuis la copie gardée (rapide) ; si une nouvelle version vient d'arriver, on propose de l'ouvrir
+    const showMaj = () => {
+      if (document.getElementById('bbMaj')) return;
+      const b = document.createElement('button'); b.id = 'bbMaj'; b.type = 'button'; b.className = 'bb-maj';
+      b.textContent = '✨ ' + tr('Nouvelle version prête : touche pour mettre à jour');
+      b.addEventListener('click', async () => { try { const ks = await caches.keys(); await Promise.all(ks.map(k => caches.open(k).then(c => c.delete('./__bb-maj')))); } catch (e) {} location.reload(); });
+      document.body.appendChild(b);
+    };
+    const checkMaj = async () => { try { if (window.caches && await caches.match('./__bb-maj')) showMaj(); } catch (e) {} };
+    navigator.serviceWorker.addEventListener('message', (ev) => { if (ev.data && ev.data.type === 'bb-maj') showMaj(); });
+    window.addEventListener('load', () => setTimeout(checkMaj, 4000));
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(checkMaj, 3000); });
   }
 
   // ================= Boot =================
@@ -10510,6 +10523,9 @@ header.top{animation:none !important;background-size:100% 100% !important;}
 .sugg-n{font-weight:700;font-size:15px;color:var(--ink,#17153b)}
 .sugg-m{font-size:12px;color:var(--ink,#17153b);opacity:.7}
 .sugg-go{flex:0 0 auto;font-size:12px;font-weight:800;color:var(--brick,#5b3df5);border:1.5px solid var(--brick,#5b3df5);border-radius:999px;padding:4px 10px}
+
+/* Bandeau « nouvelle version » */
+.bb-maj{position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top,0px));z-index:9999;background:#5b3df5;color:#fff;border:0;border-radius:999px;padding:12px 20px;font-weight:800;font-size:14px;box-shadow:0 12px 30px rgba(40,20,110,.35);cursor:pointer;max-width:92vw}
 </style>
 </body>
 </html>

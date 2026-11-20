@@ -12,3 +12,6 @@
 .sugg-n{font-weight:700;font-size:15px;color:var(--ink,#17153b)}
 .sugg-m{font-size:12px;color:var(--ink,#17153b);opacity:.7}
 .sugg-go{flex:0 0 auto;font-size:12px;font-weight:800;color:var(--brick,#5b3df5);border:1.5px solid var(--brick,#5b3df5);border-radius:999px;padding:4px 10px}
+
+/* Bandeau « nouvelle version » */
+.bb-maj{position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top,0px));z-index:9999;background:#5b3df5;color:#fff;border:0;border-radius:999px;padding:12px 20px;font-weight:800;font-size:14px;box-shadow:0 12px 30px rgba(40,20,110,.35);cursor:pointer;max-width:92vw}

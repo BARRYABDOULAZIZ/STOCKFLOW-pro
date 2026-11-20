@@ -1,6 +1,7 @@
   [
     // Connexion / inscription
     ["Chargement…", "Loading…", "جارٍ التحميل…"],
+    ["Nouvelle version prête : touche pour mettre à jour", "New version ready: tap to update", "إصدار جديد جاهز: اضغط للتحديث"],
     ["synchronisé", "synced", "متزامن"],
     ["connexion…", "connecting…", "جارٍ الاتصال…"],
     ["connexion perdue", "connection lost", "انقطع الاتصال"],

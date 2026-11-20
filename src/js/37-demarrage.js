@@ -1,6 +1,18 @@
   // ================= Installation + fonctionnement hors connexion =================
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(e => console.warn('sw', e)); });
+    // L'app s'ouvre depuis la copie gardée (rapide) ; si une nouvelle version vient d'arriver, on propose de l'ouvrir
+    const showMaj = () => {
+      if (document.getElementById('bbMaj')) return;
+      const b = document.createElement('button'); b.id = 'bbMaj'; b.type = 'button'; b.className = 'bb-maj';
+      b.textContent = '✨ ' + tr('Nouvelle version prête : touche pour mettre à jour');
+      b.addEventListener('click', async () => { try { const ks = await caches.keys(); await Promise.all(ks.map(k => caches.open(k).then(c => c.delete('./__bb-maj')))); } catch (e) {} location.reload(); });
+      document.body.appendChild(b);
+    };
+    const checkMaj = async () => { try { if (window.caches && await caches.match('./__bb-maj')) showMaj(); } catch (e) {} };
+    navigator.serviceWorker.addEventListener('message', (ev) => { if (ev.data && ev.data.type === 'bb-maj') showMaj(); });
+    window.addEventListener('load', () => setTimeout(checkMaj, 4000));
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(checkMaj, 3000); });
   }
 
   // ================= Boot =================
