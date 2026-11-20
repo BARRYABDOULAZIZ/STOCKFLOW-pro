@@ -315,6 +315,43 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     await p.close2();
   });
 
+  await test('Nom du produit : suggestions dès les premières lettres (compte de test)', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(async () => { document.getElementById('loginOverlay').style.display = 'none'; document.querySelector('[data-tab="produits"]').click();
+      state.products = [{ id: 'p1', ref: 'RIZ25', nom: 'Riz parfumé 25 kg', categorie: 'Céréales', unite: 'sac', prixAchat: 15000, prixVente: 17500, stock: 9, seuil: 3 }];
+      resetProductForm();
+      const inp = document.getElementById('p-nom');
+      const tape = (v) => { inp.focus(); inp.value = v; inp.dispatchEvent(new Event('input', { bubbles: true })); return [...document.querySelectorAll('#suggNom .sugg-it .sugg-n')].map(e => e.textContent); };
+      const box = () => { const b = document.getElementById('suggNom'); return !!b && b.style.display !== 'none'; };
+      const res = {};
+      aiAskOk = false; tape('hu'); res.ferme = !box();
+      aiAskOk = true;
+      res.hu = tape('hu'); res.initiales = tape('hd'); res.lp = tape('lp'); res.mot = tape('poudre'); res.accent = tape('cafe');
+      res.riz = tape('riz');
+      // choisir un produit du catalogue
+      tape('huile dinor 5');
+      const el = [...document.querySelectorAll('#suggNom .sugg-it')].find(e => /5 L/.test(e.textContent));
+      el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      res.cat = [inp.value, document.getElementById('p-categorie').value, document.getElementById('p-unite').value, document.getElementById('p-ref').value, box()];
+      // choisir un produit déjà en stock
+      resetProductForm(); tape('riz');
+      document.querySelector('#suggNom .sugg-it').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      res.stock = [document.getElementById('p-ref').value, inp.value, document.getElementById('p-prixvente').value];
+      resetProductForm(); return res; })()`);
+    eq(r.ferme, true, 'fermé hors compte de test');
+    expect(r.hu.length >= 3 && r.hu.every(n => /hu/i.test(n)), 'hu → huiles : ' + r.hu);
+    expect(r.initiales.some(n => /^Huile Dinor/.test(n)), 'initiales hd → Huile Dinor : ' + r.initiales);
+    expect(r.lp.some(n => /^Lait en poudre/.test(n)), 'initiales lp → Lait en poudre : ' + r.lp);
+    expect(r.mot.some(n => /Lait en poudre/.test(n)), 'un mot du milieu : ' + r.mot);
+    expect(r.accent.some(n => /Café Touba/.test(n)), 'sans accent : ' + r.accent);
+    eq(r.riz[0], 'Riz parfumé 25 kg', 'le produit du stock passe en premier');
+    eq(r.riz.filter(n => n === 'Riz parfumé 25 kg').length, 1, 'pas de doublon stock / catalogue');
+    eq(r.cat, ['Huile Dinor 5 L', 'Huiles', 'bidon', 'HD5', false], 'catalogue : nom, catégorie, unité, référence');
+    eq(r.stock, ['RIZ25', 'Riz parfumé 25 kg', '17500'], 'produit du stock : fiche remplie (réappro)');
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
   await test('Petite fête 🎉 : après une vraie vente seulement, puis elle disparaît toute seule', async () => {
     const p = await open(browser);
     const r = await p.app(`(async () => { document.getElementById('loginOverlay').style.display = 'none'; document.querySelector('[data-tab="ventes"]').click();
