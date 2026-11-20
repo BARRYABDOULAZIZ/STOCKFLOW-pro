@@ -1,7 +1,14 @@
-/* Suggestions sous « Nom du produit » */
-.sugg-nom{display:none;position:absolute;left:0;min-width:min(340px,88vw);width:100%;top:100%;z-index:40;margin-top:4px;background:var(--paper-2,#fff);color:var(--ink,#1b1440);border:1px solid rgba(91,61,245,.18);border-radius:14px;box-shadow:0 14px 34px rgba(40,20,110,.18);overflow:hidden;max-height:320px;overflow-y:auto}
-.sugg-it{padding:10px 14px;cursor:pointer;border-bottom:1px solid rgba(91,61,245,.08);display:flex;flex-direction:column;gap:2px}
+/* Suggestions sous « Nom du produit » : une vraie liste, bien distincte du formulaire */
+.sugg-nom{display:none;position:absolute;left:0;min-width:min(340px,88vw);width:100%;top:100%;z-index:40;margin-top:6px;
+  background:var(--paper-2,#fff);color:var(--ink,#17153b);border:2px solid var(--brick,#5b3df5);border-radius:16px;
+  box-shadow:0 18px 40px rgba(40,20,110,.35);overflow:hidden;max-height:340px;overflow-y:auto}
+.sugg-head{position:sticky;top:0;z-index:1;background:#5b3df5;color:#fff;font-size:13px;font-weight:800;padding:8px 14px;letter-spacing:.2px}
+.sugg-it{padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--line,#e1e4f5);display:flex;align-items:center;gap:10px}
 .sugg-it:last-child{border-bottom:0}
-.sugg-it.on,.sugg-it:hover{background:rgba(91,61,245,.08)}
-.sugg-n{font-weight:700;font-size:15px;color:var(--ink,#1b1440)}
-.sugg-m{font-size:12px;color:var(--ink,#1b1440);opacity:.7}
+.sugg-it.on,.sugg-it:active,.sugg-it:hover{background:rgba(91,61,245,.14)}
+.sugg-ic{flex:0 0 34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(91,61,245,.14)}
+.sugg-it.stock .sugg-ic{background:rgba(0,168,116,.18)}
+.sugg-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.sugg-n{font-weight:700;font-size:15px;color:var(--ink,#17153b)}
+.sugg-m{font-size:12px;color:var(--ink,#17153b);opacity:.7}
+.sugg-go{flex:0 0 auto;font-size:12px;font-weight:800;color:var(--brick,#5b3df5);border:1.5px solid var(--brick,#5b3df5);border-radius:999px;padding:4px 10px}

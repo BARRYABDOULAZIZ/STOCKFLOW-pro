@@ -135,9 +135,11 @@
     suggItems = suggSearch(inp.value, 6);
     if (!suggItems.length) { suggHide(); return; }
     const box = suggBox();
-    box.innerHTML = suggItems.map((it, i) => `<div class="sugg-it${i === suggIdx ? ' on' : ''}" role="option" data-i="${i}">
-        <span class="sugg-n">${escapeHtml(it.nom)}</span>
-        <span class="sugg-m">${it.type === 'stock' ? '📦 Déjà dans ton stock · ' + escapeHtml(it.ref || '') : escapeHtml([it.categorie, it.unite].filter(Boolean).join(' · '))}</span>
+    box.innerHTML = `<div class="sugg-head">💡 Touche un produit pour le choisir</div>` + suggItems.map((it, i) => `<div class="sugg-it${it.type === 'stock' ? ' stock' : ''}${i === suggIdx ? ' on' : ''}" role="option" data-i="${i}">
+        <span class="sugg-ic">${it.type === 'stock' ? '📦' : '🛒'}</span>
+        <span class="sugg-tx"><span class="sugg-n">${escapeHtml(it.nom)}</span>
+        <span class="sugg-m">${it.type === 'stock' ? 'Déjà dans ton stock · ' + escapeHtml(it.ref || '') : escapeHtml([it.categorie, it.unite].filter(Boolean).join(' · '))}</span></span>
+        <span class="sugg-go">${it.type === 'stock' ? 'Réappro' : 'Choisir'}</span>
       </div>`).join('');
     box.style.display = 'block';
   }
