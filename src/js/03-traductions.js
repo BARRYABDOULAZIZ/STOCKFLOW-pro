@@ -640,6 +640,10 @@
     // Saisie par photo
     ["📸 Remplir mon stock par photo", "📸 Fill my stock with a photo", "📸 املأ مخزوني بصورة"],
     ["(test)", "(test)", "(تجربة)"],
+    ["produits sans prix de vente", "products without a selling price", "منتجات بدون سعر بيع"],
+    ["produit sans prix de vente", "product without a selling price", "منتج بدون سعر بيع"],
+    ["pas comptés dans le bénéfice.", "not counted in the profit.", "غير محسوبة في الربح."],
+    ["Mettre le prix", "Set the price", "ضع السعر"],
     ["(nouveau · 6 photos par jour)", "(new · 6 photos a day)", "(جديد · 6 صور يومياً)"],
     ["Prends une photo : l'IA trouve les produits, les quantités et les prix. Tu vérifies, rien n'est enregistré sans toi.", "Take a photo: the AI finds the products, quantities and prices. You check, nothing is saved without you.", "التقط صورة: يجد الذكاء الاصطناعي المنتجات والكميات والأسعار. أنت تتحقق، ولا يُحفظ شيء بدونك."],
     ["Photo de mon étagère", "Photo of my shelf", "صورة رفّي"],

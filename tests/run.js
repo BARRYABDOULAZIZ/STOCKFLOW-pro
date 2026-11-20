@@ -1085,6 +1085,19 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     await p.close2();
   });
 
+  await test('Accueil : un produit sans prix de vente ne rend pas le bénéfice négatif', async () => {
+    const p = await open(browser);
+    const r = await p.app(`(() => {
+      state.products = [{ id: 'a', nom: 'Riz 25 kg', prixAchat: 15000, prixVente: 16500, stock: 10 }, { id: 'b', nom: 'Huile 20 L', prixAchat: 21000, prixVente: null, stock: 2 }];
+      const g = computeGlobals(); heroSansPrixRender(g.sansPrix);
+      const w = document.getElementById('heroSansPrix');
+      return { b: g.beneficePotentiel, n: g.sansPrix.length, txt: w && w.style.display !== 'none' ? w.textContent : '' }; })()`);
+    eq([r.b, r.n], [15000, 1], 'bénéfice compté sur les produits avec prix seulement');
+    expect(/Huile 20 L/.test(r.txt), 'alerte affichée : ' + r.txt);
+    eq(p.errors, [], 'erreurs');
+    await p.close2();
+  });
+
   await test('Page Admin : visible pour l\'admin seulement, +1 mois enregistre le paiement', async () => {
     const p = await open(browser, { viewport: { width: 1280, height: 900 } });
     const boutiques = [{ commerce_id: 'c1', nom: 'Boutique Siradji', devise: 'XOF', telephone: '77 1', proprietaire: 'Siradji', email: 's@x', nb_factures: 120, derniere_vente: day(0), actif_jusqua: null, essai: false },

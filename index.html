@@ -2654,6 +2654,10 @@
     // Saisie par photo
     ["📸 Remplir mon stock par photo", "📸 Fill my stock with a photo", "📸 املأ مخزوني بصورة"],
     ["(test)", "(test)", "(تجربة)"],
+    ["produits sans prix de vente", "products without a selling price", "منتجات بدون سعر بيع"],
+    ["produit sans prix de vente", "product without a selling price", "منتج بدون سعر بيع"],
+    ["pas comptés dans le bénéfice.", "not counted in the profit.", "غير محسوبة في الربح."],
+    ["Mettre le prix", "Set the price", "ضع السعر"],
     ["(nouveau · 6 photos par jour)", "(new · 6 photos a day)", "(جديد · 6 صور يومياً)"],
     ["Prends une photo : l'IA trouve les produits, les quantités et les prix. Tu vérifies, rien n'est enregistré sans toi.", "Take a photo: the AI finds the products, quantities and prices. You check, nothing is saved without you.", "التقط صورة: يجد الذكاء الاصطناعي المنتجات والكميات والأسعار. أنت تتحقق، ولا يُحفظ شيء بدونك."],
     ["Photo de mon étagère", "Photo of my shelf", "صورة رفّي"],
@@ -4864,10 +4868,12 @@
   function computeGlobals() {
     const montantInvesti = state.products.reduce((s, p) => s + (Number(p.stock) || 0) * (Number(p.prixAchat) || 0), 0);
     const valeurPotentielle = state.products.reduce((s, p) => s + (Number(p.stock) || 0) * (Number(p.prixVente) || 0), 0);
-    const beneficePotentiel = valeurPotentielle - montantInvesti;
+    // Bénéfice : seulement les produits qui ont un prix de vente (sinon un produit sans prix compte comme une perte)
+    const sansPrix = state.products.filter(p => (Number(p.stock) || 0) > 0 && !(Number(p.prixVente) > 0));
+    const beneficePotentiel = state.products.reduce((s, p) => Number(p.prixVente) > 0 ? s + (Number(p.stock) || 0) * (Number(p.prixVente) - (Number(p.prixAchat) || 0)) : s, 0);
     const rupture = state.products.filter(p => Number(p.stock) <= 0).length;
     const reappro = state.products.filter(p => Number(p.stock) > 0 && Number(p.stock) <= Number(p.seuil)).length;
-    return { montantInvesti, valeurPotentielle, beneficePotentiel, rupture, reappro };
+    return { montantInvesti, valeurPotentielle, beneficePotentiel, rupture, reappro, sansPrix };
   }
 
   // ================= Dashboard =================
@@ -4880,6 +4886,7 @@
     document.getElementById('heroInvesti').textContent = euros(g.montantInvesti);
     document.getElementById('heroValeur').textContent = euros(g.valeurPotentielle);
     document.getElementById('heroBenefice').textContent = euros(g.beneficePotentiel);
+    heroSansPrixRender(g.sansPrix);
 
     document.getElementById('dbProduits').textContent = state.products.length;
     document.getElementById('dbRupture').textContent = g.rupture;
@@ -4954,6 +4961,18 @@
     }    if (typeof renderInsights === 'function') renderInsights();
   }
 
+
+  // Alerte : produits en stock sans prix de vente (ils ne sont pas comptés dans le bénéfice)
+  function heroSansPrixRender(list) {
+    const row = document.getElementById('dashboardHeroRow'); if (!row) return;
+    let box = document.getElementById('heroSansPrix');
+    if (!list || !list.length) { if (box) box.style.display = 'none'; return; }
+    if (!box) { box = document.createElement('div'); box.id = 'heroSansPrix'; box.className = 'hero-warn'; row.insertAdjacentElement('afterend', box); }
+    const noms = list.slice(0, 3).map(p => escapeHtml(p.nom || '?')).join(', ') + (list.length > 3 ? '…' : '');
+    box.innerHTML = '⚠️ <b>' + list.length + ' ' + escapeHtml(tr(list.length > 1 ? 'produits sans prix de vente' : 'produit sans prix de vente')) + '</b> (' + noms + ') : ' + escapeHtml(tr('pas comptés dans le bénéfice.')) + ' <button type="button" class="btn-hw">✏️ ' + escapeHtml(tr('Mettre le prix')) + '</button>';
+    box.style.display = '';
+    box.querySelector('.btn-hw').onclick = () => { const b = document.querySelector('nav.tabs button[data-tab="produits"]'); if (b) b.click(); setTimeout(() => { try { startEditProduct(list[0].id); } catch (e) { console.error(e); } }, 120); };
+  }
   // ================= Produits (catalogue) =================
   let stockFilter = '', stockCat = '';
   let stockView = 'cards'; try { stockView = localStorage.getItem('sf_stock_view') || 'cards'; } catch (e) {}
@@ -10548,6 +10567,10 @@ header.top{animation:none !important;background-size:100% 100% !important;}
 
 /* Bandeau « nouvelle version » */
 .bb-maj{position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top,0px));z-index:9999;background:#5b3df5;color:#fff;border:0;border-radius:999px;padding:12px 20px;font-weight:800;font-size:14px;box-shadow:0 12px 30px rgba(40,20,110,.35);cursor:pointer;max-width:92vw}
+
+/* Alerte « produits sans prix de vente » sous les 3 grandes cartes de l'accueil */
+.hero-warn{margin:10px 0 4px;padding:12px 14px;border-radius:14px;background:rgba(255,170,0,.13);border:1px solid rgba(255,170,0,.45);color:var(--ink);font-size:14px;line-height:1.45}
+.hero-warn .btn-hw{margin-left:6px;margin-top:6px;padding:7px 12px;border-radius:10px;border:0;background:#f59e0b;color:#111;font-weight:700;cursor:pointer}
 </style>
 </body>
 </html>
