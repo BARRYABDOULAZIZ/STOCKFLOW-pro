@@ -166,16 +166,28 @@ Si le prix unitaire manque, calcule-le avec total / quantité. Vérifie que les 
 Produits déjà dans le catalogue (pour réutiliser le même nom quand c'est le même produit) : ${catalogue || "aucun"}
 Réponds UNIQUEMENT en JSON : {"fournisseur":string|null,"date":string|null,"lignes":[{"nom":string,"quantite":number,"unite":string,"prix_achat":number|null,"total":number|null,"doute":boolean}],"total":number|null}`;
       const parts = [{ text: consigne }, ...imgs.map((i: any) => ({ inlineData: { mimeType: i.mime, data: i.data } }))];
-      const vModels = [...new Set([Deno.env.get("GEMINI_MODEL") || "gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"])];
-      let out: any = null, lastV = 0;
-      // Lecture d'une facture = recopier des lignes : peu de réflexion suffit, et c'est bien plus rapide
+      // Lecture d'une facture = recopier des lignes : un modèle rapide et peu de réflexion suffisent.
+      // Réglables sans toucher au code, dans Supabase → Edge Functions → Secrets :
+      //   GEMINI_VISION_MODEL    (défaut : gemini-3.5-flash-lite, le plus rapide)
+      //   GEMINI_VISION_THINKING (défaut : minimal ; autres valeurs : low, medium, high, ou aucun)
+      const vModels = [...new Set([Deno.env.get("GEMINI_VISION_MODEL") || "gemini-3.5-flash-lite", Deno.env.get("GEMINI_MODEL") || "gemini-3.8-flash", "gemini-3.6-flash"])];
+      const vThink = (Deno.env.get("GEMINI_VISION_THINKING") || "minimal").trim().toLowerCase();
+      const vStart = Date.now();
+      let out: any = null, lastV = 0, usedV = "";
       outerV: for (const model of vModels) {
-        let rapide = true;
+        let rapide = vThink !== "aucun";
         for (let attempt = 0; attempt < 3; attempt++) {
-          const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-            method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": k },
-            body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: { temperature: 0.1, maxOutputTokens: 8192, responseMimeType: "application/json", ...(rapide ? { thinkingConfig: { thinkingLevel: "low" } } : {}) } }),
-          });
+          // Pas plus d'une minute au total ; chaque essai est coupé au bout de 25 s (on passe alors au modèle suivant)
+          if (Date.now() - vStart > 60000) break outerV;
+          const ctl = new AbortController(); const tmo = setTimeout(() => ctl.abort(), 25000);
+          let r: Response;
+          try {
+            r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+              method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": k }, signal: ctl.signal,
+              body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: { temperature: 0.1, maxOutputTokens: 8192, responseMimeType: "application/json", ...(rapide ? { thinkingConfig: { thinkingLevel: vThink } } : {}) } }),
+            });
+          } catch (_) { clearTimeout(tmo); console.error("Vision", model, "trop lent (25 s)"); lastV = 504; continue outerV; }
+          clearTimeout(tmo);
           // Réglage « réflexion légère » refusé par ce modèle : on réessaie sans
           if (r.status === 400 && rapide) { rapide = false; attempt--; continue; }
           lastV = r.status;
@@ -183,7 +195,7 @@ Réponds UNIQUEMENT en JSON : {"fournisseur":string|null,"date":string|null,"lig
           if (r.ok) {
             const txt = (rb.candidates?.[0]?.content?.parts ?? []).filter((p: any) => !p.thought).map((p: any) => p.text ?? "").join("").trim();
             try { out = JSON.parse(txt.replace(/^```(json)?|```$/g, "")); } catch (_) { out = null; }
-            if (out) break outerV;
+            if (out) { usedV = model; break outerV; }
             continue outerV;
           }
           console.error("Vision", model, r.status, JSON.stringify(rb).slice(0, 300));
@@ -192,10 +204,10 @@ Réponds UNIQUEMENT en JSON : {"fournisseur":string|null,"date":string|null,"lig
         }
       }
       if (!out) {
-        if ([429, 500, 503].includes(lastV)) return json({ error: "L'IA est très demandée. Réessaie dans une minute." }, 503);
+        if ([429, 500, 503, 504].includes(lastV)) return json({ error: "L'IA est très demandée. Réessaie dans une minute." }, 503);
         return json({ error: "Je n'ai pas réussi à lire la photo. Reprends-la avec plus de lumière, bien en face." }, 502);
       }
-      return json({ resultat: out });
+      return json({ resultat: out, modele: usedV, ms: Date.now() - vStart });
     }
 
     // ----- Voix naturelle de Bel : transforme le texte d'une réponse en audio (Gemini TTS) -----
