@@ -315,7 +315,7 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     await p.close2();
   });
 
-  await test('Nom du produit : suggestions dès les premières lettres (compte de test)', async () => {
+  await test('Nom du produit : suggestions dès les premières lettres (pour tous)', async () => {
     const p = await open(browser);
     const r = await p.app(`(async () => { document.getElementById('loginOverlay').style.display = 'none'; document.querySelector('[data-tab="produits"]').click();
       state.products = [{ id: 'p1', ref: 'RIZ25', nom: 'Riz parfumé 25 kg', categorie: 'Céréales', unite: 'sac', prixAchat: 15000, prixVente: 17500, stock: 9, seuil: 3 }];
@@ -324,7 +324,7 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
       const tape = (v) => { inp.focus(); inp.value = v; inp.dispatchEvent(new Event('input', { bubbles: true })); return [...document.querySelectorAll('#suggNom .sugg-it .sugg-n')].map(e => e.textContent); };
       const box = () => { const b = document.getElementById('suggNom'); return !!b && b.style.display !== 'none'; };
       const res = {};
-      aiAskOk = false; tape('hu'); res.ferme = !box();
+      aiAskOk = false; state.currentUser = { nom: 'C', role: 'caissier', commerceId: 'c' }; res.pourTous = tape('hu').length > 0 && box();
       aiAskOk = true;
       res.hu = tape('hu'); res.initiales = tape('hd'); res.lp = tape('lp'); res.mot = tape('poudre'); res.accent = tape('cafe');
       res.riz = tape('riz');
@@ -348,7 +348,7 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
       resetProductForm(); tape('riz'); document.querySelector('#suggNom .sugg-it').click(); tape('Riz de luxe');
       res.sortie = [document.getElementById('p-ref').value, inp.value, document.getElementById('btnAddProduct').textContent];
       resetProductForm(); return res; })()`);
-    eq(r.ferme, true, 'fermé hors compte de test');
+    eq(r.pourTous, true, 'ouvert à tous, même un caissier sans accès à l\'IA');
     expect(r.hu.length >= 3 && r.hu.every(n => /hu/i.test(n)), 'hu → huiles : ' + r.hu);
     expect(r.initiales.some(n => /^Huile Dinor/.test(n)), 'initiales hd → Huile Dinor : ' + r.initiales);
     expect(r.lp.some(n => /^Lait en poudre/.test(n)), 'initiales lp → Lait en poudre : ' + r.lp);

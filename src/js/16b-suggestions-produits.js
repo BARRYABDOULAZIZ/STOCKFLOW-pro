@@ -5,7 +5,7 @@
   // On peut aussi taper les initiales : « hd » trouve « Huile Dinor », « lp » trouve « Lait en poudre ».
   // Si la référence est vide, une référence est proposée toute seule (elle reste modifiable).
   // true = pour tous les commerçants ; false = seulement sur le compte de test (aiAskOk).
-  const SUGG_POUR_TOUS = false;
+  const SUGG_POUR_TOUS = true;
   function suggOn() { return SUGG_POUR_TOUS || aiAskOk; }
 
   // [nom, catégorie, unité]
