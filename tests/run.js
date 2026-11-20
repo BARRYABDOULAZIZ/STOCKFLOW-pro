@@ -331,12 +331,22 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
       // choisir un produit du catalogue
       tape('huile dinor 5');
       const el = [...document.querySelectorAll('#suggNom .sugg-it')].find(e => /5 L/.test(e.textContent));
-      el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      el.click();
       res.cat = [inp.value, document.getElementById('p-categorie').value, document.getElementById('p-unite').value, document.getElementById('p-ref').value, box()];
       // choisir un produit déjà en stock
       resetProductForm(); tape('riz');
-      document.querySelector('#suggNom .sugg-it').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      document.querySelector('#suggNom .sugg-it').click();
       res.stock = [document.getElementById('p-ref').value, inp.value, document.getElementById('p-prixvente').value];
+      // erreur : on choisit Huile Dinor 5 L, puis on se corrige avec Sucre → la référence, la catégorie et l'unité suivent
+      resetProductForm(); tape('huile dinor 5'); [...document.querySelectorAll('#suggNom .sugg-it')].find(e => /5 L/.test(e.textContent)).click();
+      tape('sucre en poudre 1'); document.querySelector('#suggNom .sugg-it').click();
+      res.corrige = [inp.value, document.getElementById('p-ref').value, document.getElementById('p-categorie').value, document.getElementById('p-unite').value];
+      // catégorie changée à la main : gardée ; nom effacé : la référence automatique part
+      document.getElementById('p-categorie').value = 'Ma catégorie'; tape('');
+      res.efface = [document.getElementById('p-ref').value, document.getElementById('p-categorie').value, document.getElementById('p-unite').value];
+      // erreur sur un produit du stock : on retape un autre nom → on sort du réapprovisionnement
+      resetProductForm(); tape('riz'); document.querySelector('#suggNom .sugg-it').click(); tape('Riz de luxe');
+      res.sortie = [document.getElementById('p-ref').value, inp.value, document.getElementById('btnAddProduct').textContent];
       resetProductForm(); return res; })()`);
     eq(r.ferme, true, 'fermé hors compte de test');
     expect(r.hu.length >= 3 && r.hu.every(n => /hu/i.test(n)), 'hu → huiles : ' + r.hu);
@@ -348,6 +358,9 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     eq(r.riz.filter(n => n === 'Riz parfumé 25 kg').length, 1, 'pas de doublon stock / catalogue');
     eq(r.cat, ['Huile Dinor 5 L', 'Huiles', 'bidon', 'HD5', false], 'catalogue : nom, catégorie, unité, référence');
     eq(r.stock, ['RIZ25', 'Riz parfumé 25 kg', '17500'], 'produit du stock : fiche remplie (réappro)');
+    eq(r.corrige, ['Sucre en poudre 1 kg', 'SP1', 'Épicerie', 'paquet'], 'après une erreur, le bon choix remplace tout');
+    eq(r.efface, ['', 'Ma catégorie', ''], 'nom effacé : on retire seulement ce qui avait été rempli tout seul');
+    eq(r.sortie, ['', 'Riz de luxe', 'Ajouter au catalogue'], 'autre nom après un produit du stock : plus de réappro');
     eq(p.errors, [], 'erreurs');
     await p.close2();
   });

@@ -1,7 +1,7 @@
 /* Suggestions sous « Nom du produit » */
-.sugg-nom{display:none;position:absolute;left:0;min-width:min(340px,88vw);width:100%;top:100%;z-index:40;margin-top:4px;background:var(--card,#fff);border:1px solid rgba(91,61,245,.18);border-radius:14px;box-shadow:0 14px 34px rgba(40,20,110,.18);overflow:hidden;max-height:320px;overflow-y:auto}
+.sugg-nom{display:none;position:absolute;left:0;min-width:min(340px,88vw);width:100%;top:100%;z-index:40;margin-top:4px;background:var(--paper-2,#fff);color:var(--ink,#1b1440);border:1px solid rgba(91,61,245,.18);border-radius:14px;box-shadow:0 14px 34px rgba(40,20,110,.18);overflow:hidden;max-height:320px;overflow-y:auto}
 .sugg-it{padding:10px 14px;cursor:pointer;border-bottom:1px solid rgba(91,61,245,.08);display:flex;flex-direction:column;gap:2px}
 .sugg-it:last-child{border-bottom:0}
 .sugg-it.on,.sugg-it:hover{background:rgba(91,61,245,.08)}
-.sugg-n{font-weight:700;font-size:15px}
-.sugg-m{font-size:12px;opacity:.7}
+.sugg-n{font-weight:700;font-size:15px;color:var(--ink,#1b1440)}
+.sugg-m{font-size:12px;color:var(--ink,#1b1440);opacity:.7}

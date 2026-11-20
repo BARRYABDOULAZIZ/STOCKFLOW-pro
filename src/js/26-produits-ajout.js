@@ -71,6 +71,7 @@
   }
 
   function resetProductForm() {
+    try { suggAuto = null; suggStockNom = null; } catch (e) {}
     editingId = null;
     autofilledRef = null;
     ['p-ref','p-nom','p-barcode','p-fournisseur','p-categorie','p-emplacement','p-unite','p-expiration'].forEach(id => document.getElementById(id).value = '');

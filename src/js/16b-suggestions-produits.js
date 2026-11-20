@@ -101,6 +101,23 @@
   }
 
   let suggIdx = -1, suggItems = [];
+  // Ce que la dernière suggestion a rempli toute seule : si on s'est trompé, un autre choix (ou effacer le nom) le remplace.
+  let suggAuto = null;        // { nom, 'p-ref', 'p-categorie', 'p-unite' } après un produit du catalogue
+  let suggStockNom = null;    // nom du produit du stock choisi (mode réapprovisionnement)
+  const SUGG_CHAMPS = ['p-ref', 'p-categorie', 'p-unite'];
+  // Efface ce que la suggestion avait rempli, sauf ce que le commerçant a changé à la main
+  function suggUndo() {
+    if (suggAuto) {
+      SUGG_CHAMPS.forEach(id => { const el = document.getElementById(id); if (el && el.value === suggAuto[id]) el.value = ''; });
+      suggAuto = null;
+    }
+    if (suggStockNom !== null) {
+      // On quitte le produit du stock : la fiche se vide (comme quand on efface la référence), le nom tapé est gardé
+      const inp = document.getElementById('p-nom'), keep = inp.value;
+      const ref = document.getElementById('p-ref'); ref.value = ''; ref.dispatchEvent(new Event('input', { bubbles: true }));
+      inp.value = keep; suggStockNom = null;
+    }
+  }
   function suggBox() {
     let box = document.getElementById('suggNom');
     if (!box) {
@@ -127,16 +144,18 @@
   function suggPick(i) {
     const it = suggItems[i]; if (!it) return;
     const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
+    suggUndo();   // un choix précédent (peut-être par erreur) ne reste pas collé
     if (it.type === 'stock') {
       // Produit déjà connu : on passe par la référence, ce qui remplit la fiche (mode réapprovisionnement)
       set('p-ref', it.ref || '');
       document.getElementById('p-ref').dispatchEvent(new Event('input', { bubbles: true }));
       set('p-nom', it.nom);
+      suggStockNom = it.nom;
     } else {
       set('p-nom', it.nom);
-      const cat = document.getElementById('p-categorie'); if (cat && !cat.value.trim()) cat.value = it.categorie;
-      const un = document.getElementById('p-unite'); if (un && !un.value.trim()) un.value = it.unite;
-      const ref = document.getElementById('p-ref'); if (ref && !ref.value.trim()) ref.value = suggRef(it.nom);
+      suggAuto = { nom: it.nom };
+      const fill = (id, v) => { const el = document.getElementById(id); if (el && !el.value.trim()) { el.value = v; suggAuto[id] = v; } };
+      fill('p-categorie', it.categorie); fill('p-unite', it.unite); fill('p-ref', suggRef(it.nom));
     }
     suggHide();
     const next = document.getElementById(it.type === 'stock' ? 'p-stock' : 'p-prixachat') || document.getElementById('p-stock');
@@ -146,7 +165,11 @@
   (function suggInitUI() {
     const inp = document.getElementById('p-nom'); if (!inp) return;
     inp.setAttribute('autocomplete', 'off');
-    inp.addEventListener('input', () => { suggIdx = -1; suggShow(); });
+    inp.addEventListener('input', () => {
+      // Le nom ne correspond plus au produit choisi : on retire ce qui avait été rempli tout seul
+      if ((suggAuto && inp.value !== suggAuto.nom) || (suggStockNom !== null && inp.value !== suggStockNom)) suggUndo();
+      suggIdx = -1; suggShow();
+    });
     inp.addEventListener('focus', () => { if (inp.value.trim()) suggShow(); });
     inp.addEventListener('keydown', (e) => {
       const b = document.getElementById('suggNom'); if (!b || b.style.display === 'none') return;
@@ -155,10 +178,14 @@
       else if (e.key === 'Enter' && suggIdx >= 0) { e.preventDefault(); suggPick(suggIdx); }
       else if (e.key === 'Escape') suggHide();
     });
-    // pointerdown (et non click) : le choix est pris avant que le champ perde le focus
+    // Le choix se fait au « click » (doigt levé sans glisser) : faire défiler la liste avec le doigt ne choisit rien.
+    // Toucher la liste ne la ferme pas ; toucher ailleurs la ferme.
     document.addEventListener('pointerdown', (e) => {
-      const it = e.target.closest && e.target.closest('#suggNom .sugg-it');
-      if (it) { e.preventDefault(); suggPick(Number(it.dataset.i)); return; }
+      if (e.target.closest && e.target.closest('#suggNom')) return;
       if (e.target !== inp) suggHide();
+    });
+    document.addEventListener('click', (e) => {
+      const it = e.target.closest && e.target.closest('#suggNom .sugg-it');
+      if (it) { e.preventDefault(); suggPick(Number(it.dataset.i)); }
     });
   })();
