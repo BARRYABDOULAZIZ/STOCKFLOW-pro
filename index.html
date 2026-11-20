@@ -362,7 +362,7 @@
     <div class="card" style="max-width:400px; width:100%; margin:0;">
       <div class="lang-row" id="loginLangRow" data-noi18n></div>
       <div class="row-head"><h2 id="authTitle">Connexion</h2></div>
-      <p id="authSub" style="display:none; margin:-6px 0 14px; font-size:15px; font-weight:600; color:var(--muted, #5b5480);">Crée ta boutique gratuitement, en 1 minute.</p>
+      <p id="authSub" style="display:none; margin:-6px 0 14px; font-size:15px; font-weight:600; color:var(--muted, #5b5480);">Nouveau ici ? Remplis ce formulaire, ça prend 1 minute. Tu as déjà un compte ? Appuie sur « Se connecter ».</p>
 
       <div id="authTabsRow" style="display:flex; gap:8px; margin-bottom:14px;">
         <button type="button" class="tablike active" id="authTabLogin" style="flex:1;">Se connecter</button>
@@ -2022,8 +2022,8 @@
     ["Connexion", "Sign in", "تسجيل الدخول"],
     ["Se connecter", "Sign in", "دخول"],
     ["Créer mon commerce", "Create my shop", "إنشاء متجري"],
-    ["Bienvenue 👋", "Welcome 👋", "مرحبًا 👋"],
-    ["Crée ta boutique gratuitement, en 1 minute.", "Create your shop for free, in 1 minute.", "أنشئ متجرك مجانًا في دقيقة واحدة."],
+    ["🏪 Crée ta boutique gratuitement", "🏪 Create your shop for free", "🏪 أنشئ متجرك مجانًا"],
+    ["Nouveau ici ? Remplis ce formulaire, ça prend 1 minute. Tu as déjà un compte ? Appuie sur « Se connecter ».", "New here? Fill in this form, it takes 1 minute. Already have an account? Tap “Sign in”.", "جديد هنا؟ املأ هذا النموذج، يستغرق دقيقة واحدة. لديك حساب؟ اضغط على «دخول»."],
     ["Rejoindre", "Join", "انضمام"],
     ["Mot de passe", "Password", "كلمة المرور"],
     ["Email", "Email", "البريد الإلكتروني"],
@@ -3875,7 +3875,7 @@
     document.getElementById('authPaneForgot').style.display = 'none';
     document.getElementById('authPaneRecovery').style.display = 'none';
     document.getElementById('authTabsRow').style.display = 'flex';
-    document.getElementById('authTitle').textContent = name === 'signup' ? 'Bienvenue 👋' : 'Connexion';
+    document.getElementById('authTitle').textContent = name === 'signup' ? '🏪 Crée ta boutique gratuitement' : 'Connexion';
     const sub = document.getElementById('authSub'); if (sub) sub.style.display = name === 'signup' ? '' : 'none';
   }
   // Premier onglet affiché : « Créer mon commerce » pour un nouveau venu (jamais connecté sur cet appareil)

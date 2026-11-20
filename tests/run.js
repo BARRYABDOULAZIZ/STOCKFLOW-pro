@@ -67,7 +67,7 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
   await test('Accueil : un nouveau venu tombe sur « Créer mon commerce », un ancien sur « Se connecter »', async () => {
     const lire = (p) => p.evaluate(() => ({ titre: document.getElementById('authTitle').textContent, onglet: (document.querySelector('#authTabsRow .active') || {}).id, sous: document.getElementById('authSub').style.display !== 'none' }));
     const p1 = await open(browser); await p1.waitForTimeout(800);
-    eq(await lire(p1), { titre: 'Bienvenue 👋', onglet: 'authTabSignup', sous: true }, 'nouveau venu');
+    eq(await lire(p1), { titre: '🏪 Crée ta boutique gratuitement', onglet: 'authTabSignup', sous: true }, 'nouveau venu');
     await p1.app("showAuthTab('login')"); eq(await lire(p1), { titre: 'Connexion', onglet: 'authTabLogin', sous: false }, 'clic sur Se connecter');
     await p1.app("localStorage.setItem('sf_last_user', 'u1'); handleSignedOut()"); eq((await lire(p1)).onglet, 'authTabLogin', 'déjà connecté sur ce téléphone');
     eq(p1.errors, [], 'erreurs'); await p1.close2();

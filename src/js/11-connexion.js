@@ -87,7 +87,7 @@
     document.getElementById('authPaneForgot').style.display = 'none';
     document.getElementById('authPaneRecovery').style.display = 'none';
     document.getElementById('authTabsRow').style.display = 'flex';
-    document.getElementById('authTitle').textContent = name === 'signup' ? 'Bienvenue 👋' : 'Connexion';
+    document.getElementById('authTitle').textContent = name === 'signup' ? '🏪 Crée ta boutique gratuitement' : 'Connexion';
     const sub = document.getElementById('authSub'); if (sub) sub.style.display = name === 'signup' ? '' : 'none';
   }
   // Premier onglet affiché : « Créer mon commerce » pour un nouveau venu (jamais connecté sur cet appareil)
