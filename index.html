@@ -896,44 +896,21 @@
 
   <!-- PRODUITS -->
   <section class="panel" id="panel-produits">
-    <div class="cluster">
-      <div class="stat"><div class="num" id="statCount">–</div><div class="lbl">Produits en catalogue</div></div>
-      <div class="stat"><div class="num alert" id="statAlert">–</div><div class="lbl">Sous le seuil d'alerte</div></div>
-      <div class="stat"><div class="num" id="statCategories">–</div><div class="lbl">Catégories</div></div>
-    </div>
-
-    <div class="card" id="photoFillCard" style="display:none;">
-      <div class="row-head"><h2>📸 Remplir mon stock par photo <span class="muted" style="font-size:12px; font-weight:500;">(test)</span></h2></div>
-      <p class="hint-text" style="margin-top:0;">Prends une photo : l'IA trouve les produits, les quantités et les prix. Tu vérifies, rien n'est enregistré sans toi.</p>
-      <div class="pf-btns">
-        <button type="button" class="pf-big" data-pf="facture"><span class="e">🧾</span><b>Photo d'une facture</b><small>ajoute au stock et note les prix d'achat</small></button>
-      </div>
-      <input type="file" id="pfFile" accept="image/*" multiple style="display:none;">
-      <div id="pfStatus" class="muted" style="margin-top:10px;"></div>
-      <div id="pfReview" style="display:none; margin-top:10px;"></div>
-    </div>
-
-    <div class="card smart-card" id="smartOrderCard" style="display:none;">
-      <div class="row-head"><h2>🛒 À commander</h2><span class="muted" id="smartOrderSub"></span></div>
-      <p class="hint-text" style="margin-top:0;">Calculé d'après tes ventes : ce qui sera bientôt fini, et la quantité pour tenir 2 semaines. Tu peux changer les quantités.</p>
-      <div id="smartOrderBody"></div>
-    </div>
-
     <div class="card">
       <div class="row-head"><h2>Ajouter / réapprovisionner un produit</h2></div>
       <div class="field-grid">
-        <div><label>Nom du produit</label><input id="p-nom" placeholder="Ciment, fer à béton, parpaing…"></div>
+        <div><label>Nom du produit</label><input id="p-nom" placeholder="Riz, huile, savon… (tape les 1res lettres)"></div>
         <div><label>Référence interne</label><input id="p-ref" placeholder="REF-001"></div>
         <div><label>Code-barres</label><div class="scan-in"><input id="p-barcode" placeholder="EAN / code-barres"><button class="scan-in-btn" id="btnScanBarcodeField" type="button" title="Scanner le code-barres" aria-label="Scanner le code-barres"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v8M16 8v8"/></svg></button></div></div>
         <div><label>Fournisseur</label><input id="p-fournisseur" placeholder="Nom du fournisseur"></div>
-        <div><label>Catégorie</label><input id="p-categorie" list="cat-suggestions" autocomplete="off" placeholder="Gros œuvre, plomberie, électricité…"><datalist id="cat-suggestions"></datalist></div>
+        <div><label>Catégorie</label><input id="p-categorie" list="cat-suggestions" autocomplete="off" placeholder="Épicerie, boissons, hygiène…"><datalist id="cat-suggestions"></datalist></div>
         <div><label>Emplacement</label><input id="p-emplacement" placeholder="Rayon 3, étagère A2…"></div>
       </div>
       <div class="field-grid">
         <div><label id="lbl-stock">Quantité en stock</label><input id="p-stock" type="number" min="0" step="any" value="0"></div>
         <div>
           <label>Unité de mesure</label>
-          <input id="p-unite" list="unit-suggestions" placeholder="sac 50kg, m³, ml, tonne…">
+          <input id="p-unite" list="unit-suggestions" placeholder="sac, bidon, boîte, pièce…">
           <datalist id="unit-suggestions">
             <option value="unité"></option><option value="pièce"></option><option value="kg"></option><option value="gramme"></option><option value="tonne"></option>
             <option value="litre"></option><option value="millilitre"></option>
@@ -958,6 +935,29 @@
         <button class="primary" id="btnAddProduct">Ajouter au catalogue</button>
         <button class="ghost" id="btnCancelEdit" style="display:none;">Annuler la modification</button>
       </div>
+    </div>
+
+    <div class="cluster">
+      <div class="stat"><div class="num" id="statCount">–</div><div class="lbl">Produits en catalogue</div></div>
+      <div class="stat"><div class="num alert" id="statAlert">–</div><div class="lbl">Sous le seuil d'alerte</div></div>
+      <div class="stat"><div class="num" id="statCategories">–</div><div class="lbl">Catégories</div></div>
+    </div>
+
+    <div class="card" id="photoFillCard" style="display:none;">
+      <div class="row-head"><h2>📸 Remplir mon stock par photo <span class="muted" style="font-size:12px; font-weight:500;">(test)</span></h2></div>
+      <p class="hint-text" style="margin-top:0;">Prends une photo : l'IA trouve les produits, les quantités et les prix. Tu vérifies, rien n'est enregistré sans toi.</p>
+      <div class="pf-btns">
+        <button type="button" class="pf-big" data-pf="facture"><span class="e">🧾</span><b>Photo d'une facture</b><small>ajoute au stock et note les prix d'achat</small></button>
+      </div>
+      <input type="file" id="pfFile" accept="image/*" multiple style="display:none;">
+      <div id="pfStatus" class="muted" style="margin-top:10px;"></div>
+      <div id="pfReview" style="display:none; margin-top:10px;"></div>
+    </div>
+
+    <div class="card smart-card" id="smartOrderCard" style="display:none;">
+      <div class="row-head"><h2>🛒 À commander</h2><span class="muted" id="smartOrderSub"></span></div>
+      <p class="hint-text" style="margin-top:0;">Calculé d'après tes ventes : ce qui sera bientôt fini, et la quantité pour tenir 2 semaines. Tu peux changer les quantités.</p>
+      <div id="smartOrderBody"></div>
     </div>
 
     <details class="card" id="catMgr" style="display:none;">
@@ -2218,13 +2218,13 @@
     ["Autre", "Other", "أخرى"],
     ["Note (optionnel)", "Note (optional)", "ملاحظة (اختياري)"],
     ["Enregistrer la perte", "Save the loss", "تسجيل الخسارة"],
-    ["Ciment, fer à béton, parpaing…", "Cement, rebar, blocks…", "إسمنت، حديد تسليح، طوب…"],
+    ["Riz, huile, savon… (tape les 1res lettres)", "Rice, oil, soap… (type the first letters)", "أرز، زيت، صابون… (اكتب الأحرف الأولى)"],
     ["EAN / code-barres", "EAN / barcode", "EAN / الرمز الشريطي"],
     ["Scanner le code-barres", "Scan the barcode", "مسح الرمز الشريطي"],
     ["Nom du fournisseur", "Supplier name", "اسم المورد"],
-    ["Gros œuvre, plomberie, électricité…", "Building, plumbing, electrical…", "بناء، سباكة، كهرباء…"],
+    ["Épicerie, boissons, hygiène…", "Grocery, drinks, hygiene…", "بقالة، مشروبات، نظافة…"],
     ["Rayon 3, étagère A2…", "Aisle 3, shelf A2…", "الرواق 3، الرف A2…"],
-    ["sac 50kg, m³, ml, tonne…", "50kg bag, m³, m, tonne…", "كيس 50 كغ، م³، م، طن…"],
+    ["sac, bidon, boîte, pièce…", "bag, can, box, piece…", "كيس، جالون، علبة، قطعة…"],
     ["🔎 Chercher une catégorie…", "🔎 Search a category…", "🔎 ابحث عن فئة…"],
     ["Nom de la catégorie finale", "Name of the final category", "اسم الفئة النهائية"],
     ["Nom, référence ou code-barres…", "Name, reference or barcode…", "الاسم أو المرجع أو الرمز الشريطي…"],
