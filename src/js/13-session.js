@@ -81,7 +81,7 @@
     document.getElementById('commerceTag').textContent = 'Non connecté';
     document.getElementById('loginOverlay').style.display = 'flex';
     abo.row = null; abo.admin = false; try { aboRender(); } catch (e) {}
-    showAuthTab('login');
+    showAuthTab(state.loggingOut ? 'login' : authStartTab());
     try { netBarUpdate(); } catch (e) {}
   }
 
@@ -117,7 +117,7 @@
   }
 
   function initAuth() {
-    if (!supabaseClient) { showAuthError('Connexion indisponible.'); document.getElementById('loginOverlay').style.display = 'flex'; return; }
+    if (!supabaseClient) { document.getElementById('loginOverlay').style.display = 'flex'; showAuthTab(authStartTab()); showAuthError('Connexion indisponible.'); return; }
     supabaseClient.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') { state.recoveryInProgress = true; showRecoveryForm(); return; }
       if (session && session.user) {

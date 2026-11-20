@@ -64,6 +64,18 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
     await p.close2();
   });
 
+  await test('Accueil : un nouveau venu tombe sur « Créer mon commerce », un ancien sur « Se connecter »', async () => {
+    const lire = (p) => p.evaluate(() => ({ titre: document.getElementById('authTitle').textContent, onglet: (document.querySelector('#authTabsRow .active') || {}).id, sous: document.getElementById('authSub').style.display !== 'none' }));
+    const p1 = await open(browser); await p1.waitForTimeout(800);
+    eq(await lire(p1), { titre: 'Bienvenue 👋', onglet: 'authTabSignup', sous: true }, 'nouveau venu');
+    await p1.app("showAuthTab('login')"); eq(await lire(p1), { titre: 'Connexion', onglet: 'authTabLogin', sous: false }, 'clic sur Se connecter');
+    await p1.app("localStorage.setItem('sf_last_user', 'u1'); handleSignedOut()"); eq((await lire(p1)).onglet, 'authTabLogin', 'déjà connecté sur ce téléphone');
+    eq(p1.errors, [], 'erreurs'); await p1.close2();
+    const p2 = await open(browser, { query: '?inscription' }); await p2.waitForTimeout(800);
+    await p2.app("localStorage.setItem('sf_last_user', 'u1'); handleSignedOut()");
+    eq((await lire(p2)).onglet, 'authTabSignup', 'lien ?inscription'); await p2.close2();
+  });
+
   await test('Langue de l\'écran : français, anglais, arabe (de droite à gauche)', async () => {
     for (const [lang, word, dir] of [['fr', 'Se connecter', 'ltr'], ['en', 'Sign in', 'ltr'], ['ar', '', 'rtl']]) {
       const p = await open(browser, { lang });

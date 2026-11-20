@@ -8,6 +8,8 @@
     ["Connexion", "Sign in", "تسجيل الدخول"],
     ["Se connecter", "Sign in", "دخول"],
     ["Créer mon commerce", "Create my shop", "إنشاء متجري"],
+    ["Bienvenue 👋", "Welcome 👋", "مرحبًا 👋"],
+    ["Crée ta boutique gratuitement, en 1 minute.", "Create your shop for free, in 1 minute.", "أنشئ متجرك مجانًا في دقيقة واحدة."],
     ["Rejoindre", "Join", "انضمام"],
     ["Mot de passe", "Password", "كلمة المرور"],
     ["Email", "Email", "البريد الإلكتروني"],

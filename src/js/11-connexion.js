@@ -87,7 +87,15 @@
     document.getElementById('authPaneForgot').style.display = 'none';
     document.getElementById('authPaneRecovery').style.display = 'none';
     document.getElementById('authTabsRow').style.display = 'flex';
-    document.getElementById('authTitle').textContent = 'Connexion';
+    document.getElementById('authTitle').textContent = name === 'signup' ? 'Bienvenue 👋' : 'Connexion';
+    const sub = document.getElementById('authSub'); if (sub) sub.style.display = name === 'signup' ? '' : 'none';
+  }
+  // Premier onglet affiché : « Créer mon commerce » pour un nouveau venu (jamais connecté sur cet appareil)
+  // ou quand le lien contient ?inscription ; sinon « Se connecter ».
+  function authStartTab() {
+    try { if (/[?&#]inscription\b/.test((window.location.search || '') + (window.location.hash || ''))) return 'signup'; } catch (e) {}
+    let last = null; try { last = localStorage.getItem('sf_last_user'); } catch (e) {}
+    return last ? 'login' : 'signup';
   }
 
   // ---- Mot de passe oublié ----
@@ -97,6 +105,7 @@
     document.getElementById('authPaneRecovery').style.display = paneId === 'authPaneRecovery' ? '' : 'none';
     document.getElementById('authTabsRow').style.display = 'none';
     document.getElementById('authTitle').textContent = title;
+    const sub = document.getElementById('authSub'); if (sub) sub.style.display = 'none';
   }
   document.getElementById('linkForgot').addEventListener('click', (e) => {
     e.preventDefault();

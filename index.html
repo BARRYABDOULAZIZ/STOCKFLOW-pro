@@ -362,6 +362,7 @@
     <div class="card" style="max-width:400px; width:100%; margin:0;">
       <div class="lang-row" id="loginLangRow" data-noi18n></div>
       <div class="row-head"><h2 id="authTitle">Connexion</h2></div>
+      <p id="authSub" style="display:none; margin:-6px 0 14px; font-size:15px; font-weight:600; color:var(--muted, #5b5480);">Crée ta boutique gratuitement, en 1 minute.</p>
 
       <div id="authTabsRow" style="display:flex; gap:8px; margin-bottom:14px;">
         <button type="button" class="tablike active" id="authTabLogin" style="flex:1;">Se connecter</button>
@@ -2021,6 +2022,8 @@
     ["Connexion", "Sign in", "تسجيل الدخول"],
     ["Se connecter", "Sign in", "دخول"],
     ["Créer mon commerce", "Create my shop", "إنشاء متجري"],
+    ["Bienvenue 👋", "Welcome 👋", "مرحبًا 👋"],
+    ["Crée ta boutique gratuitement, en 1 minute.", "Create your shop for free, in 1 minute.", "أنشئ متجرك مجانًا في دقيقة واحدة."],
     ["Rejoindre", "Join", "انضمام"],
     ["Mot de passe", "Password", "كلمة المرور"],
     ["Email", "Email", "البريد الإلكتروني"],
@@ -3872,7 +3875,15 @@
     document.getElementById('authPaneForgot').style.display = 'none';
     document.getElementById('authPaneRecovery').style.display = 'none';
     document.getElementById('authTabsRow').style.display = 'flex';
-    document.getElementById('authTitle').textContent = 'Connexion';
+    document.getElementById('authTitle').textContent = name === 'signup' ? 'Bienvenue 👋' : 'Connexion';
+    const sub = document.getElementById('authSub'); if (sub) sub.style.display = name === 'signup' ? '' : 'none';
+  }
+  // Premier onglet affiché : « Créer mon commerce » pour un nouveau venu (jamais connecté sur cet appareil)
+  // ou quand le lien contient ?inscription ; sinon « Se connecter ».
+  function authStartTab() {
+    try { if (/[?&#]inscription\b/.test((window.location.search || '') + (window.location.hash || ''))) return 'signup'; } catch (e) {}
+    let last = null; try { last = localStorage.getItem('sf_last_user'); } catch (e) {}
+    return last ? 'login' : 'signup';
   }
 
   // ---- Mot de passe oublié ----
@@ -3882,6 +3893,7 @@
     document.getElementById('authPaneRecovery').style.display = paneId === 'authPaneRecovery' ? '' : 'none';
     document.getElementById('authTabsRow').style.display = 'none';
     document.getElementById('authTitle').textContent = title;
+    const sub = document.getElementById('authSub'); if (sub) sub.style.display = 'none';
   }
   document.getElementById('linkForgot').addEventListener('click', (e) => {
     e.preventDefault();
@@ -4744,7 +4756,7 @@
     document.getElementById('commerceTag').textContent = 'Non connecté';
     document.getElementById('loginOverlay').style.display = 'flex';
     abo.row = null; abo.admin = false; try { aboRender(); } catch (e) {}
-    showAuthTab('login');
+    showAuthTab(state.loggingOut ? 'login' : authStartTab());
     try { netBarUpdate(); } catch (e) {}
   }
 
@@ -4780,7 +4792,7 @@
   }
 
   function initAuth() {
-    if (!supabaseClient) { showAuthError('Connexion indisponible.'); document.getElementById('loginOverlay').style.display = 'flex'; return; }
+    if (!supabaseClient) { document.getElementById('loginOverlay').style.display = 'flex'; showAuthTab(authStartTab()); showAuthError('Connexion indisponible.'); return; }
     supabaseClient.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') { state.recoveryInProgress = true; showRecoveryForm(); return; }
       if (session && session.user) {
