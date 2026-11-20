@@ -7175,7 +7175,7 @@
           return { on: !matchId && (Number(p.confiance) || 0) >= 0.4, nom: String(p.nom || '').trim(), quantite: Math.max(0, Math.round(Number(p.quantite) || 0)), unite: String(p.unite || 'pièce'), categorie: String(p.categorie || ''), prixAchat: null, prixVente: p.prix_vente != null ? Math.round(Number(p.prix_vente)) : null, matchId, doute: (Number(p.confiance) || 0) < 0.6 };
         }).filter(r => r.nom);
       }
-      pfStatus(pfRows.length ? '✅ ' + escapeHtml(tr('Vérifie la liste, corrige si besoin, puis enregistre.')) + ' (' + pfRows.length + ') · <span class="muted">' + escapeHtml(tr('lue en')) + ' ' + sec() + ' s' + (data.modele ? ' · ' + escapeHtml(String(data.modele).replace(/^gemini-/, '')) : '') + '</span>' + (data.restant != null ? '<br><span class="muted">📸 ' + escapeHtml(tr('Photos restantes aujourd\'hui :')) + ' ' + Number(data.restant) + '/' + Number(data.limite_jour || 10) + '</span>' : '') : '😕 ' + escapeHtml(tr('Aucun produit trouvé. Reprends la photo de plus près, avec plus de lumière.')));
+      pfStatus(pfRows.length ? '✅ ' + escapeHtml(tr('Vérifie la liste, corrige si besoin, puis enregistre.')) + ' (' + pfRows.length + ') · <span class="muted">' + escapeHtml(tr('lue en')) + ' ' + sec() + ' s' + (data.modele ? ' · ' + escapeHtml(String(data.modele).replace(/^gemini-/, '')) : '') + '</span>' + (data.restant != null ? '<br><span class="muted">📸 ' + escapeHtml(tr('Photos restantes aujourd\'hui :')) + ' ' + Number(data.restant) + '/' + Number(data.limite_jour || 6) + '</span>' : '') : '😕 ' + escapeHtml(tr('Aucun produit trouvé. Reprends la photo de plus près, avec plus de lumière.')));
       pfRender();
     } catch (e) {
       clearInterval(tick);

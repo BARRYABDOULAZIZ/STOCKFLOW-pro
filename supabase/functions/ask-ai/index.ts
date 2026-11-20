@@ -6,7 +6,7 @@
 //   GEMINI_API_KEY   : ta clé Google AI Studio
 //   AI_TEST_EMAILS   : e-mail(s) des comptes de TEST autorisés, séparés par des virgules
 //   GEMINI_MODEL     : (facultatif) modèle Gemini principal, par défaut gemini-3.8-flash
-//   AI_PHOTO_LIMIT   : (facultatif) photos de factures par jour et par commerce, par défaut 10 (SQL : supabase/limite_ia.sql)
+//   AI_PHOTO_LIMIT   : (facultatif) photos de factures par jour et par commerce, par défaut 6 (SQL : supabase/limite_ia.sql)
 //
 // Sécurité : seuls les comptes listés dans AI_TEST_EMAILS, avec le rôle propriétaire ou admin,
 // peuvent l'utiliser. Version gratuite de Gemini = données de TEST uniquement.
@@ -146,8 +146,8 @@ Réponds UNIQUEMENT en JSON : {"client":string|null,"credit":boolean,"mode":stri
 
     // ----- Saisie par photo : étagère (créer le catalogue) ou facture fournisseur (réassort) -----
     if (body.vision === "etagere" || body.vision === "facture") {
-      // Limite par jour et par commerce (réglable : Secrets → AI_PHOTO_LIMIT, 10 par défaut)
-      const photoMax = Math.max(1, Number(Deno.env.get("AI_PHOTO_LIMIT") || 10));
+      // Limite par jour et par commerce (réglable : Secrets → AI_PHOTO_LIMIT, 6 par défaut)
+      const photoMax = Math.max(1, Number(Deno.env.get("AI_PHOTO_LIMIT") || 6));
       let photoNb = 0;
       try { const { data: n, error: e } = await sb.rpc("ia_usage_get", { p_type: "photo" }); if (!e) photoNb = Number(n) || 0; else console.error("ia_usage_get", e.message); } catch (e) { console.error("ia_usage_get", e); }
       if (photoNb >= photoMax) return json({ error: `Limite du jour atteinte : ${photoMax} photos de factures. Ça revient demain matin 🌅`, limite: true, restant: 0 }, 429);
