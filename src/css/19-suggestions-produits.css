@@ -19,3 +19,7 @@
 /* Alerte « produits sans prix de vente » sous les 3 grandes cartes de l'accueil */
 .hero-warn{margin:10px 0 4px;padding:12px 14px;border-radius:14px;background:rgba(255,170,0,.13);border:1px solid rgba(255,170,0,.45);color:var(--ink);font-size:14px;line-height:1.45}
 .hero-warn .btn-hw{margin-left:6px;margin-top:6px;padding:7px 12px;border-radius:10px;border:0;background:#f59e0b;color:#111;font-weight:700;cursor:pointer}
+.achat-hint{margin-top:6px;font-size:13px;color:var(--ink);opacity:.85;line-height:1.4}
+.achat-warn{margin-top:4px;color:#ef4444;font-weight:700;opacity:1}
+tr.pf-perte td{background:rgba(239,68,68,.16)}
+tr.pf-perte input[data-pf-k="prixVente"]{border-color:#ef4444;color:#ef4444;font-weight:700}

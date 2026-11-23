@@ -2657,6 +2657,12 @@
     ["produits sans prix de vente", "products without a selling price", "منتجات بدون سعر بيع"],
     ["produit sans prix de vente", "product without a selling price", "منتج بدون سعر بيع"],
     ["pas comptés dans le bénéfice.", "not counted in the profit.", "غير محسوبة في الربح."],
+    ["produits achetés plus cher que leur prix de vente", "products bought for more than their selling price", "منتجات اشتُريت بأغلى من سعر بيعها"],
+    ["produit acheté plus cher que son prix de vente", "product bought for more than its selling price", "منتج اشتُري بأغلى من سعر بيعه"],
+    ["Prix TOTAL tapé au lieu du prix d'une unité ?", "TOTAL price typed instead of the price of one unit?", "هل كتبت السعر الإجمالي بدل سعر الوحدة؟"],
+    ["Plus cher que le prix de vente ! As-tu tapé le prix TOTAL au lieu du prix d'une seule unité ?", "More than the selling price! Did you type the TOTAL price instead of the price of one unit?", "أغلى من سعر البيع! هل كتبت السعر الإجمالي بدل سعر الوحدة؟"],
+    ["Prix de vente plus bas que le prix d'achat : tu vas vendre à perte", "Selling price lower than purchase price: you will sell at a loss", "سعر البيع أقل من سعر الشراء: ستبيع بخسارة"],
+    ["pour 1", "for 1", "لـ 1"],
     ["Mettre le prix", "Set the price", "ضع السعر"],
     ["(nouveau · 6 photos par jour)", "(new · 6 photos a day)", "(جديد · 6 صور يومياً)"],
     ["Prends une photo : l'IA trouve les produits, les quantités et les prix. Tu vérifies, rien n'est enregistré sans toi.", "Take a photo: the AI finds the products, quantities and prices. You check, nothing is saved without you.", "التقط صورة: يجد الذكاء الاصطناعي المنتجات والكميات والأسعار. أنت تتحقق، ولا يُحفظ شيء بدونك."],
@@ -4873,7 +4879,8 @@
     const beneficePotentiel = state.products.reduce((s, p) => Number(p.prixVente) > 0 ? s + (Number(p.stock) || 0) * (Number(p.prixVente) - (Number(p.prixAchat) || 0)) : s, 0);
     const rupture = state.products.filter(p => Number(p.stock) <= 0).length;
     const reappro = state.products.filter(p => Number(p.stock) > 0 && Number(p.stock) <= Number(p.seuil)).length;
-    return { montantInvesti, valeurPotentielle, beneficePotentiel, rupture, reappro, sansPrix };
+    const perte = state.products.filter(p => Number(p.prixVente) > 0 && Number(p.prixAchat) > Number(p.prixVente));
+    return { montantInvesti, valeurPotentielle, beneficePotentiel, rupture, reappro, sansPrix, perte };
   }
 
   // ================= Dashboard =================
@@ -4886,7 +4893,7 @@
     document.getElementById('heroInvesti').textContent = euros(g.montantInvesti);
     document.getElementById('heroValeur').textContent = euros(g.valeurPotentielle);
     document.getElementById('heroBenefice').textContent = euros(g.beneficePotentiel);
-    heroSansPrixRender(g.sansPrix);
+    heroSansPrixRender(g.sansPrix, g.perte);
 
     document.getElementById('dbProduits').textContent = state.products.length;
     document.getElementById('dbRupture').textContent = g.rupture;
@@ -4963,15 +4970,18 @@
 
 
   // Alerte : produits en stock sans prix de vente (ils ne sont pas comptés dans le bénéfice)
-  function heroSansPrixRender(list) {
+  function heroSansPrixRender(list, perte) {
     const row = document.getElementById('dashboardHeroRow'); if (!row) return;
     let box = document.getElementById('heroSansPrix');
-    if (!list || !list.length) { if (box) box.style.display = 'none'; return; }
+    list = list || []; perte = perte || [];
+    if (!list.length && !perte.length) { if (box) box.style.display = 'none'; return; }
     if (!box) { box = document.createElement('div'); box.id = 'heroSansPrix'; box.className = 'hero-warn'; row.insertAdjacentElement('afterend', box); }
-    const noms = list.slice(0, 3).map(p => escapeHtml(p.nom || '?')).join(', ') + (list.length > 3 ? '…' : '');
-    box.innerHTML = '⚠️ <b>' + list.length + ' ' + escapeHtml(tr(list.length > 1 ? 'produits sans prix de vente' : 'produit sans prix de vente')) + '</b> (' + noms + ') : ' + escapeHtml(tr('pas comptés dans le bénéfice.')) + ' <button type="button" class="btn-hw">✏️ ' + escapeHtml(tr('Mettre le prix')) + '</button>';
-    box.style.display = '';
-    box.querySelector('.btn-hw').onclick = () => { const b = document.querySelector('nav.tabs button[data-tab="produits"]'); if (b) b.click(); setTimeout(() => { try { startEditProduct(list[0].id); } catch (e) { console.error(e); } }, 120); };
+    const noms = (l) => l.slice(0, 3).map(p => escapeHtml(p.nom || '?')).join(', ') + (l.length > 3 ? '…' : '');
+    let h = '';
+    if (perte.length) h += '<div>🔴 <b>' + perte.length + ' ' + escapeHtml(tr(perte.length > 1 ? 'produits achetés plus cher que leur prix de vente' : 'produit acheté plus cher que son prix de vente')) + '</b> (' + noms(perte) + '). ' + escapeHtml(tr("Prix TOTAL tapé au lieu du prix d'une unité ?")) + ' <button type="button" class="btn-hw" data-hw="perte">✏️ ' + escapeHtml(tr('Corriger')) + '</button></div>';
+    if (list.length) h += '<div' + (perte.length ? ' style="margin-top:8px"' : '') + '>⚠️ <b>' + list.length + ' ' + escapeHtml(tr(list.length > 1 ? 'produits sans prix de vente' : 'produit sans prix de vente')) + '</b> (' + noms(list) + ') : ' + escapeHtml(tr('pas comptés dans le bénéfice.')) + ' <button type="button" class="btn-hw" data-hw="prix">✏️ ' + escapeHtml(tr('Mettre le prix')) + '</button></div>';
+    box.innerHTML = h; box.style.display = '';
+    box.querySelectorAll('.btn-hw').forEach(b => b.onclick = () => { const p0 = (b.dataset.hw === 'perte' ? perte : list)[0]; const t = document.querySelector('nav.tabs button[data-tab="produits"]'); if (t) t.click(); setTimeout(() => { try { startEditProduct(p0.id); } catch (e) { console.error(e); } }, 120); });
   }
   // ================= Produits (catalogue) =================
   let stockFilter = '', stockCat = '';
@@ -7141,9 +7151,9 @@
     const opts = (sel) => '<option value="">➕ ' + escapeHtml(tr('Nouveau produit')) + '</option>' + (state.products || []).slice().sort((x, y) => (x.nom || '').localeCompare(y.nom || '')).map(p => `<option value="${escapeHtml(p.id)}"${p.id === sel ? ' selected' : ''}>${escapeHtml(p.nom)}</option>`).join('');
     const head = isF && (pfMeta.fournisseur || pfMeta.date) ? `<p style="margin:0 0 8px;">🚚 <b>${escapeHtml(pfMeta.fournisseur || '?')}</b>${pfMeta.date ? ' · 📅 ' + escapeHtml(pfMeta.date) : ''}${pfMeta.total ? ' · ' + tr('Total') + ' ' + euros(pfMeta.total) : ''}</p>` : '';
     box.innerHTML = head + `<div class="pf-scroll"><table><thead><tr><th></th><th>${tr('Produit')}</th><th>${tr('Quantité')}</th><th>${tr('Unité')}</th>${isF ? `<th>${tr('Prix d\'achat')}</th>` : ''}<th>${tr('Prix de vente')}</th><th>${tr('Dans le catalogue')}</th></tr></thead><tbody>` +
-      pfRows.map((r, i) => `<tr data-pfi="${i}">
+      pfRows.map((r, i) => `<tr data-pfi="${i}"${isF && Number(r.prixVente) > 0 && Number(r.prixAchat) > Number(r.prixVente) ? ' class="pf-perte"' : ''}>
         <td><input type="checkbox" data-pf-k="on" ${r.on ? 'checked' : ''} style="width:auto; min-width:0;"></td>
-        <td class="pf-n"><input data-pf-k="nom" value="${escapeHtml(r.nom)}">${r.doute ? `<div class="pf-doute">⚠️ ${tr('Chiffres à vérifier')}</div>` : ''}${!isF && r.matchId ? `<div class="pf-doute">${tr('Déjà dans le catalogue : coché = le stock devient la quantité comptée')}</div>` : ''}</td>
+        <td class="pf-n"><input data-pf-k="nom" value="${escapeHtml(r.nom)}">${r.doute ? `<div class="pf-doute">⚠️ ${tr('Chiffres à vérifier')}</div>` : ''}${isF && Number(r.prixVente) > 0 && Number(r.prixAchat) > Number(r.prixVente) ? `<div class="pf-doute">⚠️ ${tr('Prix de vente plus bas que le prix d\'achat : tu vas vendre à perte')}</div>` : ''}${!isF && r.matchId ? `<div class="pf-doute">${tr('Déjà dans le catalogue : coché = le stock devient la quantité comptée')}</div>` : ''}</td>
         <td><input type="number" min="0" step="any" data-pf-k="quantite" value="${escapeHtml(String(r.quantite))}"></td>
         <td><input data-pf-k="unite" value="${escapeHtml(r.unite)}"></td>
         ${isF ? `<td><input type="number" min="0" step="1" data-pf-k="prixAchat" value="${r.prixAchat == null ? '' : escapeHtml(String(r.prixAchat))}"></td>` : ''}
@@ -8023,6 +8033,7 @@
 
     const formCard = document.getElementById('p-ref').closest('.card') || document.querySelector('.card');
     formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    achatHint();
   }
 
   function resetProductForm() {
@@ -8038,7 +8049,24 @@
     document.getElementById('restockHint').style.display = 'none';
     document.getElementById('btnAddProduct').textContent = 'Ajouter au catalogue';
     document.getElementById('btnCancelEdit').style.display = 'none';
+    achatHint();
   }
+
+  // Sous le prix d'achat : « = 12 500 pour 1 sac · 10 × 12 500 = 125 000 payés », et alerte si plus cher que le prix de vente
+  // (erreur fréquente : taper le prix TOTAL de la facture au lieu du prix d'une seule unité)
+  function achatHint() {
+    const inp = document.getElementById('p-prixachat'); if (!inp) return;
+    let h = document.getElementById('p-achat-hint');
+    if (!h) { h = document.createElement('div'); h.id = 'p-achat-hint'; h.className = 'achat-hint'; inp.insertAdjacentElement('afterend', h); }
+    const pa = Number(inp.value) || 0, pv = Number(document.getElementById('p-prixvente').value) || 0;
+    const q = Number(document.getElementById('p-stock').value) || 0, u = escapeHtml((document.getElementById('p-unite').value || '').trim() || tr('unité'));
+    if (!pa) { h.style.display = 'none'; return; }
+    let t = '= ' + euros(pa) + ' ' + tr('pour 1') + ' ' + u;
+    if (q > 0) t += ' · ' + q + ' × ' + euros(pa).replace(/\s\S+$/, '') + ' = <b>' + euros(q * pa) + '</b>';
+    if (pv > 0 && pa > pv) t += '<div class="achat-warn">⚠️ ' + tr("Plus cher que le prix de vente ! As-tu tapé le prix TOTAL au lieu du prix d'une seule unité ?") + '</div>';
+    h.innerHTML = t; h.style.display = '';
+  }
+  ['p-prixachat', 'p-prixvente', 'p-stock', 'p-unite', 'p-ref', 'p-nom'].forEach(id => { const el = document.getElementById(id); if (el) { el.addEventListener('input', achatHint); el.addEventListener('change', achatHint); } });
 
   document.getElementById('btnCancelEdit').addEventListener('click', resetProductForm);
 
@@ -10571,6 +10599,10 @@ header.top{animation:none !important;background-size:100% 100% !important;}
 /* Alerte « produits sans prix de vente » sous les 3 grandes cartes de l'accueil */
 .hero-warn{margin:10px 0 4px;padding:12px 14px;border-radius:14px;background:rgba(255,170,0,.13);border:1px solid rgba(255,170,0,.45);color:var(--ink);font-size:14px;line-height:1.45}
 .hero-warn .btn-hw{margin-left:6px;margin-top:6px;padding:7px 12px;border-radius:10px;border:0;background:#f59e0b;color:#111;font-weight:700;cursor:pointer}
+.achat-hint{margin-top:6px;font-size:13px;color:var(--ink);opacity:.85;line-height:1.4}
+.achat-warn{margin-top:4px;color:#ef4444;font-weight:700;opacity:1}
+tr.pf-perte td{background:rgba(239,68,68,.16)}
+tr.pf-perte input[data-pf-k="prixVente"]{border-color:#ef4444;color:#ef4444;font-weight:700}
 </style>
 </body>
 </html>

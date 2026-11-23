@@ -43,9 +43,9 @@
     const opts = (sel) => '<option value="">➕ ' + escapeHtml(tr('Nouveau produit')) + '</option>' + (state.products || []).slice().sort((x, y) => (x.nom || '').localeCompare(y.nom || '')).map(p => `<option value="${escapeHtml(p.id)}"${p.id === sel ? ' selected' : ''}>${escapeHtml(p.nom)}</option>`).join('');
     const head = isF && (pfMeta.fournisseur || pfMeta.date) ? `<p style="margin:0 0 8px;">🚚 <b>${escapeHtml(pfMeta.fournisseur || '?')}</b>${pfMeta.date ? ' · 📅 ' + escapeHtml(pfMeta.date) : ''}${pfMeta.total ? ' · ' + tr('Total') + ' ' + euros(pfMeta.total) : ''}</p>` : '';
     box.innerHTML = head + `<div class="pf-scroll"><table><thead><tr><th></th><th>${tr('Produit')}</th><th>${tr('Quantité')}</th><th>${tr('Unité')}</th>${isF ? `<th>${tr('Prix d\'achat')}</th>` : ''}<th>${tr('Prix de vente')}</th><th>${tr('Dans le catalogue')}</th></tr></thead><tbody>` +
-      pfRows.map((r, i) => `<tr data-pfi="${i}">
+      pfRows.map((r, i) => `<tr data-pfi="${i}"${isF && Number(r.prixVente) > 0 && Number(r.prixAchat) > Number(r.prixVente) ? ' class="pf-perte"' : ''}>
         <td><input type="checkbox" data-pf-k="on" ${r.on ? 'checked' : ''} style="width:auto; min-width:0;"></td>
-        <td class="pf-n"><input data-pf-k="nom" value="${escapeHtml(r.nom)}">${r.doute ? `<div class="pf-doute">⚠️ ${tr('Chiffres à vérifier')}</div>` : ''}${!isF && r.matchId ? `<div class="pf-doute">${tr('Déjà dans le catalogue : coché = le stock devient la quantité comptée')}</div>` : ''}</td>
+        <td class="pf-n"><input data-pf-k="nom" value="${escapeHtml(r.nom)}">${r.doute ? `<div class="pf-doute">⚠️ ${tr('Chiffres à vérifier')}</div>` : ''}${isF && Number(r.prixVente) > 0 && Number(r.prixAchat) > Number(r.prixVente) ? `<div class="pf-doute">⚠️ ${tr('Prix de vente plus bas que le prix d\'achat : tu vas vendre à perte')}</div>` : ''}${!isF && r.matchId ? `<div class="pf-doute">${tr('Déjà dans le catalogue : coché = le stock devient la quantité comptée')}</div>` : ''}</td>
         <td><input type="number" min="0" step="any" data-pf-k="quantite" value="${escapeHtml(String(r.quantite))}"></td>
         <td><input data-pf-k="unite" value="${escapeHtml(r.unite)}"></td>
         ${isF ? `<td><input type="number" min="0" step="1" data-pf-k="prixAchat" value="${r.prixAchat == null ? '' : escapeHtml(String(r.prixAchat))}"></td>` : ''}

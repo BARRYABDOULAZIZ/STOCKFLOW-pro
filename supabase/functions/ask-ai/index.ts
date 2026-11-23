@@ -156,7 +156,7 @@ Réponds UNIQUEMENT en JSON : {"client":string|null,"credit":boolean,"mode":stri
       const photoMax = Math.max(1, Number(Deno.env.get("AI_PHOTO_LIMIT") || 6));
       let photoNb = 0;
       try { const { data: n, error: e } = await sb.rpc("ia_usage_get", { p_type: "photo" }); if (!e) photoNb = Number(n) || 0; else console.error("ia_usage_get", e.message); } catch (e) { console.error("ia_usage_get", e); }
-      if (photoNb >= photoMax) return json({ error: `Limite du jour atteinte : ${photoMax} photos de factures. Ça revient demain matin 🌅`, limite: true, restant: 0 }, 429);
+      if (!isTest && photoNb >= photoMax) return json({ error: `Limite du jour atteinte : ${photoMax} photos de factures. Ça revient demain matin 🌅`, limite: true, restant: 0 }, 429);
       const k = Deno.env.get("GEMINI_API_KEY");
       if (!k) return json({ error: "Clé Gemini manquante dans les Secrets Supabase" }, 500);
       const imgs = (Array.isArray(body.images) ? body.images : []).slice(0, 4)
@@ -227,7 +227,7 @@ Réponds UNIQUEMENT en JSON : {"fournisseur":string|null,"date":string|null,"lig
       // Une photo lue avec succès compte pour 1
       let photoApres = photoNb + 1;
       try { const { data: n2, error: e2 } = await sb.rpc("ia_usage_add", { p_type: "photo" }); if (!e2 && n2) photoApres = Number(n2); else if (e2) console.error("ia_usage_add", e2.message); } catch (e) { console.error("ia_usage_add", e); }
-      return json({ resultat: out, modele: usedV, ms: Date.now() - vStart, restant: Math.max(0, photoMax - photoApres), limite_jour: photoMax });
+      return json({ resultat: out, modele: usedV, ms: Date.now() - vStart, restant: isTest ? null : Math.max(0, photoMax - photoApres), limite_jour: photoMax });
     }
 
     // ----- Voix naturelle de Bel : transforme le texte d'une réponse en audio (Gemini TTS) -----

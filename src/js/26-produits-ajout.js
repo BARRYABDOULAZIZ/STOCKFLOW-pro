@@ -68,6 +68,7 @@
 
     const formCard = document.getElementById('p-ref').closest('.card') || document.querySelector('.card');
     formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    achatHint();
   }
 
   function resetProductForm() {
@@ -83,7 +84,24 @@
     document.getElementById('restockHint').style.display = 'none';
     document.getElementById('btnAddProduct').textContent = 'Ajouter au catalogue';
     document.getElementById('btnCancelEdit').style.display = 'none';
+    achatHint();
   }
+
+  // Sous le prix d'achat : « = 12 500 pour 1 sac · 10 × 12 500 = 125 000 payés », et alerte si plus cher que le prix de vente
+  // (erreur fréquente : taper le prix TOTAL de la facture au lieu du prix d'une seule unité)
+  function achatHint() {
+    const inp = document.getElementById('p-prixachat'); if (!inp) return;
+    let h = document.getElementById('p-achat-hint');
+    if (!h) { h = document.createElement('div'); h.id = 'p-achat-hint'; h.className = 'achat-hint'; inp.insertAdjacentElement('afterend', h); }
+    const pa = Number(inp.value) || 0, pv = Number(document.getElementById('p-prixvente').value) || 0;
+    const q = Number(document.getElementById('p-stock').value) || 0, u = escapeHtml((document.getElementById('p-unite').value || '').trim() || tr('unité'));
+    if (!pa) { h.style.display = 'none'; return; }
+    let t = '= ' + euros(pa) + ' ' + tr('pour 1') + ' ' + u;
+    if (q > 0) t += ' · ' + q + ' × ' + euros(pa).replace(/\s\S+$/, '') + ' = <b>' + euros(q * pa) + '</b>';
+    if (pv > 0 && pa > pv) t += '<div class="achat-warn">⚠️ ' + tr("Plus cher que le prix de vente ! As-tu tapé le prix TOTAL au lieu du prix d'une seule unité ?") + '</div>';
+    h.innerHTML = t; h.style.display = '';
+  }
+  ['p-prixachat', 'p-prixvente', 'p-stock', 'p-unite', 'p-ref', 'p-nom'].forEach(id => { const el = document.getElementById(id); if (el) { el.addEventListener('input', achatHint); el.addEventListener('change', achatHint); } });
 
   document.getElementById('btnCancelEdit').addEventListener('click', resetProductForm);
 

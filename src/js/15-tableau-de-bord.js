@@ -7,7 +7,8 @@
     const beneficePotentiel = state.products.reduce((s, p) => Number(p.prixVente) > 0 ? s + (Number(p.stock) || 0) * (Number(p.prixVente) - (Number(p.prixAchat) || 0)) : s, 0);
     const rupture = state.products.filter(p => Number(p.stock) <= 0).length;
     const reappro = state.products.filter(p => Number(p.stock) > 0 && Number(p.stock) <= Number(p.seuil)).length;
-    return { montantInvesti, valeurPotentielle, beneficePotentiel, rupture, reappro, sansPrix };
+    const perte = state.products.filter(p => Number(p.prixVente) > 0 && Number(p.prixAchat) > Number(p.prixVente));
+    return { montantInvesti, valeurPotentielle, beneficePotentiel, rupture, reappro, sansPrix, perte };
   }
 
   // ================= Dashboard =================
@@ -20,7 +21,7 @@
     document.getElementById('heroInvesti').textContent = euros(g.montantInvesti);
     document.getElementById('heroValeur').textContent = euros(g.valeurPotentielle);
     document.getElementById('heroBenefice').textContent = euros(g.beneficePotentiel);
-    heroSansPrixRender(g.sansPrix);
+    heroSansPrixRender(g.sansPrix, g.perte);
 
     document.getElementById('dbProduits').textContent = state.products.length;
     document.getElementById('dbRupture').textContent = g.rupture;
@@ -97,13 +98,16 @@
 
 
   // Alerte : produits en stock sans prix de vente (ils ne sont pas comptés dans le bénéfice)
-  function heroSansPrixRender(list) {
+  function heroSansPrixRender(list, perte) {
     const row = document.getElementById('dashboardHeroRow'); if (!row) return;
     let box = document.getElementById('heroSansPrix');
-    if (!list || !list.length) { if (box) box.style.display = 'none'; return; }
+    list = list || []; perte = perte || [];
+    if (!list.length && !perte.length) { if (box) box.style.display = 'none'; return; }
     if (!box) { box = document.createElement('div'); box.id = 'heroSansPrix'; box.className = 'hero-warn'; row.insertAdjacentElement('afterend', box); }
-    const noms = list.slice(0, 3).map(p => escapeHtml(p.nom || '?')).join(', ') + (list.length > 3 ? '…' : '');
-    box.innerHTML = '⚠️ <b>' + list.length + ' ' + escapeHtml(tr(list.length > 1 ? 'produits sans prix de vente' : 'produit sans prix de vente')) + '</b> (' + noms + ') : ' + escapeHtml(tr('pas comptés dans le bénéfice.')) + ' <button type="button" class="btn-hw">✏️ ' + escapeHtml(tr('Mettre le prix')) + '</button>';
-    box.style.display = '';
-    box.querySelector('.btn-hw').onclick = () => { const b = document.querySelector('nav.tabs button[data-tab="produits"]'); if (b) b.click(); setTimeout(() => { try { startEditProduct(list[0].id); } catch (e) { console.error(e); } }, 120); };
+    const noms = (l) => l.slice(0, 3).map(p => escapeHtml(p.nom || '?')).join(', ') + (l.length > 3 ? '…' : '');
+    let h = '';
+    if (perte.length) h += '<div>🔴 <b>' + perte.length + ' ' + escapeHtml(tr(perte.length > 1 ? 'produits achetés plus cher que leur prix de vente' : 'produit acheté plus cher que son prix de vente')) + '</b> (' + noms(perte) + '). ' + escapeHtml(tr("Prix TOTAL tapé au lieu du prix d'une unité ?")) + ' <button type="button" class="btn-hw" data-hw="perte">✏️ ' + escapeHtml(tr('Corriger')) + '</button></div>';
+    if (list.length) h += '<div' + (perte.length ? ' style="margin-top:8px"' : '') + '>⚠️ <b>' + list.length + ' ' + escapeHtml(tr(list.length > 1 ? 'produits sans prix de vente' : 'produit sans prix de vente')) + '</b> (' + noms(list) + ') : ' + escapeHtml(tr('pas comptés dans le bénéfice.')) + ' <button type="button" class="btn-hw" data-hw="prix">✏️ ' + escapeHtml(tr('Mettre le prix')) + '</button></div>';
+    box.innerHTML = h; box.style.display = '';
+    box.querySelectorAll('.btn-hw').forEach(b => b.onclick = () => { const p0 = (b.dataset.hw === 'perte' ? perte : list)[0]; const t = document.querySelector('nav.tabs button[data-tab="produits"]'); if (t) t.click(); setTimeout(() => { try { startEditProduct(p0.id); } catch (e) { console.error(e); } }, 120); });
   }

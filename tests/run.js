@@ -1094,6 +1094,15 @@ function eq(a, b, msg) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new 
       return { b: g.beneficePotentiel, n: g.sansPrix.length, txt: w && w.style.display !== 'none' ? w.textContent : '' }; })()`);
     eq([r.b, r.n], [15000, 1], 'bénéfice compté sur les produits avec prix seulement');
     expect(/Huile 20 L/.test(r.txt), 'alerte affichée : ' + r.txt);
+    const r2 = await p.app(`(() => {
+      state.products = [{ id: 'c', nom: 'Sucre 50 kg', prixAchat: 275000, prixVente: 31625, stock: 1 }];
+      const g = computeGlobals(); heroSansPrixRender(g.sansPrix, g.perte);
+      document.getElementById('p-prixachat').value = '125000'; document.getElementById('p-prixvente').value = '14375';
+      document.getElementById('p-stock').value = '10'; document.getElementById('p-unite').value = 'sac';
+      document.getElementById('p-prixachat').dispatchEvent(new Event('input'));
+      return { w: document.getElementById('heroSansPrix').textContent, h: document.getElementById('p-achat-hint').textContent }; })()`);
+    expect(/Sucre 50 kg/.test(r2.w) && /TOTAL/.test(r2.w), 'alerte perte : ' + r2.w);
+    expect(/1250000/.test(r2.h.replace(/\s/g, ''))  && /TOTAL/.test(r2.h), 'aide prix d\'achat : ' + r2.h);
     eq(p.errors, [], 'erreurs');
     await p.close2();
   });
