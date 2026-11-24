@@ -120,10 +120,37 @@
     if (s2Stream) { s2Stream.getTracks().forEach(t => t.stop()); s2Stream = null; }
     if (globalZxingReader) { try { globalZxingReader.reset(); } catch (e) {} }
   }
+  // Retour quand un code est lu : vibration (Android), petite vibration iPhone (iOS 18+, astuce de l'interrupteur) et « bip » de caisse
+  let s2Audio = null;
+  function s2Feedback() {
+    try { if (navigator.vibrate) navigator.vibrate(120); } catch (e) {}
+    try {
+      let sw = document.getElementById('s2Haptic');
+      if (!sw) {
+        const lab = document.createElement('label');
+        lab.style.cssText = 'position:fixed; left:-9999px; top:0; opacity:0; pointer-events:none;';
+        lab.innerHTML = '<input type="checkbox" switch id="s2Haptic">';
+        document.body.appendChild(lab);
+        sw = document.getElementById('s2Haptic');
+      }
+      sw.parentElement.click();
+    } catch (e) {}
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!s2Audio) s2Audio = new AC();
+      const o = s2Audio.createOscillator(), g = s2Audio.createGain();
+      o.type = 'square'; o.frequency.value = 1800;
+      g.gain.setValueAtTime(0.08, s2Audio.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, s2Audio.currentTime + 0.12);
+      o.connect(g); g.connect(s2Audio.destination);
+      o.start(); o.stop(s2Audio.currentTime + 0.13);
+    } catch (e) {}
+  }
   function s2Found(code) {
     if (s2Done || !code) return;
     s2Done = true;
-    try { if (navigator.vibrate) navigator.vibrate(80); } catch (e) {}
+    s2Feedback();
     const cb = currentScanCallback;
     closeGlobalScanner();
     if (typeof cb === 'function') cb(String(code).trim());
@@ -217,6 +244,7 @@
   }
   async function openGlobalScannerV2() {
     const statusEl = document.getElementById('globalScanStatus');
+    try { const AC = window.AudioContext || window.webkitAudioContext; if (AC) { if (!s2Audio) s2Audio = new AC(); if (s2Audio.state === 'suspended') s2Audio.resume(); } } catch (e) {}
     s2Extras();
     try {
       await s2Start(null);
