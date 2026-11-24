@@ -6930,15 +6930,45 @@
     bar = document.createElement('div');
     bar.id = 's2Bar';
     bar.style.cssText = 'display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:10px;';
-    bar.innerHTML = '<button class="ghost" id="s2Switch" type="button">🔄 Changer de caméra</button><button class="ghost" id="s2Type" type="button">⌨️ Taper le code</button>';
+    bar.innerHTML = '<button class="ghost" id="s2Switch" type="button">🔄 Changer de caméra</button><button class="ghost" id="s2Type" type="button">⌨️ Taper le code</button><button class="ghost" id="s2Zoom" type="button" style="display:none;">🔍 Zoom ×2</button>';
     document.getElementById('globalScanStatus').after(bar);
     document.getElementById('s2Switch').addEventListener('click', () => { if (s2Devices.length > 1) { s2Idx = (s2Idx + 1) % s2Devices.length; s2Start(s2Devices[s2Idx].deviceId); } else toast('Une seule caméra sur ce téléphone.'); });
+    document.getElementById('s2Zoom').addEventListener('click', s2ToggleZoom);
+    // Toucher l'image = refaire la mise au point à cet endroit (si le téléphone le permet)
+    document.getElementById('globalScanVideo').addEventListener('click', (ev) => { if (scan2On()) s2Refocus(ev); });
     document.getElementById('s2Type').addEventListener('click', () => {
       const c = prompt('Tape les chiffres écrits sous le code-barres :');
       if (c && c.trim()) s2Found(c.trim());
     });
   }
+  let s2ZoomOn = false;
+  function s2Track() { return s2Stream ? s2Stream.getVideoTracks()[0] : null; }
+  async function s2ToggleZoom() {
+    const t = s2Track(); if (!t) return;
+    try {
+      const caps = t.getCapabilities ? t.getCapabilities() : {};
+      if (!caps.zoom) return;
+      s2ZoomOn = !s2ZoomOn;
+      const z = s2ZoomOn ? Math.min(2, caps.zoom.max) : Math.max(1, caps.zoom.min);
+      await t.applyConstraints({ advanced: [{ zoom: z }] });
+      document.getElementById('s2Zoom').textContent = s2ZoomOn ? '🔍 Zoom ×1' : '🔍 Zoom ×2';
+      document.getElementById('globalScanStatus').textContent = s2ZoomOn ? 'Zoom ×2 : tiens le téléphone à 25-30 cm du code.' : 'Pointe vers le code-barres (à 15-20 cm)…';
+    } catch (e) { console.error(e); }
+  }
+  async function s2Refocus(ev) {
+    const t = s2Track(); if (!t) return;
+    try {
+      const caps = t.getCapabilities ? t.getCapabilities() : {};
+      const modes = caps.focusMode || [];
+      const r = ev.currentTarget.getBoundingClientRect();
+      const pt = { x: (ev.clientX - r.left) / r.width, y: (ev.clientY - r.top) / r.height };
+      if (modes.includes('single-shot')) await t.applyConstraints({ advanced: [{ focusMode: 'single-shot', pointsOfInterest: [pt] }] });
+      if (modes.includes('continuous')) setTimeout(() => { t.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {}); }, 600);
+      toast('Mise au point…');
+    } catch (e) {}
+  }
   async function s2Start(deviceId) {
+    s2ZoomOn = false;
     const statusEl = document.getElementById('globalScanStatus');
     const video = document.getElementById('globalScanVideo');
     s2Stop(); s2Done = false;
@@ -6950,6 +6980,12 @@
     // Mise au point automatique continue quand le téléphone le permet (sinon le code reste flou sur beaucoup d'Android)
     try { const caps = track.getCapabilities ? track.getCapabilities() : {}; if (caps.focusMode && caps.focusMode.includes('continuous')) await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch (e) {}
     try { const st = track.getSettings ? track.getSettings() : {}; const i = s2Devices.findIndex(d => d.deviceId === st.deviceId); if (i >= 0) s2Idx = i; } catch (e) {}
+    // Bouton zoom seulement si la caméra sait zoomer ; zoom ×2 direct : on tient le téléphone plus loin et la mise au point se fait plus vite
+    try {
+      const zc = track.getCapabilities ? track.getCapabilities() : {};
+      const zb = document.getElementById('s2Zoom');
+      if (zb) { zb.style.display = (zc.zoom && zc.zoom.max >= 1.5) ? '' : 'none'; zb.textContent = '🔍 Zoom ×2'; }
+    } catch (e) {}
     video.srcObject = s2Stream; video.setAttribute('playsinline', ''); video.muted = true;
     try { await video.play(); } catch (e) {}
     statusEl.textContent = 'Pointe vers le code-barres (à 15-20 cm)…';
