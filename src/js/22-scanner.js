@@ -106,6 +106,95 @@
   let globalZxingReader = null;
   let currentScanCallback = null;
 
+  // ---- Scanner v2 (Android) : détecteur natif du téléphone + caméra arrière principale en haute définition ----
+  // Activé seulement avec le lien boromboutik.com/?scan2=1 (gardé sur le téléphone) ; ?scan2=0 pour revenir à l'ancien.
+  try {
+    const q = new URLSearchParams(location.search).get('scan2');
+    if (q === '1') localStorage.setItem('bb_scan2', '1');
+    if (q === '0') localStorage.removeItem('bb_scan2');
+  } catch (e) {}
+  function scan2On() { try { return localStorage.getItem('bb_scan2') === '1'; } catch (e) { return false; } }
+  let s2Stream = null, s2Timer = null, s2Devices = [], s2Idx = -1, s2Done = false;
+  function s2Stop() {
+    if (s2Timer) { clearTimeout(s2Timer); s2Timer = null; }
+    if (s2Stream) { s2Stream.getTracks().forEach(t => t.stop()); s2Stream = null; }
+    if (globalZxingReader) { try { globalZxingReader.reset(); } catch (e) {} }
+  }
+  function s2Found(code) {
+    if (s2Done || !code) return;
+    s2Done = true;
+    try { if (navigator.vibrate) navigator.vibrate(80); } catch (e) {}
+    const cb = currentScanCallback;
+    closeGlobalScanner();
+    if (typeof cb === 'function') cb(String(code).trim());
+  }
+  function s2Extras() {
+    let bar = document.getElementById('s2Bar');
+    if (bar) { bar.style.display = 'flex'; return; }
+    bar = document.createElement('div');
+    bar.id = 's2Bar';
+    bar.style.cssText = 'display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:10px;';
+    bar.innerHTML = '<button class="ghost" id="s2Switch" type="button">🔄 Changer de caméra</button><button class="ghost" id="s2Type" type="button">⌨️ Taper le code</button>';
+    document.getElementById('globalScanStatus').after(bar);
+    document.getElementById('s2Switch').addEventListener('click', () => { if (s2Devices.length > 1) { s2Idx = (s2Idx + 1) % s2Devices.length; s2Start(s2Devices[s2Idx].deviceId); } else toast('Une seule caméra sur ce téléphone.'); });
+    document.getElementById('s2Type').addEventListener('click', () => {
+      const c = prompt('Tape les chiffres écrits sous le code-barres :');
+      if (c && c.trim()) s2Found(c.trim());
+    });
+  }
+  async function s2Start(deviceId) {
+    const statusEl = document.getElementById('globalScanStatus');
+    const video = document.getElementById('globalScanVideo');
+    s2Stop(); s2Done = false;
+    const hd = { width: { ideal: 1920 }, height: { ideal: 1080 } };
+    const cons = deviceId ? { video: { deviceId: { exact: deviceId }, ...hd } } : { video: { facingMode: { ideal: 'environment' }, ...hd } };
+    try { s2Stream = await navigator.mediaDevices.getUserMedia(cons); }
+    catch (e) { s2Stream = await navigator.mediaDevices.getUserMedia({ video: true }); }
+    const track = s2Stream.getVideoTracks()[0];
+    // Mise au point automatique continue quand le téléphone le permet (sinon le code reste flou sur beaucoup d'Android)
+    try { const caps = track.getCapabilities ? track.getCapabilities() : {}; if (caps.focusMode && caps.focusMode.includes('continuous')) await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch (e) {}
+    try { const st = track.getSettings ? track.getSettings() : {}; const i = s2Devices.findIndex(d => d.deviceId === st.deviceId); if (i >= 0) s2Idx = i; } catch (e) {}
+    video.srcObject = s2Stream; video.setAttribute('playsinline', ''); video.muted = true;
+    try { await video.play(); } catch (e) {}
+    statusEl.textContent = 'Pointe vers le code-barres (à 15-20 cm)…';
+    if ('BarcodeDetector' in window) {
+      let det;
+      try {
+        const want = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'code_93', 'itf', 'codabar', 'qr_code', 'data_matrix'];
+        const sup = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : want;
+        det = new BarcodeDetector({ formats: want.filter(f => sup.includes(f)) });
+      } catch (e) { det = null; }
+      if (det) {
+        const loop = async () => {
+          if (s2Done || !s2Stream) return;
+          try { if (video.readyState >= 2) { const r = await det.detect(video); if (r && r.length && r[0].rawValue) { s2Found(r[0].rawValue); return; } } } catch (e) {}
+          s2Timer = setTimeout(loop, 200);
+        };
+        loop();
+        return;
+      }
+    }
+    // Pas de détecteur natif (iPhone, vieux téléphones) : lecteur ZXing sur le même flux caméra
+    await loadZxing();
+    if (!globalZxingReader) globalZxingReader = new window.ZXing.BrowserMultiFormatReader();
+    globalZxingReader.decodeFromStream(s2Stream, 'globalScanVideo', (result) => { if (result) s2Found(result.getText()); });
+  }
+  async function openGlobalScannerV2() {
+    const statusEl = document.getElementById('globalScanStatus');
+    s2Extras();
+    try {
+      await s2Start(null);
+      try { s2Devices = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput'); } catch (e) { s2Devices = []; }
+    } catch (err) {
+      console.error('Erreur caméra :', err);
+      let msg;
+      if (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError')) msg = 'Caméra bloquée : autorise-la pour ce site, puis réessaie. Tu peux aussi taper le code.';
+      else if (err && (err.name === 'NotReadableError' || err.name === 'AbortError')) msg = 'Caméra déjà utilisée par une autre application : ferme-la puis réessaie.';
+      else msg = 'Caméra indisponible — tape le code avec le bouton ⌨️.';
+      statusEl.textContent = msg + ' (' + ((err && err.name) || '') + ')';
+    }
+  }
+
   async function openGlobalScanner(title, onScanSuccess) {
     const modal = document.getElementById('globalScanModal');
     const statusEl = document.getElementById('globalScanStatus');
@@ -113,6 +202,8 @@
     modal.style.display = 'flex';
     statusEl.textContent = 'Initialisation de la caméra…';
     currentScanCallback = onScanSuccess;
+    { const b = document.getElementById('s2Bar'); if (b) b.style.display = 'none'; }
+    if (scan2On()) { await openGlobalScannerV2(); return; }
 
     try { await loadZxing(); }
     catch (e) { statusEl.textContent = "Impossible de charger le lecteur de codes-barres — vérifie ta connexion."; return; }
@@ -152,6 +243,7 @@
   }
 
   function closeGlobalScanner() {
+    s2Stop();
     if (globalZxingReader) { try { globalZxingReader.reset(); } catch (e) {} }
     const modal = document.getElementById('globalScanModal');
     if (modal) modal.style.display = 'none';
