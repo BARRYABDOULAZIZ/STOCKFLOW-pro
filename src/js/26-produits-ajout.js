@@ -201,26 +201,29 @@
     const grids = card.querySelectorAll('.field-grid');
     // Nouvelle grille « essentiel » : nom, quantité, prix d'achat, prix de vente
     const main = document.createElement('div'); main.className = 'field-grid pf-main';
-    ['p-nom', 'p-stock', 'p-prixachat', 'p-prixvente'].forEach(id => { const b = box(id); if (b) main.appendChild(b); });
+    ['p-nom', 'p-stock'].forEach(id => { const b = box(id); if (b) main.appendChild(b); });
+    // Date d'expiration sur la même ligne que « Tu en as combien ? »
+    const expB = document.getElementById('p-exp-box'); if (expB) main.appendChild(expB);
+    ['p-prixachat', 'p-prixvente'].forEach(id => { const b = box(id); if (b) main.appendChild(b); });
     grids[0].before(main);
     // Le reste dans un bloc repliable
     const more = document.createElement('details'); more.id = 'pfMore'; more.className = 'pf-more';
     more.innerHTML = '<summary>➕ ' + tr('Plus de détails') + ' <span class="muted">(' + tr('code-barres, catégorie, unité, fournisseur…') + ')</span></summary>';
     const rest = document.createElement('div'); rest.className = 'field-grid';
     ['p-barcode', 'p-unite', 'p-categorie', 'p-fournisseur', 'p-emplacement', 'p-seuil', 'p-ref'].forEach(id => { const b = box(id); if (b) rest.appendChild(b); });
-    const exp = document.getElementById('p-exp-box'); if (exp) rest.appendChild(exp);
     more.appendChild(rest); main.after(more);
     grids.forEach(g => { if (!g.children.length) g.remove(); });
     // Questions simples + exemples
     const lab = (id, t) => { const el = document.getElementById(id); const l = el && el.closest('div').querySelector('label'); if (l) l.innerHTML = t; };
     lab('p-nom', '📦 ' + tr("C'est quoi le produit ?"));
     lab('p-stock', '🔢 ' + tr('Tu en as combien ?'));
-    lab('p-prixachat', '💰 ' + tr("Tu l'achètes à combien ?") + ' <span class="muted pf-u">(' + tr('pour 1') + ')</span>');
-    lab('p-prixvente', '🏷️ ' + tr('Tu le vends à combien ?') + ' <span class="muted pf-u">(' + tr('pour 1') + ')</span>');
+    lab('p-prixachat', '💰 ' + tr("Tu l'achètes à combien ?"));
+    lab('p-prixvente', '🏷️ ' + tr('Tu le vends à combien ?'));
+    { const l = document.querySelector('#p-exp-box label'); if (l) l.innerHTML = '📅 ' + tr("Date d'expiration") + ' <span class="muted pf-u">(' + tr('facultatif') + ')</span>'; }
     const ph = (id, t) => { const el = document.getElementById(id); if (el) el.placeholder = t; };
     ph('p-nom', tr('Ex. : Riz 25 kg, huile 1 L, savon…'));
     ['p-stock', 'p-prixachat', 'p-prixvente'].forEach(id => { const el = document.getElementById(id); if (el && el.value === '0') el.value = ''; });
-    ph('p-stock', tr('Ex. : 10')); ph('p-prixachat', tr('Ex. : 12 000')); ph('p-prixvente', tr('Ex. : 14 000'));
+    ph('p-stock', tr('Ex. : 10')); ph('p-prixachat', tr('Ex. : 12 000 (pour 1)')); ph('p-prixvente', tr('Ex. : 14 000 (pour 1)'));
     const r = document.getElementById('p-ref'); if (r) r.placeholder = tr('Créée toute seule si tu la laisses vide');
     const h = card.querySelector('.hint-text'); if (h && !h.id) h.style.display = 'none';
     const btn = document.getElementById('btnAddProduct'); if (btn) btn.classList.add('pf-big');
@@ -230,6 +233,6 @@
   }
   function pfMoreOpenIfFilled() {
     const more = document.getElementById('pfMore'); if (!more) return;
-    const filled = ['p-barcode', 'p-categorie', 'p-fournisseur', 'p-emplacement', 'p-expiration'].some(id => { const el = document.getElementById(id); return el && el.value.trim(); });
+    const filled = ['p-barcode', 'p-categorie', 'p-fournisseur', 'p-emplacement'].some(id => { const el = document.getElementById(id); return el && el.value.trim(); });
     if (filled) more.open = true;
   }
