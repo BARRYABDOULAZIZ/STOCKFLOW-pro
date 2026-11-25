@@ -588,6 +588,9 @@
   .toast { border-radius:14px; padding:13px 22px; font-weight:600; background:linear-gradient(120deg,#17153b,#2a2570); color:#fff; box-shadow:var(--shadow-hi); }
   .toast.show { animation:bounceIn .45s cubic-bezier(.2,1.4,.4,1); }
   #loginOverlay { background:linear-gradient(135deg,rgba(35,20,110,.78),rgba(255,61,139,.55)) !important; backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
+  /* Petit écran : la fiche d'inscription est plus haute que l'écran → on peut défiler, et le haut n'est plus coupé */
+  #loginOverlay { overflow-y:auto !important; -webkit-overflow-scrolling:touch; align-items:flex-start !important; padding-top:calc(16px + env(safe-area-inset-top,0px)) !important; padding-bottom:calc(24px + env(safe-area-inset-bottom,0px)) !important; }
+  #loginOverlay > .card { margin:auto 0 !important; flex-shrink:0; }
   #loginOverlay .card { border-radius:24px; padding:26px 24px; box-shadow:0 30px 70px rgba(0,0,0,.35); animation:rise .5s cubic-bezier(.2,.8,.2,1) both; }
   #loginOverlay .card .row-head h2 { font-size:24px; }
   a { color:var(--brick); font-weight:600; }
