@@ -35,6 +35,23 @@
       rd.readAsDataURL(file);
     });
   }
+  // ---- Vente au détail (EN TEST : compte de test) : pièces par carton, prix d'achat et de vente à la pièce ----
+  const pfDetailOn = () => window.BB_TEST === true && pfMode === 'facture';
+  // Nombre de pièces écrit dans la désignation : « 4x25 » → 100, « ×150 » → 150 ; sinon 1 (le commerçant corrige)
+  function pfPieces(nom) {
+    const t = String(nom || '').replace(/×/g, 'x');
+    let m = t.match(/(\d+)\s*x\s*(\d+)/i); if (m) return Number(m[1]) * Number(m[2]);
+    m = t.match(/(?:^|\s)x\s*(\d+)/i); if (m) return Number(m[1]);
+    return 1;
+  }
+  const pfPcs = (r) => (pfDetailOn() && Number(r.pieces) > 1) ? Number(r.pieces) : 1;
+  const pfPaUnit = (r) => r.prixAchat == null ? null : Math.round(Number(r.prixAchat) / pfPcs(r));
+  const pfPvAuto = (r) => { const pa = pfPaUnit(r); return pa ? Math.max(25, Math.round(pa * 1.15 / 25) * 25) : null; };
+  function pfDetailTxt(r) {
+    const n = pfPcs(r); if (n <= 1) return '';
+    const pa = pfPaUnit(r);
+    return '= <b>' + (Number(r.quantite) || 0) * n + '</b> ' + escapeHtml(tr('pièces')) + (pa ? ' · ' + escapeHtml(tr('achat')) + ' ' + euros(pa) + ' / ' + escapeHtml(tr('pièce')) : '');
+  }
   function pfStatus(html) { const s = document.getElementById('pfStatus'); if (s) s.innerHTML = html; }
   function pfRender() {
     const box = document.getElementById('pfReview');
@@ -42,12 +59,15 @@
     const isF = pfMode === 'facture';
     const opts = (sel) => '<option value="">➕ ' + escapeHtml(tr('Nouveau produit')) + '</option>' + (state.products || []).slice().sort((x, y) => (x.nom || '').localeCompare(y.nom || '')).map(p => `<option value="${escapeHtml(p.id)}"${p.id === sel ? ' selected' : ''}>${escapeHtml(p.nom)}</option>`).join('');
     const head = isF && (pfMeta.fournisseur || pfMeta.date) ? `<p style="margin:0 0 8px;">🚚 <b>${escapeHtml(pfMeta.fournisseur || '?')}</b>${pfMeta.date ? ' · 📅 ' + escapeHtml(pfMeta.date) : ''}${pfMeta.total ? ' · ' + tr('Total') + ' ' + euros(pfMeta.total) : ''}</p>` : '';
-    box.innerHTML = head + `<div class="pf-scroll"><table><thead><tr><th></th><th>${tr('Produit')}</th><th>${tr('Quantité')}</th><th>${tr('Unité')}</th>${isF ? `<th>${tr('Prix d\'achat')}</th>` : ''}<th>${tr('Prix de vente')}</th><th>${tr('Dans le catalogue')}</th></tr></thead><tbody>` +
-      pfRows.map((r, i) => `<tr data-pfi="${i}"${isF && Number(r.prixVente) > 0 && Number(r.prixAchat) > Number(r.prixVente) ? ' class="pf-perte"' : ''}>
+    const det = pfDetailOn();
+    const perte = (r) => isF && Number(r.prixVente) > 0 && Number(pfPaUnit(r)) > Number(r.prixVente);
+    box.innerHTML = head + (det ? `<p class="hint-text" style="margin:0 0 8px;">🛒 ${tr('Tu vends à la pièce ? Écris combien de pièces il y a dans 1 carton/pack, et ton prix de vente pour 1 pièce. L\'appli calcule le reste.')}</p>` : '') + `<div class="pf-scroll"><table><thead><tr><th></th><th>${tr('Produit')}</th><th>${tr('Quantité')}</th><th>${tr('Unité')}</th>${det ? `<th>${tr('Pièces dans 1 carton')}</th>` : ''}${isF ? `<th>${det ? tr('Prix d\'achat du carton') : tr('Prix d\'achat')}</th>` : ''}<th>${det ? tr('Prix de vente d\'1 pièce') : tr('Prix de vente')}</th><th>${tr('Dans le catalogue')}</th></tr></thead><tbody>` +
+      pfRows.map((r, i) => `<tr data-pfi="${i}"${perte(r) ? ' class="pf-perte"' : ''}>
         <td><input type="checkbox" data-pf-k="on" ${r.on ? 'checked' : ''} style="width:auto; min-width:0;"></td>
-        <td class="pf-n"><input data-pf-k="nom" value="${escapeHtml(r.nom)}">${r.doute ? `<div class="pf-doute">⚠️ ${tr('Chiffres à vérifier')}</div>` : ''}${isF && Number(r.prixVente) > 0 && Number(r.prixAchat) > Number(r.prixVente) ? `<div class="pf-doute">⚠️ ${tr('Prix de vente plus bas que le prix d\'achat : tu vas vendre à perte')}</div>` : ''}${!isF && r.matchId ? `<div class="pf-doute">${tr('Déjà dans le catalogue : coché = le stock devient la quantité comptée')}</div>` : ''}</td>
+        <td class="pf-n"><input data-pf-k="nom" value="${escapeHtml(r.nom)}">${r.doute ? `<div class="pf-doute">⚠️ ${tr('Chiffres à vérifier')}</div>` : ''}${det ? `<div class="pf-det" data-pf-det="${i}">${pfDetailTxt(r)}</div>` : ''}${perte(r) ? `<div class="pf-doute">⚠️ ${tr('Prix de vente plus bas que le prix d\'achat : tu vas vendre à perte')}</div>` : ''}${!isF && r.matchId ? `<div class="pf-doute">${tr('Déjà dans le catalogue : coché = le stock devient la quantité comptée')}</div>` : ''}</td>
         <td><input type="number" min="0" step="any" data-pf-k="quantite" value="${escapeHtml(String(r.quantite))}"></td>
         <td><input data-pf-k="unite" value="${escapeHtml(r.unite)}"></td>
+        ${det ? `<td><input type="number" min="1" step="1" data-pf-k="pieces" value="${escapeHtml(String(r.pieces || 1))}"></td>` : ''}
         ${isF ? `<td><input type="number" min="0" step="1" data-pf-k="prixAchat" value="${r.prixAchat == null ? '' : escapeHtml(String(r.prixAchat))}"></td>` : ''}
         <td><input type="number" min="0" step="1" data-pf-k="prixVente" value="${r.prixVente == null ? '' : escapeHtml(String(r.prixVente))}" placeholder="?"></td>
         <td><select data-pf-k="matchId">${opts(r.matchId)}</select></td></tr>`).join('') +
@@ -90,7 +110,9 @@
         pfRows = (R.lignes || []).map(l => {
           const q = Number(l.quantite) || 0, pa = l.prix_achat != null ? Math.round(Number(l.prix_achat)) : (l.total && q ? Math.round(l.total / q) : null);
           const matchId = pfMatch(l.nom), ex = matchId && state.products.find(p => p.id === matchId);
-          return { on: q > 0, nom: String(l.nom || '').trim(), quantite: q, unite: String(l.unite || (ex && ex.unite) || 'unité'), prixAchat: pa, prixVente: ex ? Number(ex.prixVente) || null : (pa ? Math.round(pa * 1.15 / 25) * 25 : null), matchId, doute: !!l.doute };
+          const row = { on: q > 0, nom: String(l.nom || '').trim(), quantite: q, unite: String(l.unite || (ex && ex.unite) || 'unité'), prixAchat: pa, prixVente: ex ? Number(ex.prixVente) || null : (pa ? Math.round(pa * 1.15 / 25) * 25 : null), matchId, doute: !!l.doute, pieces: pfPieces(l.nom), pvAuto: !ex };
+          if (pfDetailOn() && row.pvAuto) row.prixVente = pfPvAuto(row);
+          return row;
         }).filter(r => r.nom);
       } else {
         pfMeta = {};
@@ -145,7 +167,10 @@
     let crees = 0, maj = 0;
     const refs = new Set((state.products || []).map(p => p.ref));
     try {
-      for (const r of rows) {
+      for (const r0 of rows) {
+        // Vente au détail : 2 cartons de 60 = 120 pièces, prix d'achat ramené à 1 pièce
+        const n = isF ? pfPcs(r0) : 1;
+        const r = n > 1 ? { ...r0, quantite: (Number(r0.quantite) || 0) * n, prixAchat: pfPaUnit(r0), unite: tr('pièce') } : r0;
         const q = Number(r.quantite) || 0;
         const ex = r.matchId && state.products.find(p => p.id === r.matchId);
         if (ex) {
@@ -189,8 +214,14 @@
       const tr0 = e.target.closest('[data-pfi]'), k = e.target.dataset.pfK; if (!tr0 || !k) return;
       const r = pfRows[Number(tr0.dataset.pfi)]; if (!r) return;
       if (k === 'on') r.on = e.target.checked;
-      else if (k === 'quantite' || k === 'prixAchat' || k === 'prixVente') r[k] = e.target.value === '' ? null : Number(e.target.value);
+      else if (k === 'quantite' || k === 'prixAchat' || k === 'prixVente' || k === 'pieces') r[k] = e.target.value === '' ? null : Number(e.target.value);
       else r[k] = e.target.value;
+      if (pfDetailOn()) {
+        if (k === 'prixVente') r.pvAuto = false;
+        if ((k === 'pieces' || k === 'prixAchat') && r.pvAuto) { r.prixVente = pfPvAuto(r); const pv = tr0.querySelector('[data-pf-k="prixVente"]'); if (pv) pv.value = r.prixVente == null ? '' : r.prixVente; }
+        const d = tr0.querySelector('[data-pf-det]'); if (d) d.innerHTML = pfDetailTxt(r);
+        const bad = Number(r.prixVente) > 0 && Number(pfPaUnit(r)) > Number(r.prixVente); tr0.classList.toggle('pf-perte', bad);
+      }
       if (k === 'on' || k === 'matchId') pfRender();
     });
     rev.addEventListener('change', (e) => { if (e.target.dataset.pfK === 'on' || e.target.dataset.pfK === 'matchId') { const tr0 = e.target.closest('[data-pfi]'); const r = tr0 && pfRows[Number(tr0.dataset.pfi)]; if (r) { r[e.target.dataset.pfK] = e.target.dataset.pfK === 'on' ? e.target.checked : e.target.value; pfRender(); } } });
