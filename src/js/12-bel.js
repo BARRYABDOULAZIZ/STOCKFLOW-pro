@@ -47,6 +47,8 @@
       // Compte normal : seule la photo de facture est ouverte (pour tous)
       if (!data.actif) { if (data.photo && pfc) { aiPhotoOk = true; pfc.style.display = ''; } return; }
       aiAskOk = true;
+      window.BB_TEST = true;
+      try { pfSimpleApply(); } catch (e) { console.error(e); }
       try { expRefresh(); } catch (e) { console.error(e); }
       try { renderLangPickers(); } catch (e) {}
       box.style.display = '';

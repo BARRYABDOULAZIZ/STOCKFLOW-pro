@@ -23,3 +23,12 @@
 .achat-warn{margin-top:4px;color:#ef4444;font-weight:700;opacity:1}
 tr.pf-perte td{background:rgba(239,68,68,.16)}
 tr.pf-perte input[data-pf-k="prixVente"]{border-color:#ef4444;color:#ef4444;font-weight:700}
+
+/* Formulaire « Ajouter un produit » simplifié (en test) */
+.pf-main label { font-size: 15px; font-weight: 700; }
+.pf-main input { font-size: 17px; padding: 12px; }
+.pf-more { margin: 10px 0 6px; border: 1px dashed var(--line); border-radius: 10px; padding: 8px 12px; }
+.pf-more > summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+.pf-more[open] > summary { margin-bottom: 8px; }
+.pf-u { font-weight: 500; font-size: 12px; }
+#btnAddProduct.pf-big { font-size: 17px; padding: 14px 22px; min-width: 60%; }
