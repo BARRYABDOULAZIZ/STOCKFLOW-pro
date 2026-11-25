@@ -7302,8 +7302,8 @@
       rd.readAsDataURL(file);
     });
   }
-  // ---- Vente au détail (EN TEST : compte de test) : pièces par carton, prix d'achat et de vente à la pièce ----
-  const pfDetailOn = () => window.BB_TEST === true && pfMode === 'facture';
+  // ---- Vente au détail (pour tous) : pièces par carton, prix d'achat et de vente à la pièce ----
+  const pfDetailOn = () => pfMode === 'facture';
   // Nombre de pièces écrit dans la désignation : « 4x25 » → 100, « ×150 » → 150 ; sinon 1 (le commerçant corrige)
   function pfPieces(nom) {
     const t = String(nom || '').replace(/×/g, 'x');
