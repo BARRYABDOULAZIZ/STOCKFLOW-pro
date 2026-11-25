@@ -217,13 +217,13 @@
     const lab = (id, t) => { const el = document.getElementById(id); const l = el && el.closest('div').querySelector('label'); if (l) l.innerHTML = t; };
     lab('p-nom', '📦 ' + tr("C'est quoi le produit ?"));
     lab('p-stock', '🔢 ' + tr('Tu en as combien ?'));
-    lab('p-prixachat', '💰 ' + tr("Tu l'achètes à combien ?"));
-    lab('p-prixvente', '🏷️ ' + tr('Tu le vends à combien ?'));
+    lab('p-prixachat', '💰 ' + tr("Tu l'achètes à combien ?") + ' <span class="muted pf-u">(' + tr('1 pièce') + ')</span>');
+    lab('p-prixvente', '🏷️ ' + tr('Tu le vends à combien ?') + ' <span class="muted pf-u">(' + tr('1 pièce') + ')</span>');
     { const l = document.querySelector('#p-exp-box label'); if (l) l.innerHTML = '📅 ' + tr("Date d'expiration") + ' <span class="muted pf-u">(' + tr('facultatif') + ')</span>'; }
     const ph = (id, t) => { const el = document.getElementById(id); if (el) el.placeholder = t; };
     ph('p-nom', tr('Ex. : Riz 25 kg, huile 1 L, savon…'));
     ['p-stock', 'p-prixachat', 'p-prixvente'].forEach(id => { const el = document.getElementById(id); if (el && el.value === '0') el.value = ''; });
-    ph('p-stock', tr('Ex. : 10')); ph('p-prixachat', tr('Ex. : 12 000 (pour 1)')); ph('p-prixvente', tr('Ex. : 14 000 (pour 1)'));
+    ph('p-stock', tr('Ex. : 10')); ph('p-prixachat', tr('Ex. : 12 000')); ph('p-prixvente', tr('Ex. : 14 000'));
     const r = document.getElementById('p-ref'); if (r) r.placeholder = tr('Créée toute seule si tu la laisses vide');
     const h = card.querySelector('.hint-text'); if (h && !h.id) h.style.display = 'none';
     const btn = document.getElementById('btnAddProduct'); if (btn) btn.classList.add('pf-big');
