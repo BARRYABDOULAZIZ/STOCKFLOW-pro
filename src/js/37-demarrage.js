@@ -4,10 +4,14 @@
     // L'app s'ouvre depuis la copie gardée (rapide) ; si une nouvelle version vient d'arriver, on propose de l'ouvrir
     const showMaj = () => {
       if (document.getElementById('bbMaj')) return;
-      const b = document.createElement('button'); b.id = 'bbMaj'; b.type = 'button'; b.className = 'bb-maj';
-      b.textContent = '✨ ' + tr('Nouvelle version prête : touche pour mettre à jour');
-      b.addEventListener('click', async () => { try { const ks = await caches.keys(); await Promise.all(ks.map(k => caches.open(k).then(c => c.delete('./__bb-maj')))); } catch (e) {} location.reload(); });
+      // Bandeau bien visible : pleine largeur en haut, couleur vive, gros bouton qui « respire »
+      const b = document.createElement('div'); b.id = 'bbMaj'; b.className = 'bb-maj'; b.setAttribute('role', 'alert');
+      b.innerHTML = '<span class="bb-maj-ic">🎉</span><span class="bb-maj-tx"><b>' + tr('Nouvelle version de BoromBoutik !') + '</b><small>' + tr('Touche le bouton pour avoir les nouveautés.') + '</small></span>'
+        + '<button type="button" class="bb-maj-go">🔄 ' + tr('Mettre à jour') + '</button><button type="button" class="bb-maj-x" aria-label="' + tr('Plus tard') + '">✕</button>';
+      b.querySelector('.bb-maj-go').addEventListener('click', async () => { try { const ks = await caches.keys(); await Promise.all(ks.map(k => caches.open(k).then(c => c.delete('./__bb-maj')))); } catch (e) {} location.reload(); });
+      b.querySelector('.bb-maj-x').addEventListener('click', () => b.remove());   // revient à la prochaine ouverture
       document.body.appendChild(b);
+      try { if (navigator.vibrate) navigator.vibrate(60); } catch (e) {}
     };
     const checkMaj = async () => { try { if (window.caches && await caches.match('./__bb-maj')) showMaj(); } catch (e) {} };
     navigator.serviceWorker.addEventListener('message', (ev) => { if (ev.data && ev.data.type === 'bb-maj') showMaj(); });
