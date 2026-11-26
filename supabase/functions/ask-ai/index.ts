@@ -91,6 +91,9 @@ Deno.serve(async (req) => {
 
     const allowed = (Deno.env.get("AI_TEST_EMAILS") ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
     const isTest = !!user.email && allowed.includes(user.email.toLowerCase());
+    // Vente à la voix SEULE (sans le reste de l'IA) pour quelques vrais commerçants testeurs : secret AI_VOICE_EMAILS (e-mails séparés par des virgules)
+    const voiceList = (Deno.env.get("AI_VOICE_EMAILS") ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+    const isVoice = isTest || (!!user.email && voiceList.includes(user.email.toLowerCase()));
     // Photo de facture ouverte à TOUS les propriétaires/admins (limite par jour). Mettre AI_PHOTO_FOR_ALL = 0 pour refermer.
     const photoAll = (Deno.env.get("AI_PHOTO_FOR_ALL") ?? "1") !== "0";
     const { data: prof } = await sb.from("profiles").select("role").eq("id", user.id).single();
@@ -100,8 +103,8 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     if (!isTest) {
-      if (body.ping) return json({ actif: false, photo: photoAll });
-      if (!(photoAll && body.vision === "facture")) {
+      if (body.ping) return json({ actif: false, photo: photoAll, voix: isVoice });
+      if (!(photoAll && body.vision === "facture") && !(isVoice && typeof body.vente === "string")) {
         return json({ error: "L'IA n'est pas encore activée pour ce compte", actif: false }, 403);
       }
     }

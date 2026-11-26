@@ -4174,7 +4174,12 @@
       const { data, error } = await supabaseClient.functions.invoke('ask-ai', { body: { ping: true } });
       if (error || !data) return;
       // Compte normal : seule la photo de facture est ouverte (pour tous)
-      if (!data.actif) { if (data.photo && pfc) { aiPhotoOk = true; pfc.style.display = ''; } return; }
+      if (!data.actif) {
+        if (data.photo && pfc) { aiPhotoOk = true; pfc.style.display = ''; }
+        // Vente à la voix ouverte à ce commerçant testeur (liste AI_VOICE_EMAILS côté serveur)
+        if (data.voix) { const vsv = document.getElementById('voiceSale'); if (vsv) vsv.style.display = ''; }
+        return;
+      }
       aiAskOk = true;
       window.BB_TEST = true;
       try { pfSimpleApply(); } catch (e) { console.error(e); }
