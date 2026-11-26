@@ -29,9 +29,9 @@
     invoiceLines[i] = { ref: prod.ref, nom: prod.nom, qte, prix: prod.prixVente, unite: prod.unite || '', matched: true };
     return i;
   }
-  // Vente au détail (EN TEST : compte de test) : boutons ¼ ½ ¾ quand l'unité est au kilo ou au litre
+  // Vente au détail (pour tous) : boutons ¼ ½ ¾ quand l'unité est au kilo ou au litre
   const FRAC_UNITS = /^(kg|kgs|kilo|kilos|kilogramme|kilogrammes|l|lt|litre|litres|liter|liters|g|gr|gramme|grammes|m|mètre|mètres|metre)$/i;
-  const fracOn = (line) => window.BB_TEST === true && !!(line.nom && line.nom.trim()) && FRAC_UNITS.test(String(line.unite || '').trim().replace(/\.$/, ''));
+  const fracOn = (line) => !!(line.nom && line.nom.trim()) && FRAC_UNITS.test(String(line.unite || '').trim().replace(/\.$/, ''));
   // « Pour combien ? » : le client demande « pour 250 F de sucre » → l'appli calcule la quantité (vrac)
   function venteMontantApply(idx, montant) {
     const l = invoiceLines[idx]; const prix = Number(l && l.prix) || 0; const m = Number(montant) || 0;
