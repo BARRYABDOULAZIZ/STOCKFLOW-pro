@@ -29,6 +29,9 @@
     invoiceLines[i] = { ref: prod.ref, nom: prod.nom, qte, prix: prod.prixVente, unite: prod.unite || '', matched: true };
     return i;
   }
+  // Vente au détail (EN TEST : compte de test) : boutons ¼ ½ ¾ quand l'unité est au kilo ou au litre
+  const FRAC_UNITS = /^(kg|kgs|kilo|kilos|kilogramme|kilogrammes|l|lt|litre|litres|liter|liters|g|gr|gramme|grammes|m|mètre|mètres|metre)$/i;
+  const fracOn = (line) => window.BB_TEST === true && !!(line.nom && line.nom.trim()) && FRAC_UNITS.test(String(line.unite || '').trim().replace(/\.$/, ''));
   function renderInvoiceLines() {
     const wrap = document.getElementById('invLines');
     wrap.innerHTML = '';
@@ -46,7 +49,7 @@
           <div class="ac-list" data-ac="${idx}" style="display:none;"></div>
         </div>
         <div class="il-stock" data-stk="${idx}">${lineStockHtml(line)}</div>
-        <div class="qty-box"><button type="button" class="q-btn" data-q="-1" data-idx="${idx}" tabindex="-1">−</button><input type="number" min="0" step="any" class="line-qty" data-idx="${idx}" value="${filled ? line.qte : ''}" inputmode="decimal"><button type="button" class="q-btn" data-q="1" data-idx="${idx}" tabindex="-1">+</button></div>
+        <div class="qty-box${fracOn(line) ? ' frac' : ''}"><button type="button" class="q-btn" data-q="-1" data-idx="${idx}" tabindex="-1">−</button><input type="number" min="0" step="any" class="line-qty" data-idx="${idx}" value="${filled ? line.qte : ''}" inputmode="decimal"><button type="button" class="q-btn" data-q="1" data-idx="${idx}" tabindex="-1">+</button>${fracOn(line) ? `<span class="fq-row"><button type="button" class="fq" data-fq="0.25" data-idx="${idx}" tabindex="-1">¼</button><button type="button" class="fq" data-fq="0.5" data-idx="${idx}" tabindex="-1">½</button><button type="button" class="fq" data-fq="0.75" data-idx="${idx}" tabindex="-1">¾</button></span>` : ''}</div>
         <input type="text" class="line-unite" data-idx="${idx}" value="${escapeHtml(line.unite)}" title="Unité">
         <input type="number" min="0" step="1" class="line-prix" data-idx="${idx}" value="${filled ? line.prix : ''}" inputmode="numeric">
         <div class="ltotal-box">${filled ? Math.round(total).toLocaleString('fr-FR') : ''}</div>
@@ -83,9 +86,17 @@
     wrap.querySelectorAll('.line-prix').forEach(inp => inp.addEventListener('input', e => { invoiceLines[+e.target.dataset.idx].prix = e.target.value; updateLineTotal(+e.target.dataset.idx); }));
     wrap.querySelectorAll('.q-btn').forEach(b => b.addEventListener('click', () => {
       const idx = +b.dataset.idx, l = invoiceLines[idx];
-      l.qte = Math.max(1, (Number(l.qte) || 0) + Number(b.dataset.q));
+      // Au kilo / au litre on peut descendre sous 1 (0,5 kg…) ; sinon minimum 1 comme avant
+      const mini = fracOn(l) ? 0.25 : 1;
+      l.qte = Math.max(mini, Math.round(((Number(l.qte) || 0) + Number(b.dataset.q)) * 100) / 100);
       const box = b.parentElement.querySelector('.line-qty'); if (box) box.value = l.qte;
       updateLineTotal(idx);
+    }));
+    wrap.querySelectorAll('.fq').forEach(b => b.addEventListener('click', () => {
+      const idx = +b.dataset.idx, l = invoiceLines[idx];
+      l.qte = Number(b.dataset.fq);
+      const box = b.closest('.qty-box').querySelector('.line-qty'); if (box) box.value = l.qte;
+      updateLineTotal(idx); refreshLineStock(idx);
     }));
     wrap.querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', () => { invoiceLines.splice(+b.dataset.rm, 1); if (invoiceLines.length === 0) invoiceLines = [freshLine()]; renderInvoiceLines(); }));
 

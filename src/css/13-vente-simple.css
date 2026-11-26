@@ -76,3 +76,10 @@
 .af-wrap{border:1.5px dashed var(--line,#d6d3d1);border-radius:12px;padding:8px 10px;margin-bottom:10px;font-size:13px;}
 .af-wrap.on{border-color:#b45309;background:rgba(217,119,6,.08);}
 .af-wrap input[type=date]{margin-top:4px;}
+
+/* Vente au détail : ¼ ½ ¾ sous la quantité (produits au kilo / au litre) */
+.il2 .qty-box.frac{flex-wrap:wrap;align-content:center;padding:4px 2px 5px;row-gap:4px;overflow:visible;height:auto;}
+.il2 .qty-box.frac .line-qty{height:auto !important;width:44px !important;font-size:13px;}
+.il2 .qty-box .fq-row{display:flex;gap:3px;width:100%;justify-content:center;}
+.il2 .qty-box .fq{min-width:28px;height:26px;flex:0 0 auto;border-radius:6px;border:1px solid var(--brick);background:color-mix(in srgb,var(--brick) 10%,var(--paper));color:var(--ink);font-size:14px;font-weight:900;line-height:1;padding:0 4px;cursor:pointer;}
+.il2 .qty-box .fq:active{transform:scale(.9);}
