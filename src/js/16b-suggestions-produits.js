@@ -29,6 +29,14 @@
     ['Lait concentré sucré', 'Épicerie', 'boîte'], ['Lait caillé', 'Frais', 'pot'], ['Yaourt', 'Frais', 'pot'],
     ['Café Touba', 'Épicerie', 'paquet'], ['Nescafé', 'Épicerie', 'boîte'], ['Thé vert Ataya', 'Épicerie', 'paquet'], ['Thé Lipton', 'Épicerie', 'boîte'],
     ['Chocolat en poudre', 'Épicerie', 'boîte'], ['Beurre', 'Frais', 'pot'], ['Chocolat à tartiner', 'Épicerie', 'pot'], ['Œufs', 'Frais', 'plateau'],
+    // Vrac (vendu au kilo / au litre : boutons ¼ ½ ¾ et « 💰 Montant » à la vente)
+    ['Lait en poudre au kilo', 'Vrac', 'kg'], ['Café en grains au kilo', 'Vrac', 'kg'], ['Café Touba au kilo', 'Vrac', 'kg'], ['Thé vert au kilo', 'Vrac', 'kg'],
+    ['Sucre au kilo', 'Vrac', 'kg'], ['Sel au kilo', 'Vrac', 'kg'], ['Farine au kilo', 'Vrac', 'kg'], ['Semoule au kilo', 'Vrac', 'kg'], ['Couscous au kilo', 'Vrac', 'kg'],
+    ['Poivre au kilo', 'Vrac', 'kg'], ['Piment au kilo', 'Vrac', 'kg'], ['Gingembre au kilo', 'Vrac', 'kg'], ['Ail au kilo', 'Vrac', 'kg'], ['Clou de girofle au kilo', 'Vrac', 'kg'],
+    ['Haricots secs au kilo', 'Vrac', 'kg'], ['Arachides au kilo', 'Vrac', 'kg'], ['Pâte d\'arachide au kilo', 'Vrac', 'kg'], ['Beurre de karité au kilo', 'Vrac', 'kg'],
+    ['Lessive en poudre au kilo', 'Vrac', 'kg'], ['Charbon au kilo', 'Vrac', 'kg'], ['Vinaigre au litre', 'Vrac', 'litre'], ['Pétrole lampant au litre', 'Vrac', 'litre'], ['Lait caillé au litre', 'Vrac', 'litre'],
+    // Vendu au sachet (boîte ou carton ouvert)
+    ['Nescafé sachet', 'Épicerie', 'sachet'], ['Lait Laicran sachet', 'Épicerie', 'sachet'], ['Café Touba sachet', 'Épicerie', 'sachet'],
     // Conserves
     ['Sardines 125 g', 'Conserves', 'boîte'], ['Thon en boîte', 'Conserves', 'boîte'], ['Petits pois en boîte', 'Conserves', 'boîte'], ['Haricots en boîte', 'Conserves', 'boîte'],
     // Légumes secs, légumes

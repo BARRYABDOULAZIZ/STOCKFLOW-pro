@@ -53,7 +53,7 @@
       }
       aiAskOk = true;
       window.BB_TEST = true;
-      try { pfSimpleApply(); } catch (e) { console.error(e); }
+      try { pfSimpleApply(); pfCartonApply(); } catch (e) { console.error(e); }
       try { expRefresh(); } catch (e) { console.error(e); }
       try { renderLangPickers(); } catch (e) {}
       box.style.display = '';

@@ -82,6 +82,7 @@
     document.getElementById('p-prixvente').value = '0';
     document.getElementById('p-seuil').value = '5';
     if (pfSimpleOn()) ['p-stock', 'p-prixachat', 'p-prixvente'].forEach(id => { document.getElementById(id).value = ''; });
+    try { pfCartonReset(); } catch (e) {}
     document.getElementById('lbl-stock').textContent = pfSimpleOn() ? '🔢 ' + tr('Tu en as combien ?') : 'Quantité en stock';
     document.getElementById('restockHint').style.display = 'none';
     document.getElementById('btnAddProduct').textContent = 'Ajouter au catalogue';
@@ -239,3 +240,32 @@
 
   // Appliqué dès l'ouverture de l'appli, pour tout le monde
   try { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => { try { pfSimpleApply(); } catch (e) { console.error(e); } }); else pfSimpleApply(); } catch (e) { console.error(e); }
+
+  // ===== « Acheté en carton / boîte » (EN TEST : compte de test) =====
+  // Ex. Ousmane : 1 boîte de Nescafé = 150 sachets, vendus 50 F le sachet.
+  // Le commerçant tape cartons × pièces × prix du carton → l'appli remplit « Tu en as combien ? » (en pièces) et le prix d'achat d'1 pièce.
+  function pfCartonApply() {
+    if (window.BB_TEST !== true || document.getElementById('pfCarton')) return;
+    const main = document.querySelector('.pf-main'); if (!main) return;
+    const d = document.createElement('details'); d.id = 'pfCarton'; d.className = 'pf-more pf-carton';
+    d.innerHTML = '<summary>📦 ' + tr('Tu l\'achètes en carton / boîte ?') + ' <span class="muted">(' + tr('vendu au sachet, à la pièce') + ')</span></summary>'
+      + '<div class="field-grid pf-cgrid">'
+      + '<div><label>' + tr('Combien de cartons ?') + '</label><input id="pfcN" type="number" min="0" step="any" inputmode="decimal" placeholder="' + tr('Ex. : 2') + '"></div>'
+      + '<div><label>' + tr('Pièces dans 1 carton') + '</label><input id="pfcP" type="number" min="1" step="1" inputmode="numeric" placeholder="' + tr('Ex. : 150 sachets') + '"></div>'
+      + '<div><label>' + tr('Prix d\'achat d\'1 carton') + '</label><input id="pfcA" type="number" min="0" step="1" inputmode="numeric" placeholder="' + tr('Ex. : 6 000') + '"></div>'
+      + '</div><div class="pf-det" id="pfcRes"></div>';
+    main.after(d);
+    const calc = () => {
+      const n = Number(document.getElementById('pfcN').value) || 0, pc = Number(document.getElementById('pfcP').value) || 0, a = Number(document.getElementById('pfcA').value) || 0;
+      const res = document.getElementById('pfcRes'); res.innerHTML = '';
+      if (pc > 0 && n > 0) document.getElementById('p-stock').value = Math.round(n * pc * 100) / 100;
+      if (pc > 0 && a > 0) document.getElementById('p-prixachat').value = Math.round(a / pc);
+      if (pc > 0 && (n > 0 || a > 0)) {
+        const u = document.getElementById('p-unite'); if (u && (!u.value.trim() || u.value.trim() === 'unité')) u.value = 'sachet';
+        res.innerHTML = '= <b>' + (n > 0 ? Math.round(n * pc * 100) / 100 : '?') + '</b> ' + escapeHtml(tr('pièces en stock')) + (a > 0 ? ' · ' + escapeHtml(tr('achat')) + ' <b>' + euros(Math.round(a / pc)) + '</b> / ' + escapeHtml(tr('pièce')) : '') + ' ✅';
+      }
+      try { if (typeof achatHint === 'function') achatHint(); } catch (e) {}
+    };
+    ['pfcN', 'pfcP', 'pfcA'].forEach(id => document.getElementById(id).addEventListener('input', calc));
+  }
+  function pfCartonReset() { ['pfcN', 'pfcP', 'pfcA'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; }); const r = document.getElementById('pfcRes'); if (r) r.innerHTML = ''; const d = document.getElementById('pfCarton'); if (d) d.open = false; }
