@@ -191,9 +191,9 @@
 
 
 
-  // ================= Formulaire « Ajouter un produit » simplifié (EN TEST : compte de test seulement) =================
+  // ================= Formulaire « Ajouter un produit » simplifié (pour tous) =================
   // 4 questions visibles (produit, combien, achat, vente) ; tout le reste rangé dans « ➕ Plus de détails ».
-  function pfSimpleOn() { return window.BB_TEST === true; }
+  function pfSimpleOn() { return true; }   // ouvert à tous les commerçants (26/11/2026)
   function pfSimpleApply() {
     if (!pfSimpleOn() || document.getElementById('pfMore')) return;
     const card = document.getElementById('p-nom').closest('.card'); if (!card) return;
@@ -236,3 +236,6 @@
     const filled = ['p-barcode', 'p-categorie', 'p-fournisseur', 'p-emplacement'].some(id => { const el = document.getElementById(id); return el && el.value.trim(); });
     if (filled) more.open = true;
   }
+
+  // Appliqué dès l'ouverture de l'appli, pour tout le monde
+  try { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => { try { pfSimpleApply(); } catch (e) { console.error(e); } }); else pfSimpleApply(); } catch (e) { console.error(e); }
