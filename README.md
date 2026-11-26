@@ -27,7 +27,7 @@ src/
     20-ventes.js                écran de vente
     23-saisie-photo.js          stock par photo (IA)
     24-point-patron.js          le point du patron
-    25-vente-voix.js            vente à la voix (en pause)
+    25-vente-voix.js            vente à la voix (comptes de test)
     25a-intelligence.js         à commander (prévision de rupture), anti-erreur à la caisse, 3 actions du jour
     25b-abonnement.js           abonnements : Mon abonnement, rappels, lecture seule, page Admin
     36-base-de-donnees.js       Supabase + copie locale (IndexedDB) + file d'attente hors connexion
