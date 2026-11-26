@@ -6123,6 +6123,33 @@
   // Vente au détail (EN TEST : compte de test) : boutons ¼ ½ ¾ quand l'unité est au kilo ou au litre
   const FRAC_UNITS = /^(kg|kgs|kilo|kilos|kilogramme|kilogrammes|l|lt|litre|litres|liter|liters|g|gr|gramme|grammes|m|mètre|mètres|metre)$/i;
   const fracOn = (line) => window.BB_TEST === true && !!(line.nom && line.nom.trim()) && FRAC_UNITS.test(String(line.unite || '').trim().replace(/\.$/, ''));
+  // « Pour combien ? » : le client demande « pour 250 F de sucre » → l'appli calcule la quantité (vrac)
+  function venteMontantApply(idx, montant) {
+    const l = invoiceLines[idx]; const prix = Number(l && l.prix) || 0; const m = Number(montant) || 0;
+    if (!l || prix <= 0 || m <= 0) { toast(tr("Mets d'abord le prix d'1 kilo / 1 litre.")); return; }
+    l.qte = Math.round((m / prix) * 10000) / 10000;   // 4 chiffres : le total retombe pile sur le montant demandé
+    const row = document.querySelectorAll('.inv-line')[idx]; const box = row && row.querySelector('.line-qty'); if (box) box.value = l.qte;
+    updateLineTotal(idx); refreshLineStock(idx);
+    toast('✅ ' + m.toLocaleString('fr-FR') + ' F = ' + String(Math.round(l.qte * 1000) / 1000).replace('.', ',') + ' ' + (l.unite || ''));
+  }
+  function venteMontantOpen(idx) {
+    const l = invoiceLines[idx]; if (!l) return;
+    let ov = document.getElementById('vmOv');
+    if (!ov) { ov = document.createElement('div'); ov.id = 'vmOv'; ov.className = 'vm-ov'; document.body.appendChild(ov); }
+    const prix = Number(l.prix) || 0;
+    ov.innerHTML = `<div class="vm-box" role="dialog"><div class="vm-t">💰 ${escapeHtml(tr('Pour combien ?'))}</div>
+      <div class="vm-s">${escapeHtml(l.nom)} · ${prix.toLocaleString('fr-FR')} F / ${escapeHtml(l.unite || '')}</div>
+      <div class="vm-chips">${[100, 200, 250, 500, 1000].map(v => `<button type="button" data-vm="${v}">${v}</button>`).join('')}</div>
+      <div class="vm-row"><input id="vmIn" type="number" min="1" step="1" inputmode="numeric" placeholder="${escapeHtml(tr('Autre montant'))}"><span>F</span><button type="button" class="vm-ok" id="vmOk">OK</button></div>
+      <button type="button" class="vm-x" id="vmX">${escapeHtml(tr('Annuler'))}</button></div>`;
+    ov.style.display = 'flex';
+    const close = () => { ov.style.display = 'none'; };
+    ov.querySelectorAll('[data-vm]').forEach(b => b.addEventListener('click', () => { close(); venteMontantApply(idx, b.dataset.vm); }));
+    ov.querySelector('#vmOk').addEventListener('click', () => { const v = ov.querySelector('#vmIn').value; close(); venteMontantApply(idx, v); });
+    ov.querySelector('#vmIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ov.querySelector('#vmOk').click(); } });
+    ov.querySelector('#vmX').addEventListener('click', close);
+    ov.addEventListener('click', e => { if (e.target === ov) close(); });
+  }
   function renderInvoiceLines() {
     const wrap = document.getElementById('invLines');
     wrap.innerHTML = '';
@@ -6140,7 +6167,7 @@
           <div class="ac-list" data-ac="${idx}" style="display:none;"></div>
         </div>
         <div class="il-stock" data-stk="${idx}">${lineStockHtml(line)}</div>
-        <div class="qty-box${fracOn(line) ? ' frac' : ''}"><button type="button" class="q-btn" data-q="-1" data-idx="${idx}" tabindex="-1">−</button><input type="number" min="0" step="any" class="line-qty" data-idx="${idx}" value="${filled ? line.qte : ''}" inputmode="decimal"><button type="button" class="q-btn" data-q="1" data-idx="${idx}" tabindex="-1">+</button>${fracOn(line) ? `<span class="fq-row"><button type="button" class="fq" data-fq="0.25" data-idx="${idx}" tabindex="-1">¼</button><button type="button" class="fq" data-fq="0.5" data-idx="${idx}" tabindex="-1">½</button><button type="button" class="fq" data-fq="0.75" data-idx="${idx}" tabindex="-1">¾</button></span>` : ''}</div>
+        <div class="qty-box${fracOn(line) ? ' frac' : ''}"><button type="button" class="q-btn" data-q="-1" data-idx="${idx}" tabindex="-1">−</button><input type="number" min="0" step="any" class="line-qty" data-idx="${idx}" value="${filled ? line.qte : ''}" inputmode="decimal"><button type="button" class="q-btn" data-q="1" data-idx="${idx}" tabindex="-1">+</button>${fracOn(line) ? `<span class="fq-row"><button type="button" class="fq" data-fq="0.25" data-idx="${idx}" tabindex="-1">¼</button><button type="button" class="fq" data-fq="0.5" data-idx="${idx}" tabindex="-1">½</button><button type="button" class="fq" data-fq="0.75" data-idx="${idx}" tabindex="-1">¾</button></span><button type="button" class="fq-amt" data-famt="${idx}" tabindex="-1">💰 ${escapeHtml(tr('Montant'))}</button>` : ''}</div>
         <input type="text" class="line-unite" data-idx="${idx}" value="${escapeHtml(line.unite)}" title="Unité">
         <input type="number" min="0" step="1" class="line-prix" data-idx="${idx}" value="${filled ? line.prix : ''}" inputmode="numeric">
         <div class="ltotal-box">${filled ? Math.round(total).toLocaleString('fr-FR') : ''}</div>
@@ -6189,6 +6216,7 @@
       const box = b.closest('.qty-box').querySelector('.line-qty'); if (box) box.value = l.qte;
       updateLineTotal(idx); refreshLineStock(idx);
     }));
+    wrap.querySelectorAll('[data-famt]').forEach(b => b.addEventListener('click', () => venteMontantOpen(+b.dataset.famt)));
     wrap.querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', () => { invoiceLines.splice(+b.dataset.rm, 1); if (invoiceLines.length === 0) invoiceLines = [freshLine()]; renderInvoiceLines(); }));
 
     updateGrandTotal();
@@ -10729,6 +10757,20 @@ body.hide-amounts #stockValue,body.hide-amounts #heroInvesti,body.hide-amounts #
 .il2 .qty-box .fq-row{display:flex;gap:3px;width:100%;justify-content:center;}
 .il2 .qty-box .fq{min-width:28px;height:26px;flex:0 0 auto;border-radius:6px;border:1px solid var(--brick);background:color-mix(in srgb,var(--brick) 10%,var(--paper));color:var(--ink);font-size:14px;font-weight:900;line-height:1;padding:0 4px;cursor:pointer;}
 .il2 .qty-box .fq:active{transform:scale(.9);}
+
+/* « Pour combien ? » (vrac) */
+.il2 .qty-box .fq-amt{width:100%;margin-top:2px;border:0;border-radius:6px;background:#16a34a;color:#fff;font-size:11.5px;font-weight:800;padding:4px 2px;cursor:pointer;white-space:nowrap;}
+.vm-ov{position:fixed;inset:0;z-index:9998;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;padding:16px;}
+.vm-box{background:var(--paper,#fff);color:var(--ink,#111);border-radius:16px;padding:18px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.35);}
+.vm-t{font-size:20px;font-weight:900;}
+.vm-s{font-size:13px;opacity:.75;margin:4px 0 12px;}
+.vm-chips{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px;}
+.vm-chips button{border:2px solid #16a34a;background:transparent;color:inherit;border-radius:10px;padding:12px 0;font-size:16px;font-weight:900;cursor:pointer;}
+.vm-chips button:active{background:#16a34a;color:#fff;}
+.vm-row{display:flex;align-items:center;gap:6px;}
+.vm-row input{flex:1;font-size:18px;padding:10px;}
+.vm-ok{background:#16a34a;color:#fff;border:0;border-radius:10px;padding:11px 16px;font-weight:900;font-size:16px;cursor:pointer;}
+.vm-x{margin-top:10px;width:100%;background:transparent;border:0;color:inherit;opacity:.7;padding:8px;cursor:pointer;}
 </style>
 <style id="perf-css">
 /* Performance : plus d'animation permanente sur l'en-tête (elle redessinait l'écran en continu sur les téléphones modestes) */

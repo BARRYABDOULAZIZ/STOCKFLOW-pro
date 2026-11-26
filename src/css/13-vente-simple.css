@@ -83,3 +83,17 @@
 .il2 .qty-box .fq-row{display:flex;gap:3px;width:100%;justify-content:center;}
 .il2 .qty-box .fq{min-width:28px;height:26px;flex:0 0 auto;border-radius:6px;border:1px solid var(--brick);background:color-mix(in srgb,var(--brick) 10%,var(--paper));color:var(--ink);font-size:14px;font-weight:900;line-height:1;padding:0 4px;cursor:pointer;}
 .il2 .qty-box .fq:active{transform:scale(.9);}
+
+/* « Pour combien ? » (vrac) */
+.il2 .qty-box .fq-amt{width:100%;margin-top:2px;border:0;border-radius:6px;background:#16a34a;color:#fff;font-size:11.5px;font-weight:800;padding:4px 2px;cursor:pointer;white-space:nowrap;}
+.vm-ov{position:fixed;inset:0;z-index:9998;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;padding:16px;}
+.vm-box{background:var(--paper,#fff);color:var(--ink,#111);border-radius:16px;padding:18px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.35);}
+.vm-t{font-size:20px;font-weight:900;}
+.vm-s{font-size:13px;opacity:.75;margin:4px 0 12px;}
+.vm-chips{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px;}
+.vm-chips button{border:2px solid #16a34a;background:transparent;color:inherit;border-radius:10px;padding:12px 0;font-size:16px;font-weight:900;cursor:pointer;}
+.vm-chips button:active{background:#16a34a;color:#fff;}
+.vm-row{display:flex;align-items:center;gap:6px;}
+.vm-row input{flex:1;font-size:18px;padding:10px;}
+.vm-ok{background:#16a34a;color:#fff;border:0;border-radius:10px;padding:11px 16px;font-weight:900;font-size:16px;cursor:pointer;}
+.vm-x{margin-top:10px;width:100%;background:transparent;border:0;color:inherit;opacity:.7;padding:8px;cursor:pointer;}

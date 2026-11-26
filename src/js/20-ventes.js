@@ -32,6 +32,33 @@
   // Vente au détail (EN TEST : compte de test) : boutons ¼ ½ ¾ quand l'unité est au kilo ou au litre
   const FRAC_UNITS = /^(kg|kgs|kilo|kilos|kilogramme|kilogrammes|l|lt|litre|litres|liter|liters|g|gr|gramme|grammes|m|mètre|mètres|metre)$/i;
   const fracOn = (line) => window.BB_TEST === true && !!(line.nom && line.nom.trim()) && FRAC_UNITS.test(String(line.unite || '').trim().replace(/\.$/, ''));
+  // « Pour combien ? » : le client demande « pour 250 F de sucre » → l'appli calcule la quantité (vrac)
+  function venteMontantApply(idx, montant) {
+    const l = invoiceLines[idx]; const prix = Number(l && l.prix) || 0; const m = Number(montant) || 0;
+    if (!l || prix <= 0 || m <= 0) { toast(tr("Mets d'abord le prix d'1 kilo / 1 litre.")); return; }
+    l.qte = Math.round((m / prix) * 10000) / 10000;   // 4 chiffres : le total retombe pile sur le montant demandé
+    const row = document.querySelectorAll('.inv-line')[idx]; const box = row && row.querySelector('.line-qty'); if (box) box.value = l.qte;
+    updateLineTotal(idx); refreshLineStock(idx);
+    toast('✅ ' + m.toLocaleString('fr-FR') + ' F = ' + String(Math.round(l.qte * 1000) / 1000).replace('.', ',') + ' ' + (l.unite || ''));
+  }
+  function venteMontantOpen(idx) {
+    const l = invoiceLines[idx]; if (!l) return;
+    let ov = document.getElementById('vmOv');
+    if (!ov) { ov = document.createElement('div'); ov.id = 'vmOv'; ov.className = 'vm-ov'; document.body.appendChild(ov); }
+    const prix = Number(l.prix) || 0;
+    ov.innerHTML = `<div class="vm-box" role="dialog"><div class="vm-t">💰 ${escapeHtml(tr('Pour combien ?'))}</div>
+      <div class="vm-s">${escapeHtml(l.nom)} · ${prix.toLocaleString('fr-FR')} F / ${escapeHtml(l.unite || '')}</div>
+      <div class="vm-chips">${[100, 200, 250, 500, 1000].map(v => `<button type="button" data-vm="${v}">${v}</button>`).join('')}</div>
+      <div class="vm-row"><input id="vmIn" type="number" min="1" step="1" inputmode="numeric" placeholder="${escapeHtml(tr('Autre montant'))}"><span>F</span><button type="button" class="vm-ok" id="vmOk">OK</button></div>
+      <button type="button" class="vm-x" id="vmX">${escapeHtml(tr('Annuler'))}</button></div>`;
+    ov.style.display = 'flex';
+    const close = () => { ov.style.display = 'none'; };
+    ov.querySelectorAll('[data-vm]').forEach(b => b.addEventListener('click', () => { close(); venteMontantApply(idx, b.dataset.vm); }));
+    ov.querySelector('#vmOk').addEventListener('click', () => { const v = ov.querySelector('#vmIn').value; close(); venteMontantApply(idx, v); });
+    ov.querySelector('#vmIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ov.querySelector('#vmOk').click(); } });
+    ov.querySelector('#vmX').addEventListener('click', close);
+    ov.addEventListener('click', e => { if (e.target === ov) close(); });
+  }
   function renderInvoiceLines() {
     const wrap = document.getElementById('invLines');
     wrap.innerHTML = '';
@@ -49,7 +76,7 @@
           <div class="ac-list" data-ac="${idx}" style="display:none;"></div>
         </div>
         <div class="il-stock" data-stk="${idx}">${lineStockHtml(line)}</div>
-        <div class="qty-box${fracOn(line) ? ' frac' : ''}"><button type="button" class="q-btn" data-q="-1" data-idx="${idx}" tabindex="-1">−</button><input type="number" min="0" step="any" class="line-qty" data-idx="${idx}" value="${filled ? line.qte : ''}" inputmode="decimal"><button type="button" class="q-btn" data-q="1" data-idx="${idx}" tabindex="-1">+</button>${fracOn(line) ? `<span class="fq-row"><button type="button" class="fq" data-fq="0.25" data-idx="${idx}" tabindex="-1">¼</button><button type="button" class="fq" data-fq="0.5" data-idx="${idx}" tabindex="-1">½</button><button type="button" class="fq" data-fq="0.75" data-idx="${idx}" tabindex="-1">¾</button></span>` : ''}</div>
+        <div class="qty-box${fracOn(line) ? ' frac' : ''}"><button type="button" class="q-btn" data-q="-1" data-idx="${idx}" tabindex="-1">−</button><input type="number" min="0" step="any" class="line-qty" data-idx="${idx}" value="${filled ? line.qte : ''}" inputmode="decimal"><button type="button" class="q-btn" data-q="1" data-idx="${idx}" tabindex="-1">+</button>${fracOn(line) ? `<span class="fq-row"><button type="button" class="fq" data-fq="0.25" data-idx="${idx}" tabindex="-1">¼</button><button type="button" class="fq" data-fq="0.5" data-idx="${idx}" tabindex="-1">½</button><button type="button" class="fq" data-fq="0.75" data-idx="${idx}" tabindex="-1">¾</button></span><button type="button" class="fq-amt" data-famt="${idx}" tabindex="-1">💰 ${escapeHtml(tr('Montant'))}</button>` : ''}</div>
         <input type="text" class="line-unite" data-idx="${idx}" value="${escapeHtml(line.unite)}" title="Unité">
         <input type="number" min="0" step="1" class="line-prix" data-idx="${idx}" value="${filled ? line.prix : ''}" inputmode="numeric">
         <div class="ltotal-box">${filled ? Math.round(total).toLocaleString('fr-FR') : ''}</div>
@@ -98,6 +125,7 @@
       const box = b.closest('.qty-box').querySelector('.line-qty'); if (box) box.value = l.qte;
       updateLineTotal(idx); refreshLineStock(idx);
     }));
+    wrap.querySelectorAll('[data-famt]').forEach(b => b.addEventListener('click', () => venteMontantOpen(+b.dataset.famt)));
     wrap.querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', () => { invoiceLines.splice(+b.dataset.rm, 1); if (invoiceLines.length === 0) invoiceLines = [freshLine()]; renderInvoiceLines(); }));
 
     updateGrandTotal();
